@@ -11,6 +11,7 @@ export interface Level {
   name: string;
   description: string;
   tier: number;
-  benchKgRequired: number;
+  benchmarkKg: number;
   tonnage30dKgRequired: number;
+  mainExercisesRequired: number;
 }

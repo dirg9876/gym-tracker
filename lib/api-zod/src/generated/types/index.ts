@@ -21,6 +21,7 @@ export * from "./level";
 export * from "./levelsResponse";
 export * from "./levelStats";
 export * from "./listWorkoutsParams";
+export * from "./mainExerciseStat";
 export * from "./personalRecord";
 export * from "./personalRecordKind";
 export * from "./progressPoint";

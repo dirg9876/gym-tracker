@@ -201,15 +201,21 @@ export interface Level {
   name: string;
   description: string;
   tier: number;
-  benchKgRequired: number;
+  benchmarkKg: number;
   tonnage30dKgRequired: number;
+  mainExercisesRequired: number;
+}
+
+export interface MainExerciseStat {
+  exerciseId: number;
+  name: string;
+  muscleGroup: string;
+  maxWeightKg: number;
 }
 
 export interface LevelStats {
-  maxBenchKg: number;
   maxTonnage30dKg: number;
-  benchExerciseId?: number | null;
-  benchExerciseName: string;
+  mainExercises: MainExerciseStat[];
 }
 
 export interface LevelsResponse {

@@ -1,9 +1,13 @@
 import { useEffect, useRef } from "react";
-import { useGetLevels, type Level } from "@workspace/api-client-react";
-import { Lock, Trophy, Dumbbell, Flame } from "lucide-react";
+import {
+  useGetLevels,
+  type Level,
+  type MainExerciseStat,
+} from "@workspace/api-client-react";
+import { Lock, Trophy, Flame, Check, Dumbbell } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatKg, formatNumber } from "@/lib/format";
-import { tierImage } from "@/lib/tierImages";
+import { levelImage } from "@/lib/tierImages";
 
 export function Levels() {
   const { data, isLoading } = useGetLevels();
@@ -24,10 +28,13 @@ export function Levels() {
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
 
-  const benchProgress =
-    next && next.benchKgRequired > 0
-      ? Math.min(100, (stats.maxBenchKg / next.benchKgRequired) * 100)
-      : 100;
+  const passedExercises = next
+    ? stats.mainExercises.filter((e) => e.maxWeightKg >= next.benchmarkKg)
+    : [];
+  const passedCount = passedExercises.length;
+  const exerciseProgress = next
+    ? Math.min(100, (passedCount / next.mainExercisesRequired) * 100)
+    : 100;
   const tonnageProgress =
     next && next.tonnage30dKgRequired > 0
       ? Math.min(100, (stats.maxTonnage30dKg / next.tonnage30dKgRequired) * 100)
@@ -50,9 +57,9 @@ export function Levels() {
           >
             <div className="relative">
               <img
-                src={tierImage(current.tier)}
+                src={levelImage(current.level, current.tier)}
                 alt={current.name}
-                className="h-40 w-40 object-contain pixelated drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
+                className="h-40 w-40 object-contain drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
                 style={{ imageRendering: "pixelated" }}
               />
               <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-sm shadow-lg">
@@ -66,18 +73,25 @@ export function Levels() {
           </motion.div>
 
           {next ? (
-            <div className="mt-6 bg-card border border-border rounded-2xl p-4 space-y-3">
+            <div className="mt-6 bg-card border border-border rounded-2xl p-4 space-y-4">
               <div className="text-xs uppercase tracking-widest text-muted-foreground">
                 До уровня {next.level} — «{next.name}»
               </div>
+
               <ProgressRow
                 icon={<Dumbbell className="h-4 w-4" />}
-                label={`${stats.benchExerciseName}`}
-                value={stats.maxBenchKg}
-                target={next.benchKgRequired}
-                unit="кг"
-                progress={benchProgress}
+                label={`Основные упражнения от ${formatKg(next.benchmarkKg)}`}
+                value={passedCount}
+                target={next.mainExercisesRequired}
+                unit=""
+                progress={exerciseProgress}
               />
+
+              <MainExercisesGrid
+                exercises={stats.mainExercises}
+                target={next.benchmarkKg}
+              />
+
               <ProgressRow
                 icon={<Flame className="h-4 w-4" />}
                 label="Тоннаж за 30 дней"
@@ -121,9 +135,9 @@ export function Levels() {
                 }`}
               >
                 <img
-                  src={tierImage(lvl.tier)}
+                  src={levelImage(lvl.level, lvl.tier)}
                   alt=""
-                  className={`h-12 w-12 object-contain ${isUnlocked ? "" : "opacity-40 grayscale"}`}
+                  className={`h-12 w-12 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
                   style={{ imageRendering: "pixelated" }}
                 />
                 <div className="flex-1 min-w-0">
@@ -152,7 +166,7 @@ export function Levels() {
                   </div>
                   {lvl.level > 0 && (
                     <div className="text-[11px] text-muted-foreground/80 mt-1">
-                      Жим {formatKg(lvl.benchKgRequired)} · Тоннаж{" "}
+                      3 упр. от {formatKg(lvl.benchmarkKg)} · Тоннаж{" "}
                       {formatNumber(lvl.tonnage30dKgRequired)} кг / 30 дней
                     </div>
                   )}
@@ -190,7 +204,9 @@ function ProgressRow({
           <span>{label}</span>
         </div>
         <div className={`font-mono ${reached ? "text-primary" : ""}`}>
-          {formatNumber(value)} / {formatNumber(target)} {unit}
+          {formatNumber(value)}
+          {unit && ` / ${formatNumber(target)} ${unit}`}
+          {!unit && ` / ${target}`}
         </div>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -201,6 +217,44 @@ function ProgressRow({
           transition={{ duration: 0.6 }}
         />
       </div>
+    </div>
+  );
+}
+
+function MainExercisesGrid({
+  exercises,
+  target,
+}: {
+  exercises: MainExerciseStat[];
+  target: number;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-1.5">
+      {exercises.map((e) => {
+        const passed = e.maxWeightKg >= target;
+        return (
+          <div
+            key={e.exerciseId}
+            className={`flex items-center justify-between text-xs px-2.5 py-1.5 rounded-md border ${
+              passed
+                ? "border-primary/40 bg-primary/10 text-foreground"
+                : "border-border bg-card/40 text-muted-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {passed ? (
+                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+              ) : (
+                <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
+              )}
+              <span className="truncate">{e.name}</span>
+            </div>
+            <span className={`font-mono ${passed ? "text-primary" : ""}`}>
+              {formatNumber(e.maxWeightKg)} кг
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

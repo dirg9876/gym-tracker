@@ -38,15 +38,20 @@ records, progress series for charts, and overall stats overview.
 
 81 levels (0–80) defined statically in `artifacts/api-server/src/lib/levels.ts`.
 Names go from insulting (Дохляк, Спичка) to respectful (Геркулес, Титан) as
-level rises. Each level requires:
-- a minimum bench press (Жим штанги лёжа) weight in any single set, and
-- a minimum total tonnage achieved within any rolling 30-day window across
-  finished workouts.
+level rises. Each level (>=1) requires both:
+- 3 different "main" free-weight compound exercises (jim, squat, deadlift,
+  rows, presses, curls — the canonical compound list in `MAIN_EXERCISE_NAMES`)
+  each lifted at >= the level's benchmark weight in any single set, and
+- a minimum total tonnage within any rolling 30-day window across finished
+  workouts. Tonnage is sized as `5 ex × 4 sets × 8 reps × benchmark × 0.7 ×
+  6 workouts/month`, rounded to 500 kg, so it scales realistically with
+  expected training volume per workout.
 
-Levels are split into 9 tiers; each tier has its own 8-bit pixel-art sprite
-under `artifacts/gym-tracker/src/assets/levels/tier-N.png`. The frontend
-`Levels` page shows the current avatar, progress bars to the next level, and
-the full ladder.
+Sprites: 9 tier sprites at `artifacts/gym-tracker/src/assets/levels/tier-N.png`
+plus per-level overrides at `level-N.png`. The frontend `levelImage(level,
+tier)` helper picks `level-N.png` if present, otherwise the tier sprite. The
+`Levels` page shows the current avatar, the 3-exercise + tonnage progress to
+the next level, and the full ladder of 81 levels.
 
 ## Key Commands
 

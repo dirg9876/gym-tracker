@@ -639,34 +639,46 @@ components:
           type: string
         tier:
           type: integer
-        benchKgRequired:
+        benchmarkKg:
           type: number
         tonnage30dKgRequired:
           type: number
+        mainExercisesRequired:
+          type: integer
       required:
         - level
         - name
         - description
         - tier
-        - benchKgRequired
+        - benchmarkKg
         - tonnage30dKgRequired
+        - mainExercisesRequired
+
+    MainExerciseStat:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        name:
+          type: string
+        muscleGroup:
+          type: string
+        maxWeightKg:
+          type: number
+      required: [exerciseId, name, muscleGroup, maxWeightKg]
 
     LevelStats:
       type: object
       properties:
-        maxBenchKg:
-          type: number
         maxTonnage30dKg:
           type: number
-        benchExerciseId:
-          type: integer
-          nullable: true
-        benchExerciseName:
-          type: string
+        mainExercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/MainExerciseStat"
       required:
-        - maxBenchKg
         - maxTonnage30dKg
-        - benchExerciseName
+        - mainExercises
 
     LevelsResponse:
       type: object

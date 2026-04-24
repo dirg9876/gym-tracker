@@ -1,16 +1,23 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
-import { eq, and, isNotNull, asc } from "drizzle-orm";
+import { eq, and, isNotNull, asc, inArray } from "drizzle-orm";
 
 export type LevelDef = {
   level: number;
   name: string;
   description: string;
   tier: number;
-  benchKgRequired: number;
+  benchmarkKg: number;
   tonnage30dKgRequired: number;
+  mainExercisesRequired: number;
 };
 
 const TIER_SIZE = 9;
+const MAIN_EXERCISES_REQUIRED = 3;
+const WORKOUTS_PER_MONTH_ASSUMED = 6;
+const SETS_PER_EXERCISE = 4;
+const REPS_PER_SET = 8;
+const EXERCISES_PER_WORKOUT = 5;
+const AVG_WEIGHT_FACTOR = 0.7;
 
 const NAMES_AND_DESCRIPTIONS: Array<[string, string]> = [
   ["Дохляк", "Ты не держал ничего тяжелее компьютерной мышки."],
@@ -96,6 +103,20 @@ const NAMES_AND_DESCRIPTIONS: Array<[string, string]> = [
   ["Легенда", "Твоё имя будут помнить века."],
 ];
 
+const MAIN_EXERCISE_NAMES = [
+  "Жим штанги лёжа",
+  "Жим гантелей лёжа",
+  "Жим штанги на наклонной скамье",
+  "Приседания со штангой",
+  "Румынская тяга",
+  "Становая тяга",
+  "Тяга штанги в наклоне",
+  "Тяга гантели одной рукой",
+  "Жим штанги стоя",
+  "Жим гантелей сидя",
+  "Подъём штанги на бицепс",
+];
+
 function round(n: number, digits = 2): number {
   const f = Math.pow(10, digits);
   return Math.round(n * f) / f;
@@ -105,15 +126,18 @@ function roundTo(n: number, step: number): number {
   return Math.round(n / step) * step;
 }
 
-function benchRequired(level: number): number {
+function benchmarkKg(level: number): number {
   if (level <= 0) return 0;
   const raw = 20 + (level - 1) * (180 / 79);
   return roundTo(raw, 2.5);
 }
 
-function tonnageRequired(level: number): number {
+function tonnageKg(level: number): number {
   if (level <= 0) return 0;
-  return roundTo(level * 250, 50);
+  const perWorkout =
+    EXERCISES_PER_WORKOUT * SETS_PER_EXERCISE * REPS_PER_SET * benchmarkKg(level) * AVG_WEIGHT_FACTOR;
+  const monthly = perWorkout * WORKOUTS_PER_MONTH_ASSUMED;
+  return roundTo(monthly, 500);
 }
 
 export const LEVELS: LevelDef[] = NAMES_AND_DESCRIPTIONS.map(([name, description], idx) => ({
@@ -121,19 +145,23 @@ export const LEVELS: LevelDef[] = NAMES_AND_DESCRIPTIONS.map(([name, description
   name,
   description,
   tier: Math.min(8, Math.floor(idx / TIER_SIZE)),
-  benchKgRequired: benchRequired(idx),
-  tonnage30dKgRequired: tonnageRequired(idx),
+  benchmarkKg: benchmarkKg(idx),
+  tonnage30dKgRequired: tonnageKg(idx),
+  mainExercisesRequired: idx === 0 ? 0 : MAIN_EXERCISES_REQUIRED,
 }));
 
 export const MAX_LEVEL = LEVELS.length - 1;
 
-const BENCH_EXERCISE_NAME = "Жим штанги лёжа";
+export type MainExerciseStat = {
+  exerciseId: number;
+  name: string;
+  muscleGroup: string;
+  maxWeightKg: number;
+};
 
 export type LevelStats = {
-  maxBenchKg: number;
   maxTonnage30dKg: number;
-  benchExerciseId: number | null;
-  benchExerciseName: string;
+  mainExercises: MainExerciseStat[];
 };
 
 export type CurrentLevelInfo = {
@@ -143,34 +171,51 @@ export type CurrentLevelInfo = {
 };
 
 export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
-  const benchRow = (
-    await db
-      .select({ id: exercisesTable.id, name: exercisesTable.name })
-      .from(exercisesTable)
-      .where(eq(exercisesTable.name, BENCH_EXERCISE_NAME))
-      .limit(1)
-  )[0];
+  const mainRows = await db
+    .select({
+      id: exercisesTable.id,
+      name: exercisesTable.name,
+      muscleGroup: exercisesTable.muscleGroup,
+    })
+    .from(exercisesTable)
+    .where(inArray(exercisesTable.name, MAIN_EXERCISE_NAMES));
 
-  const benchExerciseId = benchRow?.id ?? null;
-  const benchExerciseName = benchRow?.name ?? BENCH_EXERCISE_NAME;
+  const orderIndex = new Map(MAIN_EXERCISE_NAMES.map((n, i) => [n, i]));
+  mainRows.sort(
+    (a, b) => (orderIndex.get(a.name) ?? 99) - (orderIndex.get(b.name) ?? 99),
+  );
 
-  let maxBenchKg = 0;
-  if (benchExerciseId !== null) {
-    const benchSets = await db
-      .select({ weightKg: workoutSetsTable.weightKg })
+  const mainIds = mainRows.map((r) => r.id);
+  const maxByExercise = new Map<number, number>();
+
+  if (mainIds.length > 0) {
+    const sets = await db
+      .select({
+        exerciseId: workoutSetsTable.exerciseId,
+        weightKg: workoutSetsTable.weightKg,
+      })
       .from(workoutSetsTable)
       .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
       .where(
         and(
-          eq(workoutSetsTable.exerciseId, benchExerciseId),
           isNotNull(workoutsTable.finishedAt),
+          inArray(workoutSetsTable.exerciseId, mainIds),
         ),
       );
-    for (const s of benchSets) {
+
+    for (const s of sets) {
       const w = Number(s.weightKg);
-      if (w > maxBenchKg) maxBenchKg = w;
+      const prev = maxByExercise.get(s.exerciseId) ?? 0;
+      if (w > prev) maxByExercise.set(s.exerciseId, w);
     }
   }
+
+  const mainExercises: MainExerciseStat[] = mainRows.map((r) => ({
+    exerciseId: r.id,
+    name: r.name,
+    muscleGroup: r.muscleGroup,
+    maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
+  }));
 
   const allSets = await db
     .select({
@@ -193,10 +238,12 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
 
   let currentLevel = 0;
   for (const lvl of LEVELS) {
-    if (
-      maxBenchKg >= lvl.benchKgRequired &&
-      maxTonnage30dKg >= lvl.tonnage30dKgRequired
-    ) {
+    const passedExercises = mainExercises.filter(
+      (e) => e.maxWeightKg >= lvl.benchmarkKg,
+    ).length;
+    const meetsExercises = passedExercises >= lvl.mainExercisesRequired;
+    const meetsTonnage = maxTonnage30dKg >= lvl.tonnage30dKgRequired;
+    if (meetsExercises && meetsTonnage) {
       currentLevel = lvl.level;
     } else {
       break;
@@ -209,10 +256,8 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     currentLevel,
     nextLevel,
     stats: {
-      maxBenchKg: round(maxBenchKg),
       maxTonnage30dKg: round(maxTonnage30dKg),
-      benchExerciseId,
-      benchExerciseName,
+      mainExercises,
     },
   };
 }

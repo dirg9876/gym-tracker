@@ -5,10 +5,9 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { MainExerciseStat } from "./mainExerciseStat";
 
 export interface LevelStats {
-  maxBenchKg: number;
   maxTonnage30dKg: number;
-  benchExerciseId?: number | null;
-  benchExerciseName: string;
+  mainExercises: MainExerciseStat[];
 }

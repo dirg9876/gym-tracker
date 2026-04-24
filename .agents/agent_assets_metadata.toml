@@ -54,3 +54,57 @@ id = "-a8JPVmVhgn8oqEvDE-F1"
 uri = "file://artifacts/gym-tracker/src/assets/levels/tier-8.png"
 type = "image"
 title = "tier 8 legend"
+
+[[generated]]
+id = "H9YGdm4sHSKFP9RHM08JQ"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-9.png"
+type = "image"
+title = "level 9"
+
+[[generated]]
+id = "kXNCFIkt1u6ttdWsjZ1_q"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-1.png"
+type = "image"
+title = "level 1"
+
+[[generated]]
+id = "lWfoMJy_Rhyfqng1tQl9v"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-2.png"
+type = "image"
+title = "level 2"
+
+[[generated]]
+id = "aO6BPMR0HhltEW6Fp4Tja"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-3.png"
+type = "image"
+title = "level 3"
+
+[[generated]]
+id = "L78H87vx-W9Opv4fSMMUa"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-4.png"
+type = "image"
+title = "level 4"
+
+[[generated]]
+id = "2-IUk3O3qaZKP9FwGvReW"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-5.png"
+type = "image"
+title = "level 5"
+
+[[generated]]
+id = "2yJx_-FXBG4vTCOehA7oi"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-6.png"
+type = "image"
+title = "level 6"
+
+[[generated]]
+id = "xbjP_cEQZUU6lM4oLK941"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-7.png"
+type = "image"
+title = "level 7"
+
+[[generated]]
+id = "cjKO74X0KGvs9OnsvhWo6"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-8.png"
+type = "image"
+title = "level 8"

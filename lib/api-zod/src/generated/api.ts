@@ -320,16 +320,22 @@ export const GetLevelsResponse = zod.object({
       name: zod.string(),
       description: zod.string(),
       tier: zod.number(),
-      benchKgRequired: zod.number(),
+      benchmarkKg: zod.number(),
       tonnage30dKgRequired: zod.number(),
+      mainExercisesRequired: zod.number(),
     }),
   ),
   currentLevel: zod.number(),
   nextLevel: zod.number().nullish(),
   stats: zod.object({
-    maxBenchKg: zod.number(),
     maxTonnage30dKg: zod.number(),
-    benchExerciseId: zod.number().nullish(),
-    benchExerciseName: zod.string(),
+    mainExercises: zod.array(
+      zod.object({
+        exerciseId: zod.number(),
+        name: zod.string(),
+        muscleGroup: zod.string(),
+        maxWeightKg: zod.number(),
+      }),
+    ),
   }),
 });
