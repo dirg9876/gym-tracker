@@ -327,7 +327,7 @@ export const GetLevelsResponse = zod.object({
   ),
   currentLevel: zod.number(),
   bestLevelEver: zod.number(),
-  nextLevel: zod.number().nullish(),
+  nextLevel: zod.number().nullable(),
   stats: zod.object({
     currentTonnage30dKg: zod.number(),
     maxTonnage30dKg: zod.number(),
@@ -341,4 +341,51 @@ export const GetLevelsResponse = zod.object({
       }),
     ),
   }),
+});
+
+/**
+ * @summary List of available training programs (chest day, leg day, etc.)
+ */
+export const ListProgramsResponse = zod.object({
+  programs: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      description: zod.string(),
+      emoji: zod.string(),
+      exerciseCount: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Build a workout plan for the given program based on the user's current level and PRs
+ */
+export const GetProgramPlanParams = zod.object({
+  programId: zod.coerce.string(),
+});
+
+export const GetProgramPlanResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  description: zod.string(),
+  emoji: zod.string(),
+  basedOnLevel: zod.number(),
+  basedOnLevelName: zod.string(),
+  benchmarkKg: zod.number(),
+  exercises: zod.array(
+    zod.object({
+      exerciseId: zod.number(),
+      name: zod.string(),
+      muscleGroup: zod.string(),
+      sets: zod.number(),
+      repsMin: zod.number(),
+      repsMax: zod.number(),
+      intent: zod.enum(["strength", "hypertrophy", "accessory"]),
+      suggestedWeightKg: zod.number(),
+      isBodyweight: zod.boolean(),
+      basedOn: zod.enum(["personal-record", "level-benchmark"]),
+      note: zod.string().nullable(),
+    }),
+  ),
 });

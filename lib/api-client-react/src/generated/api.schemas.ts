@@ -224,8 +224,62 @@ export interface LevelsResponse {
   levels: Level[];
   currentLevel: number;
   bestLevelEver: number;
-  nextLevel?: number | null;
+  nextLevel: number | null;
   stats: LevelStats;
+}
+
+export interface ProgramSummary {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  exerciseCount: number;
+}
+
+export interface ProgramsListResponse {
+  programs: ProgramSummary[];
+}
+
+export type PlannedExerciseIntent =
+  (typeof PlannedExerciseIntent)[keyof typeof PlannedExerciseIntent];
+
+export const PlannedExerciseIntent = {
+  strength: "strength",
+  hypertrophy: "hypertrophy",
+  accessory: "accessory",
+} as const;
+
+export type PlannedExerciseBasedOn =
+  (typeof PlannedExerciseBasedOn)[keyof typeof PlannedExerciseBasedOn];
+
+export const PlannedExerciseBasedOn = {
+  "personal-record": "personal-record",
+  "level-benchmark": "level-benchmark",
+} as const;
+
+export interface PlannedExercise {
+  exerciseId: number;
+  name: string;
+  muscleGroup: string;
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  intent: PlannedExerciseIntent;
+  suggestedWeightKg: number;
+  isBodyweight: boolean;
+  basedOn: PlannedExerciseBasedOn;
+  note: string | null;
+}
+
+export interface ProgramPlan {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  basedOnLevel: number;
+  basedOnLevelName: string;
+  benchmarkKg: number;
+  exercises: PlannedExercise[];
 }
 
 export type ListWorkoutsParams = {

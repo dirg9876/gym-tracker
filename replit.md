@@ -59,6 +59,29 @@ frontend `levelImage(level, tier)` picks `level-N.png` if present, else the
 tier sprite. Both the home page (level card) and `/levels` show the current
 avatar plus 30-day progress to the next level.
 
+## Programs
+
+`/programs` (and `/programs/:id`) is a curated list of training programs
+(chest day, back day, legs, shoulders, arms, push, pull, fullbody) defined in
+`artifacts/api-server/src/lib/programs.ts`. Each program has a list of
+exercises tagged `strength` / `hypertrophy` / `accessory`. The plan builder
+(`buildProgramPlan`) suggests a working weight per exercise:
+- If the user has a personal record for the exercise (heaviest single set in
+  any finished workout), suggested weight = `PR × intentFactor`
+  (`strength=0.8`, `hypertrophy=0.7`, `accessory=0.6`), rounded to 2.5 kg.
+- Otherwise it falls back to a level-based benchmark: the planning level's
+  `benchmarkKg` × an exercise-specific factor (`EXERCISE_BENCHMARK_FACTOR`)
+  × the intent factor.
+- Bodyweight exercises (pull-ups, dips, planks, etc.) suggest 0 kg unless
+  the user already has a weighted PR, in which case they suggest added load.
+
+Tapping "Начать «<program name>»" creates a workout via
+`POST /api/workouts` with the program's name and routes to `/workout/:id`.
+The plan is also stashed in `localStorage` keyed by workout id
+(`gym-tracker:program-plan:<id>`) for future use. If an active workout
+already exists, the button switches to "Открыть текущую тренировку" and
+just navigates — it never overwrites the existing workout's plan.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

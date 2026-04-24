@@ -12,6 +12,6 @@ export interface LevelsResponse {
   levels: Level[];
   currentLevel: number;
   bestLevelEver: number;
-  nextLevel?: number | null;
+  nextLevel: number | null;
   stats: LevelStats;
 }

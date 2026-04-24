@@ -280,6 +280,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/LevelsResponse"
 
+  /programs:
+    get:
+      operationId: listPrograms
+      tags: [programs]
+      summary: List of available training programs (chest day, leg day, etc.)
+      responses:
+        "200":
+          description: List of programs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgramsListResponse"
+
+  /programs/{programId}:
+    get:
+      operationId: getProgramPlan
+      tags: [programs]
+      summary: Build a workout plan for the given program based on the user's current level and PRs
+      parameters:
+        - name: programId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Computed program plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgramPlan"
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -708,4 +741,101 @@ components:
         - levels
         - currentLevel
         - bestLevelEver
+        - nextLevel
         - stats
+
+    ProgramSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        emoji:
+          type: string
+        exerciseCount:
+          type: integer
+      required: [id, name, description, emoji, exerciseCount]
+
+    ProgramsListResponse:
+      type: object
+      properties:
+        programs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgramSummary"
+      required: [programs]
+
+    PlannedExercise:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        name:
+          type: string
+        muscleGroup:
+          type: string
+        sets:
+          type: integer
+        repsMin:
+          type: integer
+        repsMax:
+          type: integer
+        intent:
+          type: string
+          enum: [strength, hypertrophy, accessory]
+        suggestedWeightKg:
+          type: number
+        isBodyweight:
+          type: boolean
+        basedOn:
+          type: string
+          enum: [personal-record, level-benchmark]
+        note:
+          type: string
+          nullable: true
+      required:
+        - exerciseId
+        - name
+        - muscleGroup
+        - sets
+        - repsMin
+        - repsMax
+        - intent
+        - suggestedWeightKg
+        - isBodyweight
+        - basedOn
+        - note
+
+    ProgramPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        emoji:
+          type: string
+        basedOnLevel:
+          type: integer
+        basedOnLevelName:
+          type: string
+        benchmarkKg:
+          type: number
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlannedExercise"
+      required:
+        - id
+        - name
+        - description
+        - emoji
+        - basedOnLevel
+        - basedOnLevelName
+        - benchmarkKg
+        - exercises

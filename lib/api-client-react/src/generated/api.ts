@@ -26,6 +26,8 @@ import type {
   HealthStatus,
   LevelsResponse,
   ListWorkoutsParams,
+  ProgramPlan,
+  ProgramsListResponse,
   ProgressSeries,
   StatsOverview,
   Workout,
@@ -1342,6 +1344,169 @@ export function useGetLevels<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetLevelsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List of available training programs (chest day, leg day, etc.)
+ */
+export const getListProgramsUrl = () => {
+  return `/api/programs`;
+};
+
+export const listPrograms = async (
+  options?: RequestInit,
+): Promise<ProgramsListResponse> => {
+  return customFetch<ProgramsListResponse>(getListProgramsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProgramsQueryKey = () => {
+  return [`/api/programs`] as const;
+};
+
+export const getListProgramsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPrograms>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPrograms>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListProgramsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPrograms>>> = ({
+    signal,
+  }) => listPrograms({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPrograms>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProgramsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPrograms>>
+>;
+export type ListProgramsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List of available training programs (chest day, leg day, etc.)
+ */
+
+export function useListPrograms<
+  TData = Awaited<ReturnType<typeof listPrograms>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPrograms>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProgramsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Build a workout plan for the given program based on the user's current level and PRs
+ */
+export const getGetProgramPlanUrl = (programId: string) => {
+  return `/api/programs/${programId}`;
+};
+
+export const getProgramPlan = async (
+  programId: string,
+  options?: RequestInit,
+): Promise<ProgramPlan> => {
+  return customFetch<ProgramPlan>(getGetProgramPlanUrl(programId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProgramPlanQueryKey = (programId: string) => {
+  return [`/api/programs/${programId}`] as const;
+};
+
+export const getGetProgramPlanQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProgramPlan>>,
+  TError = ErrorType<void>,
+>(
+  programId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProgramPlan>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetProgramPlanQueryKey(programId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getProgramPlan>>> = ({
+    signal,
+  }) => getProgramPlan(programId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!programId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProgramPlan>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProgramPlanQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProgramPlan>>
+>;
+export type GetProgramPlanQueryError = ErrorType<void>;
+
+/**
+ * @summary Build a workout plan for the given program based on the user's current level and PRs
+ */
+
+export function useGetProgramPlan<
+  TData = Awaited<ReturnType<typeof getProgramPlan>>,
+  TError = ErrorType<void>,
+>(
+  programId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProgramPlan>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProgramPlanQueryOptions(programId, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

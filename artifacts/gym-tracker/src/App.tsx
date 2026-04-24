@@ -13,6 +13,8 @@ import { Stats } from "@/pages/Stats";
 import { Exercises } from "@/pages/Exercises";
 import { ExerciseProgress } from "@/pages/ExerciseProgress";
 import { Levels } from "@/pages/Levels";
+import { Programs } from "@/pages/Programs";
+import { ProgramDetail } from "@/pages/ProgramDetail";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ function Router() {
       <Route path="/exercises" component={Exercises} />
       <Route path="/exercises/:id" component={ExerciseProgress} />
       <Route path="/levels" component={Levels} />
+      <Route path="/programs" component={Programs} />
+      <Route path="/programs/:id" component={ProgramDetail} />
       <Route component={NotFound} />
     </Switch>
   );
