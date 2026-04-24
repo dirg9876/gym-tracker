@@ -8,6 +8,7 @@ router.get("/levels", async (_req, res): Promise<void> => {
   res.json({
     levels: LEVELS,
     currentLevel: info.currentLevel,
+    bestLevelEver: info.bestLevelEver,
     nextLevel: info.nextLevel,
     stats: info.stats,
   });

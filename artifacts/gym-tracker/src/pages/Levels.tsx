@@ -4,7 +4,7 @@ import {
   type Level,
   type MainExerciseStat,
 } from "@workspace/api-client-react";
-import { Lock, Trophy, Flame, Check, Dumbbell } from "lucide-react";
+import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/tierImages";
@@ -24,7 +24,7 @@ export function Levels() {
     return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>;
   }
 
-  const { levels, currentLevel, stats } = data;
+  const { levels, currentLevel, bestLevelEver, stats } = data;
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
 
@@ -37,8 +37,22 @@ export function Levels() {
     : 100;
   const tonnageProgress =
     next && next.tonnage30dKgRequired > 0
-      ? Math.min(100, (stats.maxTonnage30dKg / next.tonnage30dKgRequired) * 100)
+      ? Math.min(100, (stats.currentTonnage30dKg / next.tonnage30dKgRequired) * 100)
       : 100;
+
+  const oldestSetMs = stats.oldestSetInWindowAt
+    ? new Date(stats.oldestSetInWindowAt).getTime()
+    : null;
+  const daysUntilOldestExpires = oldestSetMs
+    ? Math.max(
+        0,
+        Math.ceil(
+          (oldestSetMs + 30 * 24 * 60 * 60 * 1000 - Date.now()) /
+            (24 * 60 * 60 * 1000),
+        ),
+      )
+    : null;
+  const droppedFromBest = bestLevelEver > currentLevel;
 
   return (
     <div className="min-h-[100dvh] bg-background pb-24">
@@ -70,6 +84,14 @@ export function Levels() {
             <p className="text-sm text-muted-foreground text-center max-w-xs">
               {current.description}
             </p>
+            {droppedFromBest && (
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
+                <Star className="h-3 w-3" />
+                <span>
+                  Лучший уровень — {bestLevelEver}. Тоннаж сбросился, верни форму!
+                </span>
+              </div>
+            )}
           </motion.div>
 
           {next ? (
@@ -94,12 +116,25 @@ export function Levels() {
 
               <ProgressRow
                 icon={<Flame className="h-4 w-4" />}
-                label="Тоннаж за 30 дней"
-                value={stats.maxTonnage30dKg}
+                label="Тоннаж за последние 30 дней"
+                value={stats.currentTonnage30dKg}
                 target={next.tonnage30dKgRequired}
                 unit="кг"
                 progress={tonnageProgress}
               />
+
+              {daysUntilOldestExpires !== null &&
+                stats.currentTonnage30dKg > 0 &&
+                stats.currentTonnage30dKg < next.tonnage30dKgRequired && (
+                  <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-2">
+                    <Hourglass className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      Окно тоннажа — последние 30 дней. Самые ранние подходы «сгорят»
+                      через {daysUntilOldestExpires}{" "}
+                      {pluralizeDays(daysUntilOldestExpires)}, если не успеешь добрать норму.
+                    </span>
+                  </div>
+                )}
             </div>
           ) : (
             <div className="mt-6 bg-card border border-primary/40 rounded-2xl p-4 flex items-center gap-3">
@@ -178,6 +213,14 @@ export function Levels() {
       </div>
     </div>
   );
+}
+
+function pluralizeDays(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "день";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "дня";
+  return "дней";
 }
 
 function ProgressRow({

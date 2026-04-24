@@ -670,14 +670,22 @@ components:
     LevelStats:
       type: object
       properties:
+        currentTonnage30dKg:
+          type: number
         maxTonnage30dKg:
           type: number
+        oldestSetInWindowAt:
+          type: string
+          format: date-time
+          nullable: true
         mainExercises:
           type: array
           items:
             $ref: "#/components/schemas/MainExerciseStat"
       required:
+        - currentTonnage30dKg
         - maxTonnage30dKg
+        - oldestSetInWindowAt
         - mainExercises
 
     LevelsResponse:
@@ -689,6 +697,8 @@ components:
             $ref: "#/components/schemas/Level"
         currentLevel:
           type: integer
+        bestLevelEver:
+          type: integer
         nextLevel:
           type: integer
           nullable: true
@@ -697,4 +707,5 @@ components:
       required:
         - levels
         - currentLevel
+        - bestLevelEver
         - stats

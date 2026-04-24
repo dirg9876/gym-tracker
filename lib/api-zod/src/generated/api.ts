@@ -326,9 +326,12 @@ export const GetLevelsResponse = zod.object({
     }),
   ),
   currentLevel: zod.number(),
+  bestLevelEver: zod.number(),
   nextLevel: zod.number().nullish(),
   stats: zod.object({
+    currentTonnage30dKg: zod.number(),
     maxTonnage30dKg: zod.number(),
+    oldestSetInWindowAt: zod.coerce.date().nullable(),
     mainExercises: zod.array(
       zod.object({
         exerciseId: zod.number(),

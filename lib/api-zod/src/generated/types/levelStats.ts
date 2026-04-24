@@ -8,6 +8,8 @@
 import type { MainExerciseStat } from "./mainExerciseStat";
 
 export interface LevelStats {
+  currentTonnage30dKg: number;
   maxTonnage30dKg: number;
+  oldestSetInWindowAt: Date | null;
   mainExercises: MainExerciseStat[];
 }

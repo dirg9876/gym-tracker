@@ -42,16 +42,22 @@ level rises. Each level (>=1) requires both:
 - 3 different "main" free-weight compound exercises (jim, squat, deadlift,
   rows, presses, curls — the canonical compound list in `MAIN_EXERCISE_NAMES`)
   each lifted at >= the level's benchmark weight in any single set, and
-- a minimum total tonnage within any rolling 30-day window across finished
-  workouts. Tonnage is sized as `5 ex × 4 sets × 8 reps × benchmark × 0.7 ×
-  6 workouts/month`, rounded to 500 kg, so it scales realistically with
-  expected training volume per workout.
+- a minimum total tonnage in the **last 30 days** (rolling window ending now).
+  Tonnage is sized as `5 ex × 4 sets × 8 reps × benchmark × 0.7 ×
+  6 workouts/month`, rounded to 500 kg.
+
+Tonnage uses the *current* 30d window (not "max ever"), so the requirement
+naturally resets if the user stops training: old sets fall out of the window
+and the user can drop levels. The API also returns `bestLevelEver` (computed
+from max-ever 30d tonnage) so the UI can remind users of their personal best
+when they slack. `oldestSetInWindowAt` powers an hourglass hint showing how
+many days until the earliest qualifying set expires.
 
 Sprites: 9 tier sprites at `artifacts/gym-tracker/src/assets/levels/tier-N.png`
-plus per-level overrides at `level-N.png`. The frontend `levelImage(level,
-tier)` helper picks `level-N.png` if present, otherwise the tier sprite. The
-`Levels` page shows the current avatar, the 3-exercise + tonnage progress to
-the next level, and the full ladder of 81 levels.
+plus per-level images `level-0.png` … `level-80.png` (all 81 generated). The
+frontend `levelImage(level, tier)` picks `level-N.png` if present, else the
+tier sprite. Both the home page (level card) and `/levels` show the current
+avatar plus 30-day progress to the next level.
 
 ## Key Commands
 

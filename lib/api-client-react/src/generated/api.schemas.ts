@@ -214,13 +214,16 @@ export interface MainExerciseStat {
 }
 
 export interface LevelStats {
+  currentTonnage30dKg: number;
   maxTonnage30dKg: number;
+  oldestSetInWindowAt: string | null;
   mainExercises: MainExerciseStat[];
 }
 
 export interface LevelsResponse {
   levels: Level[];
   currentLevel: number;
+  bestLevelEver: number;
   nextLevel?: number | null;
   stats: LevelStats;
 }

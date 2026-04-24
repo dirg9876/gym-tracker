@@ -1,10 +1,11 @@
 import { useLocation } from "wouter";
-import { useGetActiveWorkout, useGetStatsOverview, useListWorkouts, useCreateWorkout, getGetActiveWorkoutQueryKey } from "@workspace/api-client-react";
+import { useGetActiveWorkout, useGetStatsOverview, useListWorkouts, useCreateWorkout, useGetLevels, getGetActiveWorkoutQueryKey } from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
 import { Dumbbell, Activity, Flame, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { levelImage } from "@/lib/tierImages";
 
 export function Home() {
   const [, setLocation] = useLocation();
@@ -15,6 +16,7 @@ export function Home() {
 
   const { data: stats, isLoading: isLoadingStats } = useGetStatsOverview();
   const { data: recentWorkouts, isLoading: isLoadingWorkouts } = useListWorkouts({ limit: 3 });
+  const { data: levelsData } = useGetLevels();
 
   const createWorkout = useCreateWorkout({
     mutation: {
@@ -67,6 +69,47 @@ export function Home() {
             )}
           </Button>
         </section>
+
+        {/* Level card */}
+        {levelsData && (() => {
+          const cur = levelsData.levels[levelsData.currentLevel];
+          const nxt = levelsData.levels[levelsData.currentLevel + 1];
+          const tonProg = nxt && nxt.tonnage30dKgRequired > 0
+            ? Math.min(100, (levelsData.stats.currentTonnage30dKg / nxt.tonnage30dKgRequired) * 100)
+            : 100;
+          return (
+            <button
+              onClick={() => setLocation('/levels')}
+              className="w-full bg-card p-4 rounded-2xl border border-border active:bg-accent transition-colors text-left flex items-center gap-3"
+            >
+              <img
+                src={levelImage(cur.level, cur.tier)}
+                alt=""
+                className="h-14 w-14 object-contain shrink-0 drop-shadow-[0_0_12px_rgba(255,80,40,0.25)]"
+                style={{ imageRendering: "pixelated" }}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-mono text-primary">LVL {cur.level}</span>
+                  <span className="font-bold truncate">{cur.name}</span>
+                </div>
+                {nxt ? (
+                  <>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnage30dKg)} / {formatNumber(nxt.tonnage30dKgRequired)} кг за 30 дн.
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
+                      <div className="h-full bg-primary transition-all" style={{ width: `${tonProg}%` }} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-[11px] text-muted-foreground mt-0.5">Максимальный уровень</div>
+                )}
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          );
+        })()}
 
         {/* Quick Stats */}
         {stats && (

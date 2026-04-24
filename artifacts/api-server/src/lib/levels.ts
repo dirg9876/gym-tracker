@@ -160,12 +160,15 @@ export type MainExerciseStat = {
 };
 
 export type LevelStats = {
+  currentTonnage30dKg: number;
   maxTonnage30dKg: number;
+  oldestSetInWindowAt: string | null;
   mainExercises: MainExerciseStat[];
 };
 
 export type CurrentLevelInfo = {
   currentLevel: number;
+  bestLevelEver: number;
   nextLevel: number | null;
   stats: LevelStats;
 };
@@ -228,23 +231,51 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     .where(isNotNull(workoutsTable.finishedAt))
     .orderBy(asc(workoutSetsTable.createdAt));
 
-  const maxTonnage30dKg = computeMaxRollingTonnage(
-    allSets.map((s) => ({
-      ts: s.createdAt.getTime(),
-      volume: Number(s.weightKg) * s.reps,
-    })),
-    30 * 24 * 60 * 60 * 1000,
-  );
+  const events = allSets.map((s) => ({
+    ts: s.createdAt.getTime(),
+    volume: Number(s.weightKg) * s.reps,
+  }));
 
-  let currentLevel = 0;
-  for (const lvl of LEVELS) {
+  const windowMs = 30 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const windowStart = now - windowMs;
+
+  let currentTonnage30dKg = 0;
+  let oldestSetInWindowTs: number | null = null;
+  for (const e of events) {
+    if (e.ts >= windowStart && e.ts <= now) {
+      currentTonnage30dKg += e.volume;
+      if (oldestSetInWindowTs === null || e.ts < oldestSetInWindowTs) {
+        oldestSetInWindowTs = e.ts;
+      }
+    }
+  }
+
+  const maxTonnage30dKg = computeMaxRollingTonnage(events, windowMs);
+
+  function levelPasses(lvl: LevelDef, tonnage: number): boolean {
     const passedExercises = mainExercises.filter(
       (e) => e.maxWeightKg >= lvl.benchmarkKg,
     ).length;
-    const meetsExercises = passedExercises >= lvl.mainExercisesRequired;
-    const meetsTonnage = maxTonnage30dKg >= lvl.tonnage30dKgRequired;
-    if (meetsExercises && meetsTonnage) {
+    return (
+      passedExercises >= lvl.mainExercisesRequired &&
+      tonnage >= lvl.tonnage30dKgRequired
+    );
+  }
+
+  let currentLevel = 0;
+  for (const lvl of LEVELS) {
+    if (levelPasses(lvl, currentTonnage30dKg)) {
       currentLevel = lvl.level;
+    } else {
+      break;
+    }
+  }
+
+  let bestLevelEver = 0;
+  for (const lvl of LEVELS) {
+    if (levelPasses(lvl, maxTonnage30dKg)) {
+      bestLevelEver = lvl.level;
     } else {
       break;
     }
@@ -254,9 +285,15 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
 
   return {
     currentLevel,
+    bestLevelEver,
     nextLevel,
     stats: {
+      currentTonnage30dKg: round(currentTonnage30dKg),
       maxTonnage30dKg: round(maxTonnage30dKg),
+      oldestSetInWindowAt:
+        oldestSetInWindowTs !== null
+          ? new Date(oldestSetInWindowTs).toISOString()
+          : null,
       mainExercises,
     },
   };

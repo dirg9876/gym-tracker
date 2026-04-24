@@ -11,6 +11,7 @@ import type { LevelStats } from "./levelStats";
 export interface LevelsResponse {
   levels: Level[];
   currentLevel: number;
+  bestLevelEver: number;
   nextLevel?: number | null;
   stats: LevelStats;
 }
