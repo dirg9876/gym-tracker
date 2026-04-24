@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/mobile/"
+title = "Тренировки (Android)"
+version = "1.0.0"
+id = "artifacts/gym-tracker-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/mobile/" ]
+localPort = 19097
+
+[services.development]
+run = "pnpm --filter @workspace/gym-tracker-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gym-tracker-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/gym-tracker-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "19097"
+BASE_PATH = "/mobile/"
