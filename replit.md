@@ -34,6 +34,20 @@ The API derives totals (volume = weightKg × reps), per-workout summaries,
 personal records (best tonnage, best reps, best max weight), per-exercise
 records, progress series for charts, and overall stats overview.
 
+## Levels
+
+81 levels (0–80) defined statically in `artifacts/api-server/src/lib/levels.ts`.
+Names go from insulting (Дохляк, Спичка) to respectful (Геркулес, Титан) as
+level rises. Each level requires:
+- a minimum bench press (Жим штанги лёжа) weight in any single set, and
+- a minimum total tonnage achieved within any rolling 30-day window across
+  finished workouts.
+
+Levels are split into 9 tiers; each tier has its own 8-bit pixel-art sprite
+under `artifacts/gym-tracker/src/assets/levels/tier-N.png`. The frontend
+`Levels` page shows the current avatar, progress bars to the next level, and
+the full ladder.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

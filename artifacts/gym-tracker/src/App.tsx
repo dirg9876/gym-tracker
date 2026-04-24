@@ -12,6 +12,7 @@ import { HistoryDetail } from "@/pages/HistoryDetail";
 import { Stats } from "@/pages/Stats";
 import { Exercises } from "@/pages/Exercises";
 import { ExerciseProgress } from "@/pages/ExerciseProgress";
+import { Levels } from "@/pages/Levels";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/stats" component={Stats} />
       <Route path="/exercises" component={Exercises} />
       <Route path="/exercises/:id" component={ExerciseProgress} />
+      <Route path="/levels" component={Levels} />
       <Route component={NotFound} />
     </Switch>
   );

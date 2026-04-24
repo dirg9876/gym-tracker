@@ -309,3 +309,27 @@ export const GetExerciseProgressResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary Full levels ladder with current user level and progress
+ */
+export const GetLevelsResponse = zod.object({
+  levels: zod.array(
+    zod.object({
+      level: zod.number(),
+      name: zod.string(),
+      description: zod.string(),
+      tier: zod.number(),
+      benchKgRequired: zod.number(),
+      tonnage30dKgRequired: zod.number(),
+    }),
+  ),
+  currentLevel: zod.number(),
+  nextLevel: zod.number().nullish(),
+  stats: zod.object({
+    maxBenchKg: zod.number(),
+    maxTonnage30dKg: zod.number(),
+    benchExerciseId: zod.number().nullish(),
+    benchExerciseName: zod.string(),
+  }),
+});

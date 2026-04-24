@@ -196,6 +196,29 @@ export interface ExerciseProgress {
   points: ExerciseProgressPoint[];
 }
 
+export interface Level {
+  level: number;
+  name: string;
+  description: string;
+  tier: number;
+  benchKgRequired: number;
+  tonnage30dKgRequired: number;
+}
+
+export interface LevelStats {
+  maxBenchKg: number;
+  maxTonnage30dKg: number;
+  benchExerciseId?: number | null;
+  benchExerciseName: string;
+}
+
+export interface LevelsResponse {
+  levels: Level[];
+  currentLevel: number;
+  nextLevel?: number | null;
+  stats: LevelStats;
+}
+
 export type ListWorkoutsParams = {
   /**
    * @minimum 1

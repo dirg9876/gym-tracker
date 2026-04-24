@@ -1,0 +1,56 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "kcWQK57EU2BoZ_-eCXpVJ"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-0.png"
+type = "image"
+title = "tier 0 skinny"
+
+[[generated]]
+id = "FkzWPKWHh7-SxifzKrQT8"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-1.png"
+type = "image"
+title = "tier 1 thin"
+
+[[generated]]
+id = "iKwCJDuB-GYUNXwBhSFe7"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-2.png"
+type = "image"
+title = "tier 2 average"
+
+[[generated]]
+id = "fGchluETm1asY3w7ok7A1"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-3.png"
+type = "image"
+title = "tier 3 toned"
+
+[[generated]]
+id = "qXJ2vC2ZkDCMU_jZItJ03"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-4.png"
+type = "image"
+title = "tier 4 fit"
+
+[[generated]]
+id = "mHymybFIAT6HCBJxHzP35"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-5.png"
+type = "image"
+title = "tier 5 strong"
+
+[[generated]]
+id = "IIU9oqNr1iuq7zvVTONOZ"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-6.png"
+type = "image"
+title = "tier 6 very muscular"
+
+[[generated]]
+id = "V5c5Tvi8Gru4uhFBFpxqk"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-7.png"
+type = "image"
+title = "tier 7 champion"
+
+[[generated]]
+id = "-a8JPVmVhgn8oqEvDE-F1"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-8.png"
+type = "image"
+title = "tier 8 legend"
