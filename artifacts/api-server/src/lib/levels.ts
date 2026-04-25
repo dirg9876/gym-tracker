@@ -31,7 +31,13 @@ const REPS_PER_SET = 9;
 
 // Anchor: at level 60 ("Силач-новичок — Жмёшь свой вес") the level factor is 1.0,
 // meaning the required weight for a 1.0× exercise equals the user's bodyweight.
-const LEVEL_FACTOR_ANCHOR = 60;
+export const LEVEL_FACTOR_ANCHOR = 60;
+
+// Standard Olympic bar weight. Barbell exercises whose required kg falls below
+// this floor are auto-passed (treated as cleared) — you can't load a real
+// barbell with less than the empty bar, so it would be silly to "block" the
+// next level on, say, a 10 kg bench press requirement.
+export const BAR_WEIGHT_KG = 20;
 
 // Multi-level jump penalty: each level skipped beyond +1 from the confirmed
 // level adds 10% to both tonnage and per-exercise weight requirements. So a
@@ -159,6 +165,51 @@ export const DEFAULT_MAIN_EXERCISE_MULTIPLIERS: Record<string, number> = {
 
 const MAIN_EXERCISES_SEED_KEY = "main_exercises_seeded_v1";
 const DEFAULT_MULTIPLIERS_SEED_KEY = "default_multipliers_seeded_v1";
+const DEFAULT_EQUIPMENT_SEED_KEY = "default_equipment_seeded_v1";
+
+// Default equipment for the historical exercise catalog. Anything not listed
+// here defaults to "other" via the column default, and the user can edit it
+// on the /exercises page.
+export const DEFAULT_EXERCISE_EQUIPMENT: Record<
+  string,
+  "barbell" | "dumbbell" | "bodyweight" | "machine" | "other"
+> = {
+  // Barbell
+  "Жим штанги лёжа": "barbell",
+  "Жим штанги на наклонной скамье": "barbell",
+  "Приседания со штангой": "barbell",
+  "Румынская тяга": "barbell",
+  "Становая тяга": "barbell",
+  "Тяга штанги в наклоне": "barbell",
+  "Жим штанги стоя": "barbell",
+  "Подъём штанги на бицепс": "barbell",
+  "Французский жим": "barbell",
+  // Dumbbell
+  "Жим гантелей лёжа": "dumbbell",
+  "Жим гантелей сидя": "dumbbell",
+  "Тяга гантели одной рукой": "dumbbell",
+  "Разводка гантелей": "dumbbell",
+  "Махи гантелями в стороны": "dumbbell",
+  "Махи в наклоне": "dumbbell",
+  "Сгибания с гантелями": "dumbbell",
+  "Молотки с гантелями": "dumbbell",
+  "Выпады с гантелями": "dumbbell",
+  // Bodyweight
+  "Подтягивания": "bodyweight",
+  "Отжимания на брусьях": "bodyweight",
+  "Отжимания узким хватом": "bodyweight",
+  "Скручивания": "bodyweight",
+  "Планка": "bodyweight",
+  "Подъём ног в висе": "bodyweight",
+  // Machine / cable
+  "Жим ногами": "machine",
+  "Сгибания ног лёжа": "machine",
+  "Разгибания ног сидя": "machine",
+  "Тяга верхнего блока": "machine",
+  "Тяга горизонтального блока": "machine",
+  "Подъёмы на носки": "machine",
+  "Разгибания на блоке": "machine",
+};
 
 /**
  * One-time seed: marks the historical default 11 names as main so existing
@@ -195,6 +246,40 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
     .insert(appMetaTable)
     .values({
       key: MAIN_EXERCISES_SEED_KEY,
+      value: new Date().toISOString(),
+    })
+    .onConflictDoNothing({ target: appMetaTable.key });
+
+  return { seeded: seededCount };
+}
+
+/**
+ * One-time seed: stamps the default equipment kind for the historical
+ * exercise catalog. Gated by a sentinel so user edits are never clobbered.
+ * Custom exercises and unknown names keep the column default ("other").
+ */
+export async function seedDefaultEquipmentIfEmpty(): Promise<{ seeded: number }> {
+  const sentinel = await db
+    .select({ key: appMetaTable.key })
+    .from(appMetaTable)
+    .where(eq(appMetaTable.key, DEFAULT_EQUIPMENT_SEED_KEY))
+    .limit(1);
+  if (sentinel.length > 0) return { seeded: 0 };
+
+  let seededCount = 0;
+  for (const [name, equipment] of Object.entries(DEFAULT_EXERCISE_EQUIPMENT)) {
+    const updated = await db
+      .update(exercisesTable)
+      .set({ equipment })
+      .where(eq(exercisesTable.name, name))
+      .returning({ id: exercisesTable.id });
+    seededCount += updated.length;
+  }
+
+  await db
+    .insert(appMetaTable)
+    .values({
+      key: DEFAULT_EQUIPMENT_SEED_KEY,
       value: new Date().toISOString(),
     })
     .onConflictDoNothing({ target: appMetaTable.key });
@@ -339,15 +424,22 @@ export const LEVELS: LevelDef[] = buildLevels(FALLBACK_BODY_WEIGHT_KG);
 
 export const MAX_LEVEL = LEVELS.length - 1;
 
+export type Equipment = "barbell" | "dumbbell" | "bodyweight" | "machine" | "other";
+export type AutoPassedReason = "below_bar_weight";
+
 export type MainExerciseStat = {
   exerciseId: number;
   name: string;
   muscleGroup: string;
+  equipment: Equipment;
   maxWeightKg: number;
   multiplier: number;
   requiredKgForNextLevel: number | null;
   // ≥ 1. When > 1, the requirement above already includes the jump penalty.
   requiredKgPenaltyMultiplier: number;
+  // When non-null, the exercise is treated as passed regardless of maxWeightKg.
+  // "below_bar_weight" — barbell exercise whose required kg < empty bar.
+  autoPassedReason: AutoPassedReason | null;
 };
 
 export type LevelStats = {
@@ -374,6 +466,11 @@ export type CurrentLevelInfo = {
   nextLevelTonnage7dKgRequired: number | null;
   bodyWeightKg: number;
   bodyWeightIsFallback: boolean;
+  // Constants exposed to the client so the level-detail dialog can compute
+  // per-exercise required kg for arbitrary levels without re-implementing
+  // the formula in three places.
+  barWeightKg: number;
+  levelFactorAnchor: number;
   levels: LevelDef[];
   stats: LevelStats;
 };
@@ -390,6 +487,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
       name: exercisesTable.name,
       muscleGroup: exercisesTable.muscleGroup,
       bodyweightMultiplier: exercisesTable.bodyweightMultiplier,
+      equipment: exercisesTable.equipment,
     })
     .from(exercisesTable)
     .where(eq(exercisesTable.isMain, true))
@@ -466,6 +564,12 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     for (const r of mainRows) {
       const mul = Number(r.bodyweightMultiplier);
       const req = requiredKgForExercise(lvl.level, bodyWeightKg, mul, penaltyMul);
+      // Barbell exercises can't physically be loaded below the empty bar, so a
+      // sub-bar requirement is auto-passed (counts toward the threshold).
+      if (req > 0 && r.equipment === "barbell" && req < BAR_WEIGHT_KG) {
+        passedExercises += 1;
+        continue;
+      }
       const cur = maxByExercise.get(r.id) ?? 0;
       if (cur >= req && req > 0) passedExercises += 1;
     }
@@ -525,21 +629,31 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
 
   const mainExercises: MainExerciseStat[] = mainRows.map((r) => {
     const mul = Number(r.bodyweightMultiplier);
+    const required = nextLvl
+      ? requiredKgForExercise(
+          nextLvl.level,
+          bodyWeightKg,
+          mul,
+          nextLevelPenaltyMultiplier,
+        )
+      : null;
+    const autoPassedReason: AutoPassedReason | null =
+      required != null &&
+      required > 0 &&
+      r.equipment === "barbell" &&
+      required < BAR_WEIGHT_KG
+        ? "below_bar_weight"
+        : null;
     return {
       exerciseId: r.id,
       name: r.name,
       muscleGroup: r.muscleGroup,
+      equipment: r.equipment as Equipment,
       maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
       multiplier: round(mul),
-      requiredKgForNextLevel: nextLvl
-        ? requiredKgForExercise(
-            nextLvl.level,
-            bodyWeightKg,
-            mul,
-            nextLevelPenaltyMultiplier,
-          )
-        : null,
+      requiredKgForNextLevel: required,
       requiredKgPenaltyMultiplier: round(nextLevelPenaltyMultiplier),
+      autoPassedReason,
     };
   });
 
@@ -552,6 +666,8 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     nextLevelTonnage7dKgRequired,
     bodyWeightKg,
     bodyWeightIsFallback,
+    barWeightKg: BAR_WEIGHT_KG,
+    levelFactorAnchor: LEVEL_FACTOR_ANCHOR,
     levels,
     stats: {
       currentTonnage7dKg: round(currentTonnage7dKg),

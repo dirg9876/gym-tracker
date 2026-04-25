@@ -1,5 +1,14 @@
 import { pgTable, serial, text, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 
+export const EQUIPMENT_VALUES = [
+  "barbell",
+  "dumbbell",
+  "bodyweight",
+  "machine",
+  "other",
+] as const;
+export type Equipment = (typeof EQUIPMENT_VALUES)[number];
+
 export const exercisesTable = pgTable("exercises", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -9,6 +18,7 @@ export const exercisesTable = pgTable("exercises", {
   bodyweightMultiplier: numeric("bodyweight_multiplier", { precision: 5, scale: 2 })
     .notNull()
     .default("1.00"),
+  equipment: text("equipment").notNull().default("other").$type<Equipment>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -6,6 +6,7 @@ import {
   useUpdateExercise,
   getListExercisesQueryKey,
   getGetLevelsQueryKey,
+  type Equipment,
   type Exercise,
 } from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -15,6 +16,7 @@ import { Search, Plus, Trash2, ChevronRight, Star } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { EQUIPMENT_OPTIONS, equipmentLabel } from "@/lib/equipment";
 
 export function Exercises() {
   const [, setLocation] = useLocation();
@@ -23,6 +25,7 @@ export function Exercises() {
   const [onlyMain, setOnlyMain] = useState(false);
   const [newName, setNewName] = useState("");
   const [newGroup, setNewGroup] = useState("");
+  const [newEquipment, setNewEquipment] = useState<Equipment>("other");
 
   const { data: exercises, isLoading } = useListExercises();
 
@@ -55,7 +58,15 @@ export function Exercises() {
           queryClient.setQueryData<Exercise[]>(
             queryKey,
             previous.map((ex) =>
-              ex.id === exerciseId ? { ...ex, isMain: data.isMain } : ex,
+              ex.id === exerciseId
+                ? {
+                    ...ex,
+                    ...(data.isMain !== undefined ? { isMain: data.isMain } : {}),
+                    ...(data.equipment !== undefined
+                      ? { equipment: data.equipment }
+                      : {}),
+                  }
+                : ex,
             ),
           );
         }
@@ -67,12 +78,16 @@ export function Exercises() {
         }
         toast.error("Не удалось обновить упражнение");
       },
-      onSuccess: (row) => {
-        toast.success(
-          row.isMain
-            ? `«${row.name}» отмечено как основное`
-            : `«${row.name}» больше не основное`,
-        );
+      onSuccess: (row, vars) => {
+        if (vars.data.isMain !== undefined) {
+          toast.success(
+            row.isMain
+              ? `«${row.name}» отмечено как основное`
+              : `«${row.name}» больше не основное`,
+          );
+        } else if (vars.data.equipment !== undefined) {
+          toast.success(`Тип «${row.name}» — ${equipmentLabel(row.equipment)}`);
+        }
         queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
       },
       onSettled: () => {
@@ -156,9 +171,34 @@ export function Exercises() {
             <Input placeholder="Название" value={newName} onChange={e => setNewName(e.target.value)} className="bg-background rounded-xl" />
             <Input placeholder="Группа" value={newGroup} onChange={e => setNewGroup(e.target.value)} className="bg-background rounded-xl w-1/3" />
           </div>
-          <Button 
-            className="w-full rounded-xl" 
-            onClick={() => createExercise.mutate({ data: { name: newName, muscleGroup: newGroup } })}
+          <div className="flex flex-wrap gap-1.5">
+            {EQUIPMENT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setNewEquipment(opt.value)}
+                aria-pressed={newEquipment === opt.value}
+                className={`text-xs px-2.5 h-8 rounded-lg border transition-colors ${
+                  newEquipment === opt.value
+                    ? "bg-primary/15 border-primary/40 text-primary font-medium"
+                    : "bg-background border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {opt.short}
+              </button>
+            ))}
+          </div>
+          <Button
+            className="w-full rounded-xl"
+            onClick={() =>
+              createExercise.mutate({
+                data: {
+                  name: newName,
+                  muscleGroup: newGroup,
+                  ...(newEquipment !== "other" ? { equipment: newEquipment } : {}),
+                },
+              })
+            }
             disabled={!newName || !newGroup || createExercise.isPending}
           >
             <Plus className="h-4 w-4 mr-2" /> Добавить
@@ -207,7 +247,34 @@ export function Exercises() {
                             className={`h-5 w-5 ${ex.isMain ? "fill-primary" : ""}`}
                           />
                         </Button>
-                        <span className="font-medium text-lg truncate">{ex.name}</span>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="font-medium text-lg leading-tight">{ex.name}</span>
+                          {ex.isCustom ? (
+                            <select
+                              value={ex.equipment}
+                              onChange={(e) => {
+                                updateExercise.mutate({
+                                  exerciseId: ex.id,
+                                  data: { equipment: e.target.value as Equipment },
+                                });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-0.5 self-start text-[11px] uppercase tracking-wider text-muted-foreground bg-transparent border-none p-0 cursor-pointer hover:text-foreground focus:outline-none focus:text-foreground"
+                              aria-label="Тип оборудования"
+                              disabled={updateExercise.isPending}
+                            >
+                              {EQUIPMENT_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                              {equipmentLabel(ex.equipment)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {ex.isCustom && (

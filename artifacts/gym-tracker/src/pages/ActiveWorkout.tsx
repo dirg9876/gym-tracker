@@ -3,6 +3,7 @@ import { useLocation, useParams } from "wouter";
 import {
   useGetWorkout,
   useListExercises,
+  useGetLevels,
   useAddSet,
   useDeleteSet,
   useFinishWorkout,
@@ -15,6 +16,9 @@ import {
   type PlannedExercise,
   type WorkoutSet,
 } from "@workspace/api-client-react";
+import { isBodyweight } from "@/lib/equipment";
+import { Link } from "wouter";
+import { AlertTriangle } from "lucide-react";
 import { Stepper } from "@/components/Stepper";
 import { ExercisePicker } from "@/components/ExercisePicker";
 import { SetCard } from "@/components/SetCard";
@@ -39,12 +43,20 @@ export function ActiveWorkout() {
   });
 
   const { data: exercises, isLoading: isExercisesLoading } = useListExercises();
+  // Bodyweight (and the fallback flag) lives on the levels endpoint — it's
+  // already cached for /levels and avoids an extra dedicated profile fetch.
+  const { data: levelsData } = useGetLevels();
+  const bodyWeightKg = levelsData?.bodyWeightKg ?? 0;
+  const bodyWeightIsFallback = levelsData?.bodyWeightIsFallback ?? false;
 
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | undefined>();
   const [weight, setWeight] = useState(20);
   const [reps, setReps] = useState(10);
   const [planExercises, setPlanExercises] = useState<PlannedExercise[]>([]);
   const [restTimerKey, setRestTimerKey] = useState(0);
+
+  const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
+  const isBwSelected = isBodyweight(selectedExercise?.equipment);
 
   // Load plan from localStorage
   useEffect(() => {
@@ -149,11 +161,17 @@ export function ActiveWorkout() {
       toast.error("Выберите упражнение");
       return;
     }
+    // For bodyweight exercises the user enters extra weight (e.g. plate on
+    // a belt for pull-ups); the actual top-set weight stored in the DB is
+    // bodyweight + extra so tonnage and PRs reflect the real load.
+    const submittedWeight = isBwSelected
+      ? Math.max(0, bodyWeightKg + weight)
+      : weight;
     addSet.mutate({
       workoutId,
       data: {
         exerciseId: selectedExerciseId,
-        weightKg: weight,
+        weightKg: submittedWeight,
         reps,
       },
     });
@@ -224,13 +242,31 @@ export function ActiveWorkout() {
           />
 
           <Stepper
-            label="Вес (кг)"
+            label={isBwSelected ? "Доп. вес (кг)" : "Вес (кг)"}
             value={weight}
             onChange={setWeight}
             step={2.5}
             min={0}
-            chips={[20, 40, 60, 80, 100]}
+            chips={isBwSelected ? [0, 5, 10, 15, 20] : [20, 40, 60, 80, 100]}
           />
+          {isBwSelected && bodyWeightKg > 0 && (
+            <div className="-mt-3 text-xs text-muted-foreground">
+              = {formatNumber(weight)} + {formatNumber(bodyWeightKg)} кг с собственным весом
+            </div>
+          )}
+          {isBwSelected && bodyWeightIsFallback && (
+            <Link
+              href="/profile"
+              className="-mt-2 flex items-start gap-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md px-2.5 py-2 hover:bg-amber-500/15"
+            >
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                Укажи свой вес в профиле, чтобы тоннаж по упражнениям с
+                собственным весом считался верно. Сейчас используем {formatNumber(bodyWeightKg)} кг
+                по умолчанию.
+              </span>
+            </Link>
+          )}
 
           <Stepper
             label="Повторения"

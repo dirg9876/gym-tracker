@@ -173,15 +173,6 @@ const EXERCISE_BENCHMARK_FACTOR: Record<string, number> = {
   "Подъём ног в висе": 0.0,
 };
 
-const BODYWEIGHT_EXERCISES = new Set([
-  "Подтягивания",
-  "Отжимания на брусьях",
-  "Отжимания узким хватом",
-  "Скручивания",
-  "Планка",
-  "Подъём ног в висе",
-]);
-
 function roundTo(n: number, step: number): number {
   return Math.round(n / step) * step;
 }
@@ -245,6 +236,7 @@ export async function buildProgramPlan(
       id: exercisesTable.id,
       name: exercisesTable.name,
       muscleGroup: exercisesTable.muscleGroup,
+      equipment: exercisesTable.equipment,
     })
     .from(exercisesTable);
   const byName = new Map(allExerciseRows.map((r) => [r.name, r]));
@@ -282,7 +274,7 @@ export async function buildProgramPlan(
     .map((def) => {
       const row = byName.get(def.name);
       if (!row) return null;
-      const isBodyweight = BODYWEIGHT_EXERCISES.has(def.name);
+      const isBodyweight = row.equipment === "bodyweight";
       const intentFactor = INTENT_FACTOR[def.intent];
       const pr = maxByExercise.get(row.id) ?? 0;
 

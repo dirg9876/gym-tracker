@@ -53,9 +53,16 @@ router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
     res.status(400).json({ error: body.error.message });
     return;
   }
+  const updates: Partial<typeof exercisesTable.$inferInsert> = {};
+  if (body.data.isMain !== undefined) updates.isMain = body.data.isMain;
+  if (body.data.equipment !== undefined) updates.equipment = body.data.equipment;
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "Не передано ни одного поля для обновления" });
+    return;
+  }
   const [row] = await db
     .update(exercisesTable)
-    .set({ isMain: body.data.isMain })
+    .set(updates)
     .where(eq(exercisesTable.id, params.data.exerciseId))
     .returning();
   if (!row) {

@@ -5,7 +5,12 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { Equipment } from "./equipment";
 
+/**
+ * Partial update — at least one field must be supplied. Only mutable flags are accepted; rename/delete go through other endpoints.
+ */
 export interface UpdateExerciseInput {
-  isMain: boolean;
+  isMain?: boolean;
+  equipment?: Equipment;
 }

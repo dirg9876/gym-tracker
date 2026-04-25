@@ -15,6 +15,8 @@ router.get("/levels", async (_req, res): Promise<void> => {
     nextLevelTonnage7dKgRequired: info.nextLevelTonnage7dKgRequired,
     bodyWeightKg: info.bodyWeightKg,
     bodyWeightIsFallback: info.bodyWeightIsFallback,
+    barWeightKg: info.barWeightKg,
+    levelFactorAnchor: info.levelFactorAnchor,
     stats: info.stats,
   });
 });

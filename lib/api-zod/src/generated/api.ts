@@ -23,6 +23,11 @@ export const ListExercisesResponseItem = zod.object({
   muscleGroup: zod.string(),
   isCustom: zod.boolean(),
   isMain: zod.boolean(),
+  equipment: zod
+    .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+    .describe(
+      'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+    ),
 });
 export const ListExercisesResponse = zod.array(ListExercisesResponseItem);
 
@@ -45,9 +50,19 @@ export const UpdateExerciseParams = zod.object({
   exerciseId: zod.coerce.number(),
 });
 
-export const UpdateExerciseBody = zod.object({
-  isMain: zod.boolean(),
-});
+export const UpdateExerciseBody = zod
+  .object({
+    isMain: zod.boolean().optional(),
+    equipment: zod
+      .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+      .optional()
+      .describe(
+        'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+      ),
+  })
+  .describe(
+    "Partial update — at least one field must be supplied. Only mutable flags are accepted; rename\/delete go through other endpoints.",
+  );
 
 export const UpdateExerciseResponse = zod.object({
   id: zod.number(),
@@ -55,6 +70,11 @@ export const UpdateExerciseResponse = zod.object({
   muscleGroup: zod.string(),
   isCustom: zod.boolean(),
   isMain: zod.boolean(),
+  equipment: zod
+    .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+    .describe(
+      'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+    ),
 });
 
 /**
@@ -461,6 +481,11 @@ export const GetExerciseProgressResponse = zod.object({
     muscleGroup: zod.string(),
     isCustom: zod.boolean(),
     isMain: zod.boolean(),
+    equipment: zod
+      .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+      .describe(
+        'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+      ),
   }),
   points: zod.array(
     zod.object({
@@ -529,6 +554,16 @@ export const GetLevelsResponse = zod.object({
     .describe(
       "True when the user has not set their bodyweight and a default is being used.",
     ),
+  barWeightKg: zod
+    .number()
+    .describe(
+      "Standard empty-bar weight used by the auto-pass rule for barbell exercises. Exposed so the client can replicate per-exercise calculations for arbitrary levels (e.g. the level-detail dialog).",
+    ),
+  levelFactorAnchor: zod
+    .number()
+    .describe(
+      "Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level \/ levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses).",
+    ),
   stats: zod.object({
     currentTonnage7dKg: zod
       .number()
@@ -545,6 +580,11 @@ export const GetLevelsResponse = zod.object({
         exerciseId: zod.number(),
         name: zod.string(),
         muscleGroup: zod.string(),
+        equipment: zod
+          .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+          .describe(
+            'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+          ),
         maxWeightKg: zod.number(),
         multiplier: zod
           .number()
@@ -561,6 +601,18 @@ export const GetLevelsResponse = zod.object({
           .number()
           .describe(
             "Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1 when the user is attempting to skip more than one level above their confirmed level; UI uses this to surface why the target is higher than the base bodyweight × multiplier × levelFactor would suggest.",
+          ),
+        autoPassedReason: zod
+          .union([
+            zod
+              .enum(["below_bar_weight"])
+              .describe(
+                "Why the server auto-passed an exercise without requiring the user to actually lift the target. Currently only `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor.",
+              ),
+            zod.null(),
+          ])
+          .describe(
+            'When non-null, the exercise is treated as passed regardless of `maxWeightKg`. UIs should still display the original `requiredKgForNextLevel` for context (e.g. \"would have needed 10 kg, auto-passed since &lt; 20 kg bar\").',
           ),
       }),
     ),

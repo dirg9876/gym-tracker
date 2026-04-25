@@ -23,5 +23,9 @@ export interface LevelsResponse {
   bodyWeightKg: number;
   /** True when the user has not set their bodyweight and a default is being used. */
   bodyWeightIsFallback: boolean;
+  /** Standard empty-bar weight used by the auto-pass rule for barbell exercises. Exposed so the client can replicate per-exercise calculations for arbitrary levels (e.g. the level-detail dialog). */
+  barWeightKg: number;
+  /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). */
+  levelFactorAnchor: number;
   stats: LevelStats;
 }

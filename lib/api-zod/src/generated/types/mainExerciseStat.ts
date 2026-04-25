@@ -5,11 +5,14 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { AutoPassedReason } from "./autoPassedReason";
+import type { Equipment } from "./equipment";
 
 export interface MainExerciseStat {
   exerciseId: number;
   name: string;
   muscleGroup: string;
+  equipment: Equipment;
   maxWeightKg: number;
   /** Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat). */
   multiplier: number;
@@ -17,4 +20,6 @@ export interface MainExerciseStat {
   requiredKgForNextLevel: number | null;
   /** Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1 when the user is attempting to skip more than one level above their confirmed level; UI uses this to surface why the target is higher than the base bodyweight × multiplier × levelFactor would suggest. */
   requiredKgPenaltyMultiplier: number;
+  /** When non-null, the exercise is treated as passed regardless of `maxWeightKg`. UIs should still display the original `requiredKgForNextLevel` for context (e.g. "would have needed 10 kg, auto-passed since &lt; 20 kg bar"). */
+  autoPassedReason: AutoPassedReason | null;
 }

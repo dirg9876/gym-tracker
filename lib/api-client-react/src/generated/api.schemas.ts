@@ -9,12 +9,26 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * Equipment kind for an exercise. Drives UI affordances (e.g. the "доп. вес" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.
+ */
+export type Equipment = (typeof Equipment)[keyof typeof Equipment];
+
+export const Equipment = {
+  barbell: "barbell",
+  dumbbell: "dumbbell",
+  bodyweight: "bodyweight",
+  machine: "machine",
+  other: "other",
+} as const;
+
 export interface Exercise {
   id: number;
   name: string;
   muscleGroup: string;
   isCustom: boolean;
   isMain: boolean;
+  equipment: Equipment;
 }
 
 export interface CreateExerciseInput {
@@ -148,8 +162,12 @@ export interface WorkoutReport {
   exerciseBreakdown: WorkoutExerciseBreakdownItem[];
 }
 
+/**
+ * Partial update — at least one field must be supplied. Only mutable flags are accepted; rename/delete go through other endpoints.
+ */
 export interface UpdateExerciseInput {
-  isMain: boolean;
+  isMain?: boolean;
+  equipment?: Equipment;
 }
 
 export interface WorkoutExerciseBreakdownResponse {
@@ -229,10 +247,21 @@ export interface Level {
   mainExercisesRequired: number;
 }
 
+/**
+ * Why the server auto-passed an exercise without requiring the user to actually lift the target. Currently only `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor.
+ */
+export type AutoPassedReason =
+  (typeof AutoPassedReason)[keyof typeof AutoPassedReason];
+
+export const AutoPassedReason = {
+  below_bar_weight: "below_bar_weight",
+} as const;
+
 export interface MainExerciseStat {
   exerciseId: number;
   name: string;
   muscleGroup: string;
+  equipment: Equipment;
   maxWeightKg: number;
   /** Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat). */
   multiplier: number;
@@ -240,6 +269,8 @@ export interface MainExerciseStat {
   requiredKgForNextLevel: number | null;
   /** Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1 when the user is attempting to skip more than one level above their confirmed level; UI uses this to surface why the target is higher than the base bodyweight × multiplier × levelFactor would suggest. */
   requiredKgPenaltyMultiplier: number;
+  /** When non-null, the exercise is treated as passed regardless of `maxWeightKg`. UIs should still display the original `requiredKgForNextLevel` for context (e.g. "would have needed 10 kg, auto-passed since &lt; 20 kg bar"). */
+  autoPassedReason: AutoPassedReason | null;
 }
 
 export interface LevelStats {
@@ -267,6 +298,10 @@ export interface LevelsResponse {
   bodyWeightKg: number;
   /** True when the user has not set their bodyweight and a default is being used. */
   bodyWeightIsFallback: boolean;
+  /** Standard empty-bar weight used by the auto-pass rule for barbell exercises. Exposed so the client can replicate per-exercise calculations for arbitrary levels (e.g. the level-detail dialog). */
+  barWeightKg: number;
+  /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). */
+  levelFactorAnchor: number;
   stats: LevelStats;
 }
 

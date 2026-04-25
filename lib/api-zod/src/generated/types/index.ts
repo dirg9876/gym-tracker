@@ -8,9 +8,11 @@
 
 export * from "./activeWorkoutResponse";
 export * from "./addSetInput";
+export * from "./autoPassedReason";
 export * from "./bMICategory";
 export * from "./createExerciseInput";
 export * from "./createWorkoutInput";
+export * from "./equipment";
 export * from "./exercise";
 export * from "./exerciseLastSetEntry";
 export * from "./exerciseLastSets";

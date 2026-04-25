@@ -5,6 +5,7 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { Equipment } from "./equipment";
 
 export interface Exercise {
   id: number;
@@ -12,4 +13,5 @@ export interface Exercise {
   muscleGroup: string;
   isCustom: boolean;
   isMain: boolean;
+  equipment: Equipment;
 }

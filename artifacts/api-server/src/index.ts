@@ -1,6 +1,10 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedMainExercisesIfEmpty, seedDefaultMultipliersIfEmpty } from "./lib/levels";
+import {
+  seedMainExercisesIfEmpty,
+  seedDefaultMultipliersIfEmpty,
+  seedDefaultEquipmentIfEmpty,
+} from "./lib/levels";
 
 const rawPort = process.env["PORT"];
 
@@ -33,6 +37,15 @@ async function start() {
     }
   } catch (err) {
     logger.error({ err }, "Failed to seed default multipliers");
+  }
+
+  try {
+    const { seeded } = await seedDefaultEquipmentIfEmpty();
+    if (seeded > 0) {
+      logger.info({ seeded }, "Seeded default exercise equipment");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to seed default equipment");
   }
 
   app.listen(port, (err) => {

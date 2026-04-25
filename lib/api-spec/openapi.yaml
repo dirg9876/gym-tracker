@@ -469,6 +469,15 @@ components:
           type: string
       required: [status]
 
+    Equipment:
+      type: string
+      enum: [barbell, dumbbell, bodyweight, machine, other]
+      description: >-
+        Equipment kind for an exercise. Drives UI affordances (e.g. the
+        "доп. вес" input for bodyweight), the auto-pass rule for barbell
+        exercises whose required weight is below the empty-bar floor, and
+        the equipment badge on the exercises page.
+
     Exercise:
       type: object
       properties:
@@ -482,7 +491,9 @@ components:
           type: boolean
         isMain:
           type: boolean
-      required: [id, name, muscleGroup, isCustom, isMain]
+        equipment:
+          $ref: "#/components/schemas/Equipment"
+      required: [id, name, muscleGroup, isCustom, isMain, equipment]
 
     CreateExerciseInput:
       type: object
@@ -674,7 +685,12 @@ components:
       properties:
         isMain:
           type: boolean
-      required: [isMain]
+        equipment:
+          $ref: "#/components/schemas/Equipment"
+      description: >-
+        Partial update — at least one field must be supplied. Only mutable
+        flags are accepted; rename/delete go through other endpoints.
+      minProperties: 1
 
     WorkoutExerciseBreakdownItem:
       type: object
@@ -917,6 +933,14 @@ components:
         - tonnage7dKgRequired
         - mainExercisesRequired
 
+    AutoPassedReason:
+      type: string
+      enum: [below_bar_weight]
+      description: >-
+        Why the server auto-passed an exercise without requiring the user to
+        actually lift the target. Currently only `below_bar_weight` — a barbell
+        exercise whose required kg is less than the empty-bar floor.
+
     MainExerciseStat:
       type: object
       properties:
@@ -926,6 +950,8 @@ components:
           type: string
         muscleGroup:
           type: string
+        equipment:
+          $ref: "#/components/schemas/Equipment"
         maxWeightKg:
           type: number
         multiplier:
@@ -945,14 +971,25 @@ components:
             when the user is attempting to skip more than one level above their
             confirmed level; UI uses this to surface why the target is higher
             than the base bodyweight × multiplier × levelFactor would suggest.
+        autoPassedReason:
+          oneOf:
+            - $ref: "#/components/schemas/AutoPassedReason"
+            - type: "null"
+          description: >-
+            When non-null, the exercise is treated as passed regardless of
+            `maxWeightKg`. UIs should still display the original
+            `requiredKgForNextLevel` for context (e.g. "would have needed
+            10 kg, auto-passed since &lt; 20 kg bar").
       required:
         - exerciseId
         - name
         - muscleGroup
+        - equipment
         - maxWeightKg
         - multiplier
         - requiredKgForNextLevel
         - requiredKgPenaltyMultiplier
+        - autoPassedReason
 
     LevelStats:
       type: object
@@ -1017,6 +1054,19 @@ components:
         bodyWeightIsFallback:
           type: boolean
           description: True when the user has not set their bodyweight and a default is being used.
+        barWeightKg:
+          type: number
+          description: >-
+            Standard empty-bar weight used by the auto-pass rule for barbell
+            exercises. Exposed so the client can replicate per-exercise
+            calculations for arbitrary levels (e.g. the level-detail dialog).
+        levelFactorAnchor:
+          type: integer
+          description: >-
+            Level at which the level factor equals 1.0. Exposed so the client
+            can compute `requiredKg = bodyWeight × (level / levelFactorAnchor)
+            × multiplier` for any level (rounded to the same 2.5 kg step the
+            server uses).
         stats:
           $ref: "#/components/schemas/LevelStats"
       required:
@@ -1029,6 +1079,8 @@ components:
         - nextLevelTonnage7dKgRequired
         - bodyWeightKg
         - bodyWeightIsFallback
+        - barWeightKg
+        - levelFactorAnchor
         - stats
 
     BMICategory:
