@@ -1127,7 +1127,11 @@ components:
             server uses). Now equals 80 (= МС level).
         currentRank:
           $ref: "#/components/schemas/SportRank"
-          description: Sport rank corresponding to the user's currentLevel.
+          description: >-
+            Sport rank derived from the user's actual performance on the classic
+            big-3 lifts (squat, bench, deadlift) expressed as a fraction of
+            their MS norm for their weight class and sex. Falls back to the
+            level-based rank when no classic lift data is available.
         weightClassKg:
           type: number
           description: >-

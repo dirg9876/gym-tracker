@@ -1,6 +1,7 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
 import { and, asc, eq, isNotNull, inArray } from "drizzle-orm";
-import { computeCurrentLevel, LEVELS, MAX_LEVEL, referenceKg } from "./levels";
+import { computeCurrentLevel, LEVELS, MAX_LEVEL, referenceKg, levelFactor } from "./levels";
+import { getMcKgForExercise } from "./sport-norms";
 
 export type Intent = "strength" | "hypertrophy" | "accessory";
 
@@ -289,8 +290,23 @@ export async function buildProgramPlan(
         suggestedWeightKg = 0;
         basedOn = "level-benchmark";
       } else {
+        // Use the MC-derived anchor for this exercise so that level-based
+        // suggestions stay consistent with the MS-anchored norm system.
+        // For exercises not in EXERCISE_NORMS, getMcKgForExercise falls back to
+        // bodyWeightKg × fallbackMultiplier (same as the old formula).
         const exFactor = EXERCISE_BENCHMARK_FACTOR[def.name] ?? 0.5;
-        suggestedWeightKg = benchmark * exFactor * intentFactor;
+        const mcResult = getMcKgForExercise(
+          def.name,
+          levelInfo.bodyWeightKg,
+          levelInfo.sex,
+          exFactor,
+        );
+        if (mcResult.kg != null) {
+          suggestedWeightKg = mcResult.kg * levelFactor(planningLevel) * intentFactor;
+        } else {
+          // time-based exercise with no kg target
+          suggestedWeightKg = 0;
+        }
         basedOn = "level-benchmark";
       }
 

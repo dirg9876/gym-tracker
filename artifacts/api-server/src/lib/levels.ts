@@ -672,7 +672,16 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     confirmedLevel = currentLevel;
   }
 
-  const nextLevelIdx = currentLevel >= MAX_LEVEL ? null : currentLevel + 1;
+  // Guard: if confirmed > computed (e.g. after norm recalibration), use the
+  // confirmed level as the floor. All downstream calculations — nextLevel,
+  // tonnage requirements, and per-exercise targets — must be anchored to this
+  // effective level so the response is internally consistent.
+  const confirmedLevelMigrationNeeded = confirmedLevel > currentLevel;
+  const effectiveCurrentLevel = confirmedLevelMigrationNeeded
+    ? confirmedLevel
+    : currentLevel;
+
+  const nextLevelIdx = effectiveCurrentLevel >= MAX_LEVEL ? null : effectiveCurrentLevel + 1;
   const nextLvl = nextLevelIdx !== null ? levels[nextLevelIdx]! : null;
   const nextLevelPenaltyMultiplier =
     nextLvl !== null ? jumpPenaltyMultiplier(nextLvl.level, confirmedLevel) : 1;
@@ -749,18 +758,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     currentRank = rankForLevel(currentLevel);
   }
 
-  // Guard: if the stored confirmed level is higher than the freshly computed
-  // level (e.g. after a norm recalibration made targets harder), use the
-  // confirmed level as the floor for display. We still show a banner so the
-  // user knows the norms changed and they should re-verify their maxes.
-  const confirmedLevelMigrationNeeded = confirmedLevel > currentLevel;
-  const effectiveCurrentLevel = confirmedLevelMigrationNeeded
-    ? confirmedLevel
-    : currentLevel;
-
   return {
-    // Use effectiveCurrentLevel as the floor: when confirmed > computed (e.g.
-    // after norm recalibration), we don't visually demote the user.
     currentLevel: effectiveCurrentLevel,
     bestLevelEver,
     nextLevel: effectiveCurrentLevel >= MAX_LEVEL ? null : effectiveCurrentLevel + 1,
