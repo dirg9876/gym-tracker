@@ -5,6 +5,7 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateProfileInputSex } from "./updateProfileInputSex";
 
 export interface UpdateProfileInput {
   /**
@@ -17,4 +18,6 @@ export interface UpdateProfileInput {
    * @maximum 230
    */
   heightCm?: number | null;
+  /** Athlete sex. Affects MS standard lookup for level calibration. */
+  sex?: UpdateProfileInputSex;
 }

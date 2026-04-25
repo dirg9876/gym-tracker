@@ -3,8 +3,10 @@ import {
   useGetLevels,
   type Level,
   type MainExerciseStat,
+  type SportRank,
 } from "@workspace/api-client-react";
 import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star, AlertTriangle, ChevronRight, Zap, Info } from "lucide-react";
+import { RankBadge, RankDivider } from "@/components/RankBadge";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { formatKg, formatNumber } from "@/lib/format";
@@ -59,6 +61,8 @@ export function Levels() {
     bodyWeightIsFallback,
     barWeightKg,
     levelFactorAnchor,
+    currentRank,
+    weightClassKg,
   } = data;
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
@@ -134,6 +138,12 @@ export function Levels() {
                 </div>
               </div>
               <div className="text-2xl font-bold">{current.name}</div>
+              <RankBadge rank={currentRank} variant="hero" />
+              {currentRank.code !== "NONE" && (
+                <div className="text-[11px] text-muted-foreground/70 -mt-1">
+                  Класс {weightClassKg} кг
+                </div>
+              )}
               <p className="text-sm text-muted-foreground text-center max-w-xs">
                 {current.description}
               </p>
@@ -238,69 +248,76 @@ export function Levels() {
       <div className="max-w-md mx-auto px-4 py-6">
         <h2 className="text-lg font-semibold mb-3">Лестница уровней</h2>
         <div className="space-y-2">
-          {levels.map((lvl) => {
+          {levels.map((lvl, idx) => {
             const isCurrent = lvl.level === currentLevel;
             const isUnlocked = lvl.level <= currentLevel;
             const isNext = lvl.level === currentLevel + 1;
+            const prevRankCode = idx > 0 ? levels[idx - 1]!.rank.code : null;
+            const isRankStart = prevRankCode !== lvl.rank.code;
             return (
-              <button
-                key={lvl.level}
-                ref={isCurrent ? currentRef : undefined}
-                type="button"
-                onClick={() => setOpenLevel(lvl.level)}
-                aria-label={`Открыть уровень ${lvl.level} — ${lvl.name}`}
-                className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-colors hover:bg-accent/40 ${
-                  isCurrent
-                    ? "border-primary bg-primary/10"
-                    : isNext
-                      ? "border-primary/40 bg-card"
-                      : isUnlocked
-                        ? "border-border bg-card/60"
-                        : "border-border bg-card/30"
-                }`}
-              >
-                <img
-                  src={levelImage(lvl.level, lvl.tier)}
-                  alt=""
-                  className={`h-12 w-12 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
-                  style={{ imageRendering: "pixelated" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`text-xs font-mono ${isUnlocked ? "text-primary" : "text-muted-foreground"}`}
-                    >
-                      LVL {lvl.level}
-                    </span>
-                    {isCurrent && (
-                      <span className="text-[10px] uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
-                        сейчас
+              <div key={lvl.level}>
+                {isRankStart && lvl.rank.code !== "NONE" && (
+                  <RankDivider label={lvl.rank.label} />
+                )}
+                <button
+                  ref={isCurrent ? currentRef : undefined}
+                  type="button"
+                  onClick={() => setOpenLevel(lvl.level)}
+                  aria-label={`Открыть уровень ${lvl.level} — ${lvl.name}`}
+                  className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-colors hover:bg-accent/40 ${
+                    isCurrent
+                      ? "border-primary bg-primary/10"
+                      : isNext
+                        ? "border-primary/40 bg-card"
+                        : isUnlocked
+                          ? "border-border bg-card/60"
+                          : "border-border bg-card/30"
+                  }`}
+                >
+                  <img
+                    src={levelImage(lvl.level, lvl.tier)}
+                    alt=""
+                    className={`h-12 w-12 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`text-xs font-mono ${isUnlocked ? "text-primary" : "text-muted-foreground"}`}
+                      >
+                        LVL {lvl.level}
                       </span>
-                    )}
-                    {!isUnlocked && (
-                      <Lock className="h-3 w-3 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div
-                    className={`font-semibold ${isUnlocked ? "" : "text-muted-foreground"}`}
-                  >
-                    {lvl.name}
-                  </div>
-                  <div className="text-xs text-muted-foreground line-clamp-2">
-                    {lvl.description}
-                  </div>
-                  {lvl.level > 0 && (
-                    <div className="text-[11px] text-muted-foreground/80 mt-1">
-                      {bodyWeightIsFallback
-                        ? `3 упр. по нормативу (укажи вес — сейчас расчёт по ${formatNumber(bodyWeightKg)} кг)`
-                        : `3 упр. по нормативу для ${formatNumber(bodyWeightKg)} кг`}
-                      {" · Тоннаж "}
-                      {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                      {isCurrent && (
+                        <span className="text-[10px] uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                          сейчас
+                        </span>
+                      )}
+                      {!isUnlocked && (
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <RankBadge rank={lvl.rank} variant="compact" />
                     </div>
-                  )}
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
-              </button>
+                    <div
+                      className={`font-semibold ${isUnlocked ? "" : "text-muted-foreground"}`}
+                    >
+                      {lvl.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground line-clamp-2">
+                      {lvl.description}
+                    </div>
+                    {lvl.level > 0 && (
+                      <div className="text-[11px] text-muted-foreground/80 mt-1">
+                        {bodyWeightIsFallback
+                          ? `3 упр. по нормативу (укажи вес — сейчас расчёт по ${formatNumber(bodyWeightKg)} кг)`
+                          : `3 упр. по нормативу для ${formatNumber(bodyWeightKg)} кг`}
+                        {" · Тоннаж "}
+                        {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                      </div>
+                    )}
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+                </button>
+              </div>
             );
           })}
         </div>
@@ -317,6 +334,7 @@ export function Levels() {
         bodyWeightIsFallback={bodyWeightIsFallback}
         barWeightKg={barWeightKg}
         levelFactorAnchor={levelFactorAnchor}
+        weightClassKg={weightClassKg}
       />
       </div>
     </AppShell>
@@ -358,6 +376,7 @@ function LevelDetailDialog({
   bodyWeightIsFallback,
   barWeightKg,
   levelFactorAnchor,
+  weightClassKg,
 }: {
   openLevel: number | null;
   onOpenChange: (open: boolean) => void;
@@ -367,20 +386,19 @@ function LevelDetailDialog({
   bodyWeightIsFallback: boolean;
   barWeightKg: number;
   levelFactorAnchor: number;
+  weightClassKg: number;
 }) {
   const lvl = openLevel != null ? levels[openLevel] : undefined;
   const rows = useMemo(() => {
     if (!lvl) return [];
     return mainExercises.slice(0, 3).map((ex) => {
-      const required = requiredKgFor(
-        lvl.level,
-        bodyWeightKg,
-        ex.multiplier,
-        levelFactorAnchor,
-      );
+      const isTimeBased = ex.autoPassedReason === "time_based_exercise";
+      const required = !isTimeBased
+        ? requiredKgFor(lvl.level, bodyWeightKg, ex.multiplier, levelFactorAnchor)
+        : 0;
       const belowBar =
-        ex.equipment === "barbell" && required > 0 && required < barWeightKg;
-      return { ex, required, belowBar };
+        !isTimeBased && ex.equipment === "barbell" && required > 0 && required < barWeightKg;
+      return { ex, required, belowBar, isTimeBased };
     });
   }, [lvl, mainExercises, bodyWeightKg, barWeightKg, levelFactorAnchor]);
 
@@ -398,12 +416,20 @@ function LevelDetailDialog({
                   style={{ imageRendering: "pixelated" }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-mono text-primary">
-                    LVL {lvl.level}
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs font-mono text-primary">
+                      LVL {lvl.level}
+                    </div>
+                    <RankBadge rank={lvl.rank} variant="compact" />
                   </div>
                   <DialogTitle className="text-left text-xl leading-tight">
                     {lvl.name}
                   </DialogTitle>
+                  {lvl.rank.code !== "NONE" && (
+                    <div className="text-[11px] text-muted-foreground/70 mt-0.5">
+                      {lvl.rank.label} · Класс {weightClassKg} кг
+                    </div>
+                  )}
                 </div>
               </div>
               <DialogDescription className="text-left pt-1">
@@ -466,42 +492,52 @@ function LevelDetailDialog({
                     )}
                     {rows.length > 0 && (
                       <div className="space-y-1.5">
-                        {rows.map(({ ex, required, belowBar }) => (
+                        {rows.map(({ ex, required, belowBar, isTimeBased }) => (
                           <div
                             key={ex.exerciseId}
-                            className={`flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 px-3 py-2 rounded-md border ${
-                              belowBar
+                            className={`flex flex-col gap-0.5 px-3 py-2 rounded-md border ${
+                              belowBar || isTimeBased
                                 ? "border-primary/40 bg-primary/10"
                                 : "border-border bg-card/40"
                             }`}
                           >
-                            <div className="flex items-center gap-2 min-w-0">
-                              {belowBar && (
-                                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-                              )}
-                              <span className="text-sm font-medium break-words">
-                                {ex.name}
-                              </span>
-                            </div>
-                            <div className="text-xs sm:text-right shrink-0">
-                              {belowBar ? (
-                                <span className="text-primary">
-                                  Норматив ниже грифа — засчитано
+                            <div className="flex items-center justify-between gap-2 min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {(belowBar || isTimeBased) && (
+                                  <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                                )}
+                                <span className="text-sm font-medium break-words">
+                                  {ex.name}
                                 </span>
-                              ) : (
-                                <span className="font-mono text-foreground/80">
-                                  {formatKg(required)}
-                                </span>
-                              )}
+                              </div>
+                              <div className="text-xs text-right shrink-0">
+                                {isTimeBased ? (
+                                  <span className="text-primary">
+                                    Время — засчитано
+                                  </span>
+                                ) : belowBar ? (
+                                  <span className="text-primary">
+                                    Ниже грифа — засчитано
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-foreground/80">
+                                    {formatKg(required)}
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                            {!isTimeBased && ex.mcKg != null && (
+                              <div className="text-[10px] text-muted-foreground/70 pl-0">
+                                Норматив МС: {formatKg(ex.mcKg)}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
                     <div className="text-[11px] text-muted-foreground/80 pt-1">
-                      Веса посчитаны как «вес тела × множитель упражнения ×
-                      коэффициент уровня». Без учёта штрафа за прыжок через
-                      уровни.
+                      Норматив на уровне = МС-норматив × (уровень / 80). Без
+                      учёта штрафа за прыжок через уровни.
                     </div>
                   </div>
                 </>
@@ -608,9 +644,13 @@ function MainExercisesGrid({
               <span className="font-medium break-words flex-1">{e.name}</span>
             </div>
             <div className="pl-5 flex items-center justify-end">
-              {autoPassed ? (
+              {e.autoPassedReason === "time_based_exercise" ? (
                 <span className="text-[11px] text-primary">
-                  Норматив ниже грифа — засчитано
+                  Время — засчитано
+                </span>
+              ) : e.autoPassedReason === "below_bar_weight" ? (
+                <span className="text-[11px] text-primary">
+                  Ниже грифа — засчитано
                 </span>
               ) : required != null && required > 0 ? (
                 <div className="flex items-baseline gap-2 leading-tight">

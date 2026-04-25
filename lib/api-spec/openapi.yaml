@@ -926,6 +926,9 @@ components:
             levelFactor(level)`.
         mainExercisesRequired:
           type: integer
+        rank:
+          $ref: "#/components/schemas/SportRank"
+          description: Sport rank badge associated with this level (e.g. Юн III, КМС, МС).
       required:
         - level
         - name
@@ -934,14 +937,55 @@ components:
         - benchmarkKg
         - tonnage7dKgRequired
         - mainExercisesRequired
+        - rank
+
+    SportRankCode:
+      type: string
+      enum: [NONE, YOUTH_III, YOUTH_II, YOUTH_I, III_RAZRYAD, II_RAZRYAD, I_RAZRYAD, KMS, MS]
+      description: >-
+        Sport rank classification code. Ordered from NONE (beginner, LVL 0) to
+        MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
+
+    SportRank:
+      type: object
+      properties:
+        code:
+          $ref: "#/components/schemas/SportRankCode"
+        label:
+          type: string
+          description: Full Russian label, e.g. "III юн. разряд", "КМС", "МС".
+        shortLabel:
+          type: string
+          description: Short label for compact UI, e.g. "Юн III", "I р.", "КМС".
+        tier:
+          type: integer
+          description: 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.
+        minLevel:
+          type: integer
+          description: Minimum level to display this rank on the ladder.
+      required: [code, label, shortLabel, tier, minLevel]
+
+    McSource:
+      type: string
+      enum: [classic, coefficient, bodyweight, time, fallback]
+      description: >-
+        How the MS-equivalent kg target (mcKg) was derived.
+        `classic` — direct from the official ФПР big-3 table;
+        `coefficient` — ratio of a classic lift's MS value;
+        `bodyweight` — ratio of the athlete's bodyweight;
+        `time` — time-based exercise, no kg requirement;
+        `fallback` — unknown exercise, uses stored bodyweight_multiplier.
 
     AutoPassedReason:
       type: string
-      enum: [below_bar_weight]
+      enum: [below_bar_weight, time_based_exercise]
       description: >-
         Why the server auto-passed an exercise without requiring the user to
-        actually lift the target. Currently only `below_bar_weight` — a barbell
-        exercise whose required kg is less than the empty-bar floor.
+        actually lift the target.
+        `below_bar_weight` — a barbell exercise whose required kg is less than
+        the empty-bar floor (20 kg).
+        `time_based_exercise` — a time-based exercise (e.g. Планка) that has
+        no kg requirement.
 
     MainExerciseStat:
       type: object
@@ -982,6 +1026,16 @@ components:
             `maxWeightKg`. UIs should still display the original
             `requiredKgForNextLevel` for context (e.g. "would have needed
             10 kg, auto-passed since &lt; 20 kg bar").
+        mcKg:
+          type: number
+          nullable: true
+          description: >-
+            Master-of-Sport (МС) equivalent kg target for this exercise and
+            the user's weight class. Null for time-based exercises (e.g.
+            Планка). Use this to display "Норматив МС: X кг" in the UI.
+        mcSource:
+          $ref: "#/components/schemas/McSource"
+          description: How mcKg was derived (official table, coefficient, bodyweight ratio, etc.).
       required:
         - exerciseId
         - name
@@ -992,6 +1046,8 @@ components:
         - requiredKgForNextLevel
         - requiredKgPenaltyMultiplier
         - autoPassedReason
+        - mcKg
+        - mcSource
 
     LevelStats:
       type: object
@@ -1068,7 +1124,19 @@ components:
             Level at which the level factor equals 1.0. Exposed so the client
             can compute `requiredKg = bodyWeight × (level / levelFactorAnchor)
             × multiplier` for any level (rounded to the same 2.5 kg step the
-            server uses).
+            server uses). Now equals 80 (= МС level).
+        currentRank:
+          $ref: "#/components/schemas/SportRank"
+          description: Sport rank corresponding to the user's currentLevel.
+        weightClassKg:
+          type: number
+          description: >-
+            Official competition weight class (kg) for the user's bodyweight
+            and sex. Used to display "ваш класс X кг" on the rank card.
+        sex:
+          type: string
+          enum: [male, female]
+          description: Athlete sex used to select the MS standards table.
         stats:
           $ref: "#/components/schemas/LevelStats"
       required:
@@ -1083,6 +1151,9 @@ components:
         - bodyWeightIsFallback
         - barWeightKg
         - levelFactorAnchor
+        - currentRank
+        - weightClassKg
+        - sex
         - stats
 
     BMICategory:
@@ -1105,7 +1176,11 @@ components:
           oneOf:
             - $ref: "#/components/schemas/BMICategory"
             - type: "null"
-      required: [bodyWeightKg, heightCm, bmi, bmiCategory]
+        sex:
+          type: string
+          enum: [male, female]
+          description: Athlete sex. Default is "male". Used to select the MS standards table for level calibration.
+      required: [bodyWeightKg, heightCm, bmi, bmiCategory, sex]
 
     UpdateProfileInput:
       type: object
@@ -1120,6 +1195,10 @@ components:
           nullable: true
           minimum: 100
           maximum: 230
+        sex:
+          type: string
+          enum: [male, female]
+          description: Athlete sex. Affects MS standard lookup for level calibration.
 
     ProgramSummary:
       type: object

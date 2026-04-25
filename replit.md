@@ -45,16 +45,41 @@ level rises. Each level (>=1) requires both:
   canonical compound names are seeded as `is_main=true` (see
   `seedMainExercisesIfEmpty`). The Levels page shows an amber hint linking
   to `/exercises` if fewer than 3 are marked, and
-- a minimum total tonnage in the **last 30 days** (rolling window ending now).
-  Tonnage is sized as `5 ex × 4 sets × 8 reps × benchmark × 0.7 ×
-  6 workouts/month`, rounded to 500 kg.
+- a minimum total **tonnage in the last 7 days** (rolling window ending now),
+  sized as `3 workouts × 5 ex × 5 sets × 9 reps × bodyWeight × (level/80)`,
+  rounded to 500 kg.
 
-Tonnage uses the *current* 30d window (not "max ever"), so the requirement
-naturally resets if the user stops training: old sets fall out of the window
-and the user can drop levels. The API also returns `bestLevelEver` (computed
-from max-ever 30d tonnage) so the UI can remind users of their personal best
-when they slack. `oldestSetInWindowAt` powers an hourglass hint showing how
-many days until the earliest qualifying set expires.
+Tonnage uses the *current* 7d window, so the requirement naturally resets if
+the user stops training. The API also returns `bestLevelEver` (historical max)
+so the UI can remind users of their personal best. `oldestSetInWindowAt` powers
+an hourglass hint showing how many days until the earliest qualifying set expires.
+
+### Sport Rank System
+
+Level 80 = МС (Мастер спорта) anchor. Per-exercise required weight is:
+`mcKg × (level / 80)` where `mcKg` is the Master-of-Sport target for the
+athlete's weight class and sex (official ФПР/ЕВСК 2024 raw powerlifting norms
+for the Big 3; coaching-table coefficients for accessories).
+
+Norm derivation is in `artifacts/api-server/src/lib/sport-norms.ts`:
+- `MS_STANDARDS` — official raw PL norms by weight class (male/female)
+- `EXERCISE_NORMS` — "classic" (official), "coefficient" (ratio of Big-3 MS), 
+  "bodyweight_ratio", or "time_based" (e.g. Планка = auto-pass)
+- `getMcKgForExercise()` — returns mcKg + mcSource for any exercise
+- `rankForLevel()` — maps level → SportRank (9 tiers: NONE → MS)
+
+Rank thresholds: lvl 0–9 = Без разряда, 10 = Юн III, 20 = Юн II, 30 = Юн I,
+40 = III р., 50 = II р., 60 = I р., 70 = КМС, 76–80 = МС.
+
+`profile.sex` (male/female, default male) is stored in `app_meta` and used to
+select the correct MS standards table for weight-class lookup.
+
+The frontend displays:
+- `RankBadge` (compact/hero/default) and `RankDivider` in
+  `artifacts/gym-tracker/src/components/RankBadge.tsx`
+- Hero card shows current rank badge + weight class
+- Level ladder shows compact rank badge per row + RankDivider at rank transitions
+- Level detail dialog shows rank badge in header + "Норматив МС: X кг" per exercise
 
 Sprites: 9 tier sprites at `artifacts/gym-tracker/src/assets/levels/tier-N.png`
 plus per-level images `level-0.png` … `level-80.png` (all 81 generated). The

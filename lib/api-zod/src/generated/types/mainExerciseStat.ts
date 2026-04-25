@@ -7,6 +7,7 @@
  */
 import type { AutoPassedReason } from "./autoPassedReason";
 import type { Equipment } from "./equipment";
+import type { McSource } from "./mcSource";
 
 export interface MainExerciseStat {
   exerciseId: number;
@@ -22,4 +23,8 @@ export interface MainExerciseStat {
   requiredKgPenaltyMultiplier: number;
   /** When non-null, the exercise is treated as passed regardless of `maxWeightKg`. UIs should still display the original `requiredKgForNextLevel` for context (e.g. "would have needed 10 kg, auto-passed since &lt; 20 kg bar"). */
   autoPassedReason: AutoPassedReason | null;
+  /** Master-of-Sport (МС) equivalent kg target for this exercise and the user's weight class. Null for time-based exercises (e.g. Планка). Use this to display "Норматив МС: X кг" in the UI. */
+  mcKg: number | null;
+  /** How mcKg was derived (official table, coefficient, bodyweight ratio, etc.). */
+  mcSource: McSource;
 }

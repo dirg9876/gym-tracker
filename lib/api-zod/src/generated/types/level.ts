@@ -5,6 +5,7 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { SportRank } from "./sportRank";
 
 export interface Level {
   level: number;
@@ -16,4 +17,6 @@ export interface Level {
   /** Required total tonnage (kg) over the last 7 days at this level, computed from `3 workouts/week × 5 exercises × 5 sets × 9 reps × workingWeight`, where `workingWeight = bodyWeight × levelFactor(level)`. */
   tonnage7dKgRequired: number;
   mainExercisesRequired: number;
+  /** Sport rank badge associated with this level (e.g. Юн III, КМС, МС). */
+  rank: SportRank;
 }

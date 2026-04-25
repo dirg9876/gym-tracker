@@ -7,11 +7,12 @@
  */
 
 /**
- * Why the server auto-passed an exercise without requiring the user to actually lift the target. Currently only `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor.
+ * Why the server auto-passed an exercise without requiring the user to actually lift the target. `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor (20 kg). `time_based_exercise` — a time-based exercise (e.g. Планка) that has no kg requirement.
  */
 export type AutoPassedReason =
   (typeof AutoPassedReason)[keyof typeof AutoPassedReason];
 
 export const AutoPassedReason = {
   below_bar_weight: "below_bar_weight",
+  time_based_exercise: "time_based_exercise",
 } as const;

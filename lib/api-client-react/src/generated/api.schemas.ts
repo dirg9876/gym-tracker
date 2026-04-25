@@ -236,6 +236,35 @@ export interface ExerciseProgress {
   points: ExerciseProgressPoint[];
 }
 
+/**
+ * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
+ */
+export type SportRankCode = (typeof SportRankCode)[keyof typeof SportRankCode];
+
+export const SportRankCode = {
+  NONE: "NONE",
+  YOUTH_III: "YOUTH_III",
+  YOUTH_II: "YOUTH_II",
+  YOUTH_I: "YOUTH_I",
+  III_RAZRYAD: "III_RAZRYAD",
+  II_RAZRYAD: "II_RAZRYAD",
+  I_RAZRYAD: "I_RAZRYAD",
+  KMS: "KMS",
+  MS: "MS",
+} as const;
+
+export interface SportRank {
+  code: SportRankCode;
+  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС". */
+  label: string;
+  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС". */
+  shortLabel: string;
+  /** 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping. */
+  tier: number;
+  /** Minimum level to display this rank on the ladder. */
+  minLevel: number;
+}
+
 export interface Level {
   level: number;
   name: string;
@@ -246,16 +275,32 @@ export interface Level {
   /** Required total tonnage (kg) over the last 7 days at this level, computed from `3 workouts/week × 5 exercises × 5 sets × 9 reps × workingWeight`, where `workingWeight = bodyWeight × levelFactor(level)`. */
   tonnage7dKgRequired: number;
   mainExercisesRequired: number;
+  /** Sport rank badge associated with this level (e.g. Юн III, КМС, МС). */
+  rank: SportRank;
 }
 
 /**
- * Why the server auto-passed an exercise without requiring the user to actually lift the target. Currently only `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor.
+ * How the MS-equivalent kg target (mcKg) was derived. `classic` — direct from the official ФПР big-3 table; `coefficient` — ratio of a classic lift's MS value; `bodyweight` — ratio of the athlete's bodyweight; `time` — time-based exercise, no kg requirement; `fallback` — unknown exercise, uses stored bodyweight_multiplier.
+ */
+export type McSource = (typeof McSource)[keyof typeof McSource];
+
+export const McSource = {
+  classic: "classic",
+  coefficient: "coefficient",
+  bodyweight: "bodyweight",
+  time: "time",
+  fallback: "fallback",
+} as const;
+
+/**
+ * Why the server auto-passed an exercise without requiring the user to actually lift the target. `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor (20 kg). `time_based_exercise` — a time-based exercise (e.g. Планка) that has no kg requirement.
  */
 export type AutoPassedReason =
   (typeof AutoPassedReason)[keyof typeof AutoPassedReason];
 
 export const AutoPassedReason = {
   below_bar_weight: "below_bar_weight",
+  time_based_exercise: "time_based_exercise",
 } as const;
 
 export interface MainExerciseStat {
@@ -272,6 +317,10 @@ export interface MainExerciseStat {
   requiredKgPenaltyMultiplier: number;
   /** When non-null, the exercise is treated as passed regardless of `maxWeightKg`. UIs should still display the original `requiredKgForNextLevel` for context (e.g. "would have needed 10 kg, auto-passed since &lt; 20 kg bar"). */
   autoPassedReason: AutoPassedReason | null;
+  /** Master-of-Sport (МС) equivalent kg target for this exercise and the user's weight class. Null for time-based exercises (e.g. Планка). Use this to display "Норматив МС: X кг" in the UI. */
+  mcKg: number | null;
+  /** How mcKg was derived (official table, coefficient, bodyweight ratio, etc.). */
+  mcSource: McSource;
 }
 
 export interface LevelStats {
@@ -283,6 +332,17 @@ export interface LevelStats {
   oldestSetInWindowAt: string | null;
   mainExercises: MainExerciseStat[];
 }
+
+/**
+ * Athlete sex used to select the MS standards table.
+ */
+export type LevelsResponseSex =
+  (typeof LevelsResponseSex)[keyof typeof LevelsResponseSex];
+
+export const LevelsResponseSex = {
+  male: "male",
+  female: "female",
+} as const;
 
 export interface LevelsResponse {
   levels: Level[];
@@ -301,8 +361,14 @@ export interface LevelsResponse {
   bodyWeightIsFallback: boolean;
   /** Standard empty-bar weight used by the auto-pass rule for barbell exercises. Exposed so the client can replicate per-exercise calculations for arbitrary levels (e.g. the level-detail dialog). */
   barWeightKg: number;
-  /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). */
+  /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). Now equals 80 (= МС level). */
   levelFactorAnchor: number;
+  /** Sport rank corresponding to the user's currentLevel. */
+  currentRank: SportRank;
+  /** Official competition weight class (kg) for the user's bodyweight and sex. Used to display "ваш класс X кг" on the rank card. */
+  weightClassKg: number;
+  /** Athlete sex used to select the MS standards table. */
+  sex: LevelsResponseSex;
   stats: LevelStats;
 }
 
@@ -315,12 +381,35 @@ export const BMICategory = {
   obese: "obese",
 } as const;
 
+/**
+ * Athlete sex. Default is "male". Used to select the MS standards table for level calibration.
+ */
+export type ProfileSex = (typeof ProfileSex)[keyof typeof ProfileSex];
+
+export const ProfileSex = {
+  male: "male",
+  female: "female",
+} as const;
+
 export interface Profile {
   bodyWeightKg: number | null;
   heightCm: number | null;
   bmi: number | null;
   bmiCategory: BMICategory | null;
+  /** Athlete sex. Default is "male". Used to select the MS standards table for level calibration. */
+  sex: ProfileSex;
 }
+
+/**
+ * Athlete sex. Affects MS standard lookup for level calibration.
+ */
+export type UpdateProfileInputSex =
+  (typeof UpdateProfileInputSex)[keyof typeof UpdateProfileInputSex];
+
+export const UpdateProfileInputSex = {
+  male: "male",
+  female: "female",
+} as const;
 
 export interface UpdateProfileInput {
   /**
@@ -333,6 +422,8 @@ export interface UpdateProfileInput {
    * @maximum 230
    */
   heightCm?: number | null;
+  /** Athlete sex. Affects MS standard lookup for level calibration. */
+  sex?: UpdateProfileInputSex;
 }
 
 export interface ProgramSummary {

@@ -5,7 +5,15 @@ import {
   getConfirmedLevel,
   setConfirmedLevel,
   FALLBACK_BODY_WEIGHT_KG,
+  FALLBACK_SEX,
 } from "./profile";
+import {
+  getMcKgForExercise,
+  getWeightClassKg,
+  rankForLevel,
+  type McSource,
+  type SportRank,
+} from "./sport-norms";
 
 export type LevelDef = {
   level: number;
@@ -15,6 +23,7 @@ export type LevelDef = {
   benchmarkKg: number;
   tonnage7dKgRequired: number;
   mainExercisesRequired: number;
+  rank: SportRank;
 };
 
 const TIER_SIZE = 9;
@@ -29,9 +38,10 @@ const EXERCISES_PER_WORKOUT = 5;
 const SETS_PER_EXERCISE = 5;
 const REPS_PER_SET = 9;
 
-// Anchor: at level 60 ("Силач-новичок — Жмёшь свой вес") the level factor is 1.0,
-// meaning the required weight for a 1.0× exercise equals the user's bodyweight.
-export const LEVEL_FACTOR_ANCHOR = 60;
+// Anchor: at level 80 (МС — Мастер спорта) the level factor is 1.0,
+// meaning the per-exercise MC target equals the full MS kg norm for the user's
+// weight class. All lower levels scale linearly: required_kg = mc_kg × level/80.
+export const LEVEL_FACTOR_ANCHOR = 80;
 
 // Standard Olympic bar weight. Barbell exercises whose required kg falls below
 // this floor are auto-passed (treated as cleared) — you can't load a real
@@ -415,6 +425,7 @@ export function buildLevels(bodyWeightKg: number): LevelDef[] {
     benchmarkKg: referenceKg(idx, bodyWeightKg),
     tonnage7dKgRequired: tonnage7dRequired(idx, bodyWeightKg),
     mainExercisesRequired: idx === 0 ? 0 : MAIN_EXERCISES_REQUIRED,
+    rank: rankForLevel(idx),
   }));
 }
 
@@ -425,7 +436,7 @@ export const LEVELS: LevelDef[] = buildLevels(FALLBACK_BODY_WEIGHT_KG);
 export const MAX_LEVEL = LEVELS.length - 1;
 
 export type Equipment = "barbell" | "dumbbell" | "bodyweight" | "machine" | "other";
-export type AutoPassedReason = "below_bar_weight";
+export type AutoPassedReason = "below_bar_weight" | "time_based_exercise";
 
 export type MainExerciseStat = {
   exerciseId: number;
@@ -433,13 +444,21 @@ export type MainExerciseStat = {
   muscleGroup: string;
   equipment: Equipment;
   maxWeightKg: number;
+  /** Effective multiplier = mcKg / bodyWeightKg. Used by the level-detail dialog
+   *  to compute required kg for any level: bodyWeight × (level/anchor) × multiplier. */
   multiplier: number;
   requiredKgForNextLevel: number | null;
   // ≥ 1. When > 1, the requirement above already includes the jump penalty.
   requiredKgPenaltyMultiplier: number;
   // When non-null, the exercise is treated as passed regardless of maxWeightKg.
   // "below_bar_weight" — barbell exercise whose required kg < empty bar.
+  // "time_based_exercise" — e.g. Планка; kg requirement not applicable.
   autoPassedReason: AutoPassedReason | null;
+  /** MS-equivalent kg target for this exercise and the user's weight class.
+   *  Null for time-based exercises (e.g. Планка). */
+  mcKg: number | null;
+  /** How the mcKg was derived. */
+  mcSource: McSource;
 };
 
 export type LevelStats = {
@@ -471,6 +490,12 @@ export type CurrentLevelInfo = {
   // the formula in three places.
   barWeightKg: number;
   levelFactorAnchor: number;
+  /** Sport rank corresponding to currentLevel (e.g. КМС, МС). */
+  currentRank: SportRank;
+  /** Official competition weight class for the user's bodyweight. */
+  weightClassKg: number;
+  /** Athlete sex used to select the MS standards table. */
+  sex: "male" | "female";
   levels: LevelDef[];
   stats: LevelStats;
 };
@@ -479,6 +504,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
   const profile = await getProfile();
   const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
   const bodyWeightIsFallback = profile.bodyWeightKg == null;
+  const sex = profile.sex ?? FALLBACK_SEX;
   const levels = buildLevels(bodyWeightKg);
 
   const mainRows = await db
@@ -492,6 +518,17 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     .from(exercisesTable)
     .where(eq(exercisesTable.isMain, true))
     .orderBy(asc(exercisesTable.muscleGroup), asc(exercisesTable.name));
+
+  // Pre-compute MC-based effective multipliers for each main exercise.
+  // effectiveMul[id] = mcKg / bodyWeightKg  (→ required = bw × level/80 × mul = mcKg × level/80)
+  // For time-based exercises (Планка), mcKg is null and the exercise is auto-passed.
+  const mcResultByExercise = new Map<number, { kg: number | null; source: McSource; effectiveMul: number }>();
+  for (const r of mainRows) {
+    const fallbackMul = Number(r.bodyweightMultiplier);
+    const result = getMcKgForExercise(r.name, bodyWeightKg, sex, fallbackMul);
+    const effectiveMul = result.kg != null ? result.kg / bodyWeightKg : 0;
+    mcResultByExercise.set(r.id, { kg: result.kg, source: result.source, effectiveMul });
+  }
 
   const mainIds = mainRows.map((r) => r.id);
   const maxByExercise = new Map<number, number>();
@@ -562,8 +599,13 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     if (lvl.level === 0) return true;
     let passedExercises = 0;
     for (const r of mainRows) {
-      const mul = Number(r.bodyweightMultiplier);
-      const req = requiredKgForExercise(lvl.level, bodyWeightKg, mul, penaltyMul);
+      const mc = mcResultByExercise.get(r.id)!;
+      // Time-based exercises (e.g. Планка) have no kg requirement — auto-pass.
+      if (mc.kg == null) {
+        passedExercises += 1;
+        continue;
+      }
+      const req = requiredKgForExercise(lvl.level, bodyWeightKg, mc.effectiveMul, penaltyMul);
       // Barbell exercises can't physically be loaded below the empty bar, so a
       // sub-bar requirement is auto-passed (counts toward the threshold).
       if (req > 0 && r.equipment === "barbell" && req < BAR_WEIGHT_KG) {
@@ -628,32 +670,40 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     : null;
 
   const mainExercises: MainExerciseStat[] = mainRows.map((r) => {
-    const mul = Number(r.bodyweightMultiplier);
-    const required = nextLvl
+    const mc = mcResultByExercise.get(r.id)!;
+    // Time-based exercises (e.g. Планка) have no kg requirement at all.
+    const isTimeBased = mc.kg == null;
+    const required = !isTimeBased && nextLvl
       ? requiredKgForExercise(
           nextLvl.level,
           bodyWeightKg,
-          mul,
+          mc.effectiveMul,
           nextLevelPenaltyMultiplier,
         )
       : null;
-    const autoPassedReason: AutoPassedReason | null =
+    let autoPassedReason: AutoPassedReason | null = null;
+    if (isTimeBased) {
+      autoPassedReason = "time_based_exercise";
+    } else if (
       required != null &&
       required > 0 &&
       r.equipment === "barbell" &&
       required < BAR_WEIGHT_KG
-        ? "below_bar_weight"
-        : null;
+    ) {
+      autoPassedReason = "below_bar_weight";
+    }
     return {
       exerciseId: r.id,
       name: r.name,
       muscleGroup: r.muscleGroup,
       equipment: r.equipment as Equipment,
       maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
-      multiplier: round(mul),
+      multiplier: round(mc.effectiveMul),
       requiredKgForNextLevel: required,
       requiredKgPenaltyMultiplier: round(nextLevelPenaltyMultiplier),
       autoPassedReason,
+      mcKg: mc.kg != null ? round(mc.kg) : null,
+      mcSource: mc.source,
     };
   });
 
@@ -668,6 +718,9 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     bodyWeightIsFallback,
     barWeightKg: BAR_WEIGHT_KG,
     levelFactorAnchor: LEVEL_FACTOR_ANCHOR,
+    currentRank: rankForLevel(currentLevel),
+    weightClassKg: getWeightClassKg(bodyWeightKg, sex),
+    sex,
     levels,
     stats: {
       currentTonnage7dKg: round(currentTonnage7dKg),

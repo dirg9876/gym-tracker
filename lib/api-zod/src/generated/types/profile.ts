@@ -6,10 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BMICategory } from "./bMICategory";
+import type { ProfileSex } from "./profileSex";
 
 export interface Profile {
   bodyWeightKg: number | null;
   heightCm: number | null;
   bmi: number | null;
   bmiCategory: BMICategory | null;
+  /** Athlete sex. Default is "male". Used to select the MS standards table for level calibration. */
+  sex: ProfileSex;
 }

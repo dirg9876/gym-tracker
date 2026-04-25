@@ -529,6 +529,45 @@ export const GetLevelsResponse = zod.object({
           "Required total tonnage (kg) over the last 7 days at this level, computed from `3 workouts\/week × 5 exercises × 5 sets × 9 reps × workingWeight`, where `workingWeight = bodyWeight × levelFactor(level)`.",
         ),
       mainExercisesRequired: zod.number(),
+      rank: zod
+        .object({
+          code: zod
+            .enum([
+              "NONE",
+              "YOUTH_III",
+              "YOUTH_II",
+              "YOUTH_I",
+              "III_RAZRYAD",
+              "II_RAZRYAD",
+              "I_RAZRYAD",
+              "KMS",
+              "MS",
+            ])
+            .describe(
+              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            ),
+          label: zod
+            .string()
+            .describe(
+              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            ),
+          shortLabel: zod
+            .string()
+            .describe(
+              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            ),
+          tier: zod
+            .number()
+            .describe(
+              "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            ),
+          minLevel: zod
+            .number()
+            .describe("Minimum level to display this rank on the ladder."),
+        })
+        .describe(
+          "Sport rank badge associated with this level (e.g. Юн III, КМС, МС).",
+        ),
     }),
   ),
   currentLevel: zod.number(),
@@ -568,8 +607,53 @@ export const GetLevelsResponse = zod.object({
   levelFactorAnchor: zod
     .number()
     .describe(
-      "Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level \/ levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses).",
+      "Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level \/ levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). Now equals 80 (= МС level).",
     ),
+  currentRank: zod
+    .object({
+      code: zod
+        .enum([
+          "NONE",
+          "YOUTH_III",
+          "YOUTH_II",
+          "YOUTH_I",
+          "III_RAZRYAD",
+          "II_RAZRYAD",
+          "I_RAZRYAD",
+          "KMS",
+          "MS",
+        ])
+        .describe(
+          "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+        ),
+      label: zod
+        .string()
+        .describe(
+          'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+        ),
+      shortLabel: zod
+        .string()
+        .describe(
+          'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+        ),
+      tier: zod
+        .number()
+        .describe(
+          "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+        ),
+      minLevel: zod
+        .number()
+        .describe("Minimum level to display this rank on the ladder."),
+    })
+    .describe("Sport rank corresponding to the user's currentLevel."),
+  weightClassKg: zod
+    .number()
+    .describe(
+      'Official competition weight class (kg) for the user\'s bodyweight and sex. Used to display \"ваш класс X кг\" on the rank card.',
+    ),
+  sex: zod
+    .enum(["male", "female"])
+    .describe("Athlete sex used to select the MS standards table."),
   stats: zod.object({
     currentTonnage7dKg: zod
       .number()
@@ -611,14 +695,25 @@ export const GetLevelsResponse = zod.object({
         autoPassedReason: zod
           .union([
             zod
-              .enum(["below_bar_weight"])
+              .enum(["below_bar_weight", "time_based_exercise"])
               .describe(
-                "Why the server auto-passed an exercise without requiring the user to actually lift the target. Currently only `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor.",
+                "Why the server auto-passed an exercise without requiring the user to actually lift the target. `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor (20 kg). `time_based_exercise` — a time-based exercise (e.g. Планка) that has no kg requirement.",
               ),
             zod.null(),
           ])
           .describe(
             'When non-null, the exercise is treated as passed regardless of `maxWeightKg`. UIs should still display the original `requiredKgForNextLevel` for context (e.g. \"would have needed 10 kg, auto-passed since &lt; 20 kg bar\").',
+          ),
+        mcKg: zod
+          .number()
+          .nullable()
+          .describe(
+            'Master-of-Sport (МС) equivalent kg target for this exercise and the user\'s weight class. Null for time-based exercises (e.g. Планка). Use this to display \"Норматив МС: X кг\" in the UI.',
+          ),
+        mcSource: zod
+          .enum(["classic", "coefficient", "bodyweight", "time", "fallback"])
+          .describe(
+            "How mcKg was derived (official table, coefficient, bodyweight ratio, etc.).",
           ),
       }),
     ),
@@ -636,6 +731,11 @@ export const GetProfileResponse = zod.object({
     zod.enum(["underweight", "normal", "overweight", "obese"]),
     zod.null(),
   ]),
+  sex: zod
+    .enum(["male", "female"])
+    .describe(
+      'Athlete sex. Default is \"male\". Used to select the MS standards table for level calibration.',
+    ),
 });
 
 /**
@@ -658,6 +758,10 @@ export const UpdateProfileBody = zod.object({
     .min(updateProfileBodyHeightCmMin)
     .max(updateProfileBodyHeightCmMax)
     .nullish(),
+  sex: zod
+    .enum(["male", "female"])
+    .optional()
+    .describe("Athlete sex. Affects MS standard lookup for level calibration."),
 });
 
 export const UpdateProfileResponse = zod.object({
@@ -668,6 +772,11 @@ export const UpdateProfileResponse = zod.object({
     zod.enum(["underweight", "normal", "overweight", "obese"]),
     zod.null(),
   ]),
+  sex: zod
+    .enum(["male", "female"])
+    .describe(
+      'Athlete sex. Default is \"male\". Used to select the MS standards table for level calibration.',
+    ),
 });
 
 /**

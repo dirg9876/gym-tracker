@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Level } from "./level";
+import type { LevelsResponseSex } from "./levelsResponseSex";
 import type { LevelStats } from "./levelStats";
+import type { SportRank } from "./sportRank";
 
 export interface LevelsResponse {
   levels: Level[];
@@ -25,7 +27,13 @@ export interface LevelsResponse {
   bodyWeightIsFallback: boolean;
   /** Standard empty-bar weight used by the auto-pass rule for barbell exercises. Exposed so the client can replicate per-exercise calculations for arbitrary levels (e.g. the level-detail dialog). */
   barWeightKg: number;
-  /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). */
+  /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). Now equals 80 (= МС level). */
   levelFactorAnchor: number;
+  /** Sport rank corresponding to the user's currentLevel. */
+  currentRank: SportRank;
+  /** Official competition weight class (kg) for the user's bodyweight and sex. Used to display "ваш класс X кг" on the rank card. */
+  weightClassKg: number;
+  /** Athlete sex used to select the MS standards table. */
+  sex: LevelsResponseSex;
   stats: LevelStats;
 }

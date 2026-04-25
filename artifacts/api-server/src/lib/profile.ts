@@ -2,9 +2,11 @@ import { db, appMetaTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 export const FALLBACK_BODY_WEIGHT_KG = 80;
+export const FALLBACK_SEX = "male" as const;
 
 export const BODY_WEIGHT_KEY = "body_weight_kg";
 export const HEIGHT_KEY = "height_cm";
+export const SEX_KEY = "sex";
 export const CONFIRMED_LEVEL_KEY = "confirmed_level_v1";
 
 export const BODY_WEIGHT_MIN = 30;
@@ -13,12 +15,14 @@ export const HEIGHT_MIN = 100;
 export const HEIGHT_MAX = 230;
 
 export type BMICategory = "underweight" | "normal" | "overweight" | "obese";
+export type Sex = "male" | "female";
 
 export type Profile = {
   bodyWeightKg: number | null;
   heightCm: number | null;
   bmi: number | null;
   bmiCategory: BMICategory | null;
+  sex: Sex;
 };
 
 export function classifyBMI(bmi: number): BMICategory {
@@ -47,6 +51,15 @@ async function readMetaNumber(key: string): Promise<number | null> {
   return Number.isFinite(n) ? n : null;
 }
 
+async function readMetaString(key: string): Promise<string | null> {
+  const rows = await db
+    .select({ value: appMetaTable.value })
+    .from(appMetaTable)
+    .where(eq(appMetaTable.key, key))
+    .limit(1);
+  return rows.length > 0 ? rows[0]!.value : null;
+}
+
 async function writeMetaNumber(key: string, value: number): Promise<void> {
   await db
     .insert(appMetaTable)
@@ -57,15 +70,28 @@ async function writeMetaNumber(key: string, value: number): Promise<void> {
     });
 }
 
+async function writeMetaString(key: string, value: string): Promise<void> {
+  await db
+    .insert(appMetaTable)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: appMetaTable.key,
+      set: { value, updatedAt: new Date() },
+    });
+}
+
 async function deleteMeta(key: string): Promise<void> {
   await db.delete(appMetaTable).where(eq(appMetaTable.key, key));
 }
 
 export async function getProfile(): Promise<Profile> {
-  const [bodyWeightKg, heightCm] = await Promise.all([
+  const [bodyWeightKg, heightCm, sexRaw] = await Promise.all([
     readMetaNumber(BODY_WEIGHT_KEY),
     readMetaNumber(HEIGHT_KEY),
+    readMetaString(SEX_KEY),
   ]);
+
+  const sex: Sex = sexRaw === "female" ? "female" : "male";
 
   let bmi: number | null = null;
   let bmiCategory: BMICategory | null = null;
@@ -81,12 +107,14 @@ export async function getProfile(): Promise<Profile> {
     heightCm: heightCm != null ? round2(heightCm) : null,
     bmi,
     bmiCategory,
+    sex,
   };
 }
 
 export type UpdateProfileInput = {
   bodyWeightKg?: number | null;
   heightCm?: number | null;
+  sex?: Sex | null;
 };
 
 export async function updateProfile(input: UpdateProfileInput): Promise<Profile> {
@@ -103,6 +131,9 @@ export async function updateProfile(input: UpdateProfileInput): Promise<Profile>
     } else {
       await writeMetaNumber(HEIGHT_KEY, input.heightCm);
     }
+  }
+  if ("sex" in input && input.sex != null) {
+    await writeMetaString(SEX_KEY, input.sex);
   }
   return getProfile();
 }
