@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   useGetWorkout,
@@ -57,6 +57,24 @@ export function ActiveWorkout() {
 
   const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
   const isBwSelected = isBodyweight(selectedExercise?.equipment);
+
+  // When the user switches the picker to a bodyweight exercise, reset the
+  // weight stepper to 0 — for bodyweight exercises the field means "extra
+  // weight added on top of bodyweight", and the default must be 0 (no
+  // plate / weight belt) per the product requirement. We only fire this on
+  // an actual transition into a bodyweight exercise so we don't clobber a
+  // value the user is currently editing for a non-bodyweight exercise.
+  const prevBwRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (selectedExerciseId === undefined) {
+      prevBwRef.current = null;
+      return;
+    }
+    if (isBwSelected && prevBwRef.current !== true) {
+      setWeight(0);
+    }
+    prevBwRef.current = isBwSelected;
+  }, [selectedExerciseId, isBwSelected]);
 
   // Load plan from localStorage
   useEffect(() => {

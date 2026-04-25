@@ -37,6 +37,9 @@ router.post("/exercises", async (req, res): Promise<void> => {
       name: parsed.data.name.trim(),
       muscleGroup: parsed.data.muscleGroup.trim(),
       isCustom: true,
+      ...(parsed.data.equipment !== undefined
+        ? { equipment: parsed.data.equipment }
+        : {}),
     })
     .returning();
   res.status(201).json(row);

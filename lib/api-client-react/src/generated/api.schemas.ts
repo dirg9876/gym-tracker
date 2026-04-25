@@ -42,6 +42,7 @@ export interface CreateExerciseInput {
    * @maxLength 40
    */
   muscleGroup: string;
+  equipment?: Equipment;
 }
 
 export interface CreateWorkoutInput {
@@ -373,6 +374,7 @@ export interface PlannedExercise {
   intent: PlannedExerciseIntent;
   suggestedWeightKg: number;
   isBodyweight: boolean;
+  equipment: Equipment;
   basedOn: PlannedExerciseBasedOn;
   note: string | null;
 }

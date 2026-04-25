@@ -5,6 +5,7 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { Equipment } from "./equipment";
 
 export interface CreateExerciseInput {
   /**
@@ -17,4 +18,5 @@ export interface CreateExerciseInput {
    * @maxLength 40
    */
   muscleGroup: string;
+  equipment?: Equipment;
 }

@@ -187,6 +187,7 @@ export type PlannedExercise = {
   intent: Intent;
   suggestedWeightKg: number;
   isBodyweight: boolean;
+  equipment: "barbell" | "dumbbell" | "bodyweight" | "machine" | "other";
   basedOn: "personal-record" | "level-benchmark";
   note: string | null;
 };
@@ -315,6 +316,7 @@ export async function buildProgramPlan(
         intent: def.intent,
         suggestedWeightKg: stepped,
         isBodyweight,
+        equipment: row.equipment,
         basedOn,
         note: def.note ?? null,
       } satisfies PlannedExercise;

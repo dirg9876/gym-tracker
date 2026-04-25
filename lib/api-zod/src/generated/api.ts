@@ -41,6 +41,12 @@ export const createExerciseBodyMuscleGroupMax = 40;
 export const CreateExerciseBody = zod.object({
   name: zod.string().min(1).max(createExerciseBodyNameMax),
   muscleGroup: zod.string().min(1).max(createExerciseBodyMuscleGroupMax),
+  equipment: zod
+    .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+    .optional()
+    .describe(
+      'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+    ),
 });
 
 /**
@@ -705,6 +711,11 @@ export const GetProgramPlanResponse = zod.object({
       intent: zod.enum(["strength", "hypertrophy", "accessory"]),
       suggestedWeightKg: zod.number(),
       isBodyweight: zod.boolean(),
+      equipment: zod
+        .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
+        .describe(
+          'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+        ),
       basedOn: zod.enum(["personal-record", "level-benchmark"]),
       note: zod.string().nullable(),
     }),

@@ -5,6 +5,7 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { Equipment } from "./equipment";
 import type { PlannedExerciseBasedOn } from "./plannedExerciseBasedOn";
 import type { PlannedExerciseIntent } from "./plannedExerciseIntent";
 
@@ -18,6 +19,7 @@ export interface PlannedExercise {
   intent: PlannedExerciseIntent;
   suggestedWeightKg: number;
   isBodyweight: boolean;
+  equipment: Equipment;
   basedOn: PlannedExerciseBasedOn;
   note: string | null;
 }
