@@ -478,7 +478,11 @@ export const GetLevelsResponse = zod.object({
       name: zod.string(),
       description: zod.string(),
       tier: zod.number(),
-      benchmarkKg: zod.number(),
+      benchmarkKg: zod
+        .number()
+        .describe(
+          "Legacy 1.0× reference weight for this level, computed as `bodyWeight × levelFactor(level)`. New per-exercise targets should use `MainExerciseStat.requiredKgForNextLevel` instead; this field is retained for backwards compatibility with the program builder.",
+        ),
       tonnage30dKgRequired: zod.number(),
       mainExercisesRequired: zod.number(),
     }),
