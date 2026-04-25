@@ -673,19 +673,19 @@ components:
           type: string
           format: date-time
           nullable: true
-        previousVolume:
+        previousSessionVolume:
           type: number
           nullable: true
-        previousTopSetWeight:
+        previousSessionTopWeight:
           type: number
           nullable: true
-        previousTotalReps:
+        previousSessionTotalReps:
           type: integer
           nullable: true
         deltaVolume:
           type: number
           nullable: true
-        deltaTopSetWeight:
+        deltaTopWeight:
           type: number
           nullable: true
         deltaReps:
@@ -705,11 +705,11 @@ components:
         - previousSessionWorkoutId
         - previousSessionWorkoutName
         - previousSessionDate
-        - previousVolume
-        - previousTopSetWeight
-        - previousTotalReps
+        - previousSessionVolume
+        - previousSessionTopWeight
+        - previousSessionTotalReps
         - deltaVolume
-        - deltaTopSetWeight
+        - deltaTopWeight
         - deltaReps
         - isPersonalRecord
 

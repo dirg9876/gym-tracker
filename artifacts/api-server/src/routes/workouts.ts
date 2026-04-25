@@ -428,8 +428,13 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
 
   // Use the shared helper for the rich breakdown so the finish report and the
   // standalone GET /workouts/:id/exercise-breakdown endpoint return identical
-  // shapes for any consumer.
-  const exerciseBreakdown = await computeExerciseBreakdown(workoutId);
+  // shapes for any consumer. Pass the PR exercise-id set so the breakdown's
+  // `isPersonalRecord` flag stays in lock-step with `newExerciseRecords`.
+  const prExerciseIds = new Set(newExerciseRecords.map((r) => r.exerciseId));
+  const exerciseBreakdown = await computeExerciseBreakdown(
+    workoutId,
+    prExerciseIds,
+  );
 
   const durationMinutes = round(
     (finishedAt.getTime() - w.startedAt.getTime()) / 60000,

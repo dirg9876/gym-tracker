@@ -71,7 +71,7 @@ export function ExerciseProgressCard({ item }: Props) {
           value={`${formatKg(item.topSetWeight)} × ${item.topSetReps}`}
           delta={
             <DeltaTag
-              value={item.deltaTopSetWeight}
+              value={item.deltaTopWeight}
               format={(v) => formatKg(Math.abs(v))}
             />
           }

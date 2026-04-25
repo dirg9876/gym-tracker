@@ -134,11 +134,11 @@ export type ExerciseBreakdownItem = {
   previousSessionWorkoutId: number | null;
   previousSessionWorkoutName: string | null;
   previousSessionDate: string | null;
-  previousVolume: number | null;
-  previousTopSetWeight: number | null;
-  previousTotalReps: number | null;
+  previousSessionVolume: number | null;
+  previousSessionTopWeight: number | null;
+  previousSessionTotalReps: number | null;
   deltaVolume: number | null;
-  deltaTopSetWeight: number | null;
+  deltaTopWeight: number | null;
   deltaReps: number | null;
   isPersonalRecord: boolean;
 };
@@ -146,15 +146,22 @@ export type ExerciseBreakdownItem = {
 /**
  * Compute per-exercise breakdown for a workout: today's totals + the most
  * recent prior finished session that included each exercise + deltas + a PR
- * flag (true if any of: top set weight, top set reps, total volume for the
- * exercise improved vs the all-time best across prior finished workouts).
+ * flag.
  *
- * Only sets in finished workouts that occurred BEFORE this workout's startedAt
- * (and are not this workout) count as history. PRs are computed against the
- * all-time best of those prior finished workouts.
+ * `isPersonalRecord` uses the SAME criteria as the finish endpoint's
+ * `newExerciseRecords` (max single-set weight, max single-set reps, or max
+ * single-set volume strictly exceeds the all-time best across prior finished
+ * workouts). When this helper is called from the finish endpoint, the caller
+ * may pass `prExerciseIds` to short-circuit and stay perfectly in sync with
+ * `newExerciseRecords`. When omitted, the helper recomputes the same
+ * condition itself so standalone callers see consistent results.
+ *
+ * Only sets in finished workouts that occurred BEFORE this workout's
+ * startedAt (and are not this workout) count as history.
  */
 export async function computeExerciseBreakdown(
   workoutId: number,
+  prExerciseIds?: Set<number>,
 ): Promise<ExerciseBreakdownItem[]> {
   const [w] = await db
     .select()
@@ -270,9 +277,9 @@ export async function computeExerciseBreakdown(
       }
     }
 
-    let prevVolume: number | null = null;
-    let prevTopSetWeight: number | null = null;
-    let prevTotalReps: number | null = null;
+    let prevSessionVolume: number | null = null;
+    let prevSessionTopWeight: number | null = null;
+    let prevSessionTotalReps: number | null = null;
     if (prevWorkoutId !== null) {
       const prevSets = prior.filter((p) => p.workoutId === prevWorkoutId);
       let v = 0;
@@ -283,38 +290,43 @@ export async function computeExerciseBreakdown(
         r += ps.reps;
         if (ps.weightKg > topW) topW = ps.weightKg;
       }
-      prevVolume = round(v);
-      prevTotalReps = r;
-      prevTopSetWeight = topW;
+      prevSessionVolume = round(v);
+      prevSessionTotalReps = r;
+      prevSessionTopWeight = topW;
     }
 
-    // PR detection: any of (top set weight, top set reps, exercise total volume)
-    // strictly exceeds the all-time best across all prior finished workouts
-    let bestEverWeight = 0;
-    let bestEverReps = 0;
-    const prevVolumesByWorkout = new Map<number, number>();
-    for (const ps of prior) {
-      if (ps.weightKg > bestEverWeight) bestEverWeight = ps.weightKg;
-      if (ps.reps > bestEverReps) bestEverReps = ps.reps;
-      prevVolumesByWorkout.set(
-        ps.workoutId,
-        (prevVolumesByWorkout.get(ps.workoutId) ?? 0) + ps.volume,
+    // PR detection — must match the finish endpoint's `newExerciseRecords`
+    // criteria (per-set max weight, per-set max reps, per-set max volume).
+    // If the caller already computed that set, trust it; otherwise recompute
+    // the same condition here.
+    let isPR: boolean;
+    if (prExerciseIds) {
+      isPR = prExerciseIds.has(cur.exerciseId);
+    } else {
+      let bestEverWeight = 0;
+      let bestEverReps = 0;
+      let bestEverVolumeSet = 0;
+      for (const ps of prior) {
+        if (ps.weightKg > bestEverWeight) bestEverWeight = ps.weightKg;
+        if (ps.reps > bestEverReps) bestEverReps = ps.reps;
+        if (ps.volume > bestEverVolumeSet) bestEverVolumeSet = ps.volume;
+      }
+      const curSetsForEx = currentSets.filter(
+        (s) => s.exerciseId === cur.exerciseId,
       );
+      const maxCurReps = curSetsForEx.reduce(
+        (m, s) => Math.max(m, s.reps),
+        0,
+      );
+      const maxCurSetVolume = curSetsForEx.reduce(
+        (m, s) => Math.max(m, s.volume),
+        0,
+      );
+      isPR =
+        cur.topSetWeight > bestEverWeight ||
+        maxCurReps > bestEverReps ||
+        maxCurSetVolume > bestEverVolumeSet;
     }
-    let bestEverVolume = 0;
-    for (const v of prevVolumesByWorkout.values()) {
-      if (v > bestEverVolume) bestEverVolume = v;
-    }
-    const isPR =
-      cur.topSetWeight > bestEverWeight ||
-      (function () {
-        // for top reps PR, look at any current set
-        const maxRepsThisExercise = currentSets
-          .filter((s) => s.exerciseId === cur.exerciseId)
-          .reduce((m, s) => Math.max(m, s.reps), 0);
-        return maxRepsThisExercise > bestEverReps;
-      })() ||
-      cur.volume > bestEverVolume;
 
     result.push({
       exerciseId: cur.exerciseId,
@@ -330,16 +342,19 @@ export async function computeExerciseBreakdown(
       previousSessionDate: prevWorkoutStartedAt
         ? prevWorkoutStartedAt.toISOString()
         : null,
-      previousVolume: prevVolume,
-      previousTopSetWeight: prevTopSetWeight,
-      previousTotalReps: prevTotalReps,
+      previousSessionVolume: prevSessionVolume,
+      previousSessionTopWeight: prevSessionTopWeight,
+      previousSessionTotalReps: prevSessionTotalReps,
       deltaVolume:
-        prevVolume !== null ? round(round(cur.volume) - prevVolume) : null,
-      deltaTopSetWeight:
-        prevTopSetWeight !== null
-          ? round(cur.topSetWeight - prevTopSetWeight)
+        prevSessionVolume !== null
+          ? round(round(cur.volume) - prevSessionVolume)
           : null,
-      deltaReps: prevTotalReps !== null ? cur.reps - prevTotalReps : null,
+      deltaTopWeight:
+        prevSessionTopWeight !== null
+          ? round(cur.topSetWeight - prevSessionTopWeight)
+          : null,
+      deltaReps:
+        prevSessionTotalReps !== null ? cur.reps - prevSessionTotalReps : null,
       isPersonalRecord: isPR,
     });
   }

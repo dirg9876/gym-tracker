@@ -131,11 +131,11 @@ export interface WorkoutExerciseBreakdownItem {
   previousSessionWorkoutId: number | null;
   previousSessionWorkoutName: string | null;
   previousSessionDate: string | null;
-  previousVolume: number | null;
-  previousTopSetWeight: number | null;
-  previousTotalReps: number | null;
+  previousSessionVolume: number | null;
+  previousSessionTopWeight: number | null;
+  previousSessionTotalReps: number | null;
   deltaVolume: number | null;
-  deltaTopSetWeight: number | null;
+  deltaTopWeight: number | null;
   deltaReps: number | null;
   isPersonalRecord: boolean;
 }

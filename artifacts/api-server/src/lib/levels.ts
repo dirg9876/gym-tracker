@@ -124,10 +124,11 @@ const MAIN_EXERCISES_SEED_KEY = "main_exercises_seeded_v1";
 
 /**
  * One-time seed: marks the historical default 11 names as main so existing
- * users keep the same level behavior. Guarded by a sentinel row in
- * `app_meta` so this runs at most once per database — even if the user
- * later unstars every main exercise, a server restart will NOT re-apply
- * the canonical list.
+ * users keep the same level behavior. The seed runs only when BOTH:
+ *   - no exercise is currently marked is_main = true, AND
+ *   - the sentinel row in `app_meta` is absent.
+ * The sentinel guarantees that even if the user later unstars every main
+ * exercise, a server restart will NOT re-apply the canonical list.
  */
 export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
   const sentinel = await db
@@ -137,12 +138,23 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
     .limit(1);
   if (sentinel.length > 0) return { seeded: 0 };
 
-  const updated = await db
-    .update(exercisesTable)
-    .set({ isMain: true })
-    .where(inArray(exercisesTable.name, DEFAULT_MAIN_EXERCISE_NAMES))
-    .returning({ id: exercisesTable.id });
+  const [{ cnt }] = await db
+    .select({ cnt: sql<number>`count(*)::int` })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.isMain, true));
 
+  let seededCount = 0;
+  if (cnt === 0) {
+    const updated = await db
+      .update(exercisesTable)
+      .set({ isMain: true })
+      .where(inArray(exercisesTable.name, DEFAULT_MAIN_EXERCISE_NAMES))
+      .returning({ id: exercisesTable.id });
+    seededCount = updated.length;
+  }
+
+  // Always write the sentinel after the first run, even if `cnt > 0` (i.e.
+  // the user already had mains). This keeps the run a true one-shot.
   await db
     .insert(appMetaTable)
     .values({
@@ -151,7 +163,7 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
     })
     .onConflictDoNothing({ target: appMetaTable.key });
 
-  return { seeded: updated.length };
+  return { seeded: seededCount };
 }
 
 function round(n: number, digits = 2): number {
