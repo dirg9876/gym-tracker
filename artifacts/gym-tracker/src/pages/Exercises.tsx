@@ -248,7 +248,14 @@ export function Exercises() {
                           />
                         </Button>
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className="font-medium text-lg leading-tight">{ex.name}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-lg leading-tight">{ex.name}</span>
+                            {ex.isMain && ex.mcKg != null && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                МС: {Math.round(ex.mcKg)} кг
+                              </span>
+                            )}
+                          </div>
                           {ex.isCustom ? (
                             <select
                               value={ex.equipment}

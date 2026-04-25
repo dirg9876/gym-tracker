@@ -14,4 +14,7 @@ export interface Exercise {
   isCustom: boolean;
   isMain: boolean;
   equipment: Equipment;
+  /** МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.
+   */
+  mcKg?: number | null;
 }

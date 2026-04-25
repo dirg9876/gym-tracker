@@ -28,6 +28,12 @@ export const ListExercisesResponseItem = zod.object({
     .describe(
       'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
     ),
+  mcKg: zod
+    .number()
+    .nullish()
+    .describe(
+      "МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.\n",
+    ),
 });
 export const ListExercisesResponse = zod.array(ListExercisesResponseItem);
 
@@ -80,6 +86,12 @@ export const UpdateExerciseResponse = zod.object({
     .enum(["barbell", "dumbbell", "bodyweight", "machine", "other"])
     .describe(
       'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
+    ),
+  mcKg: zod
+    .number()
+    .nullish()
+    .describe(
+      "МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.\n",
     ),
 });
 
@@ -492,6 +504,12 @@ export const GetExerciseProgressResponse = zod.object({
       .describe(
         'Equipment kind for an exercise. Drives UI affordances (e.g. the \"доп. вес\" input for bodyweight), the auto-pass rule for barbell exercises whose required weight is below the empty-bar floor, and the equipment badge on the exercises page.',
       ),
+    mcKg: zod
+      .number()
+      .nullish()
+      .describe(
+        "МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.\n",
+      ),
   }),
   points: zod.array(
     zod.object({
@@ -645,7 +663,9 @@ export const GetLevelsResponse = zod.object({
         .number()
         .describe("Minimum level to display this rank on the ladder."),
     })
-    .describe("Sport rank corresponding to the user's currentLevel."),
+    .describe(
+      "Sport rank derived from the user's actual performance on the classic big-3 lifts (squat, bench, deadlift) expressed as a fraction of their MS norm for their weight class and sex. Falls back to the level-based rank when no classic lift data is available.",
+    ),
   weightClassKg: zod
     .number()
     .describe(

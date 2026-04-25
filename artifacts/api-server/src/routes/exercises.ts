@@ -14,15 +14,35 @@ import {
   UpdateExerciseParams,
   UpdateExerciseBody,
 } from "@workspace/api-zod";
+import {
+  getProfile,
+  FALLBACK_BODY_WEIGHT_KG,
+  FALLBACK_SEX,
+} from "../lib/profile";
+import { getMcKgForExercise } from "../lib/sport-norms";
 
 const router: IRouter = Router();
 
 router.get("/exercises", async (_req, res): Promise<void> => {
-  const rows = await db
-    .select()
-    .from(exercisesTable)
-    .orderBy(exercisesTable.muscleGroup, exercisesTable.name);
-  res.json(ListExercisesResponse.parse(rows));
+  const [rows, profile] = await Promise.all([
+    db
+      .select()
+      .from(exercisesTable)
+      .orderBy(exercisesTable.muscleGroup, exercisesTable.name),
+    getProfile(),
+  ]);
+
+  const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
+  const sex = profile.sex ?? FALLBACK_SEX;
+
+  const enriched = rows.map((ex) => {
+    if (!ex.isMain) return ex;
+    const fallbackMul = Number(ex.bodyweightMultiplier ?? 1);
+    const result = getMcKgForExercise(ex.name, bodyWeightKg, sex, fallbackMul);
+    return { ...ex, mcKg: result.kg };
+  });
+
+  res.json(ListExercisesResponse.parse(enriched));
 });
 
 router.post("/exercises", async (req, res): Promise<void> => {

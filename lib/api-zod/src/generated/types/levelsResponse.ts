@@ -29,7 +29,7 @@ export interface LevelsResponse {
   barWeightKg: number;
   /** Level at which the level factor equals 1.0. Exposed so the client can compute `requiredKg = bodyWeight × (level / levelFactorAnchor) × multiplier` for any level (rounded to the same 2.5 kg step the server uses). Now equals 80 (= МС level). */
   levelFactorAnchor: number;
-  /** Sport rank corresponding to the user's currentLevel. */
+  /** Sport rank derived from the user's actual performance on the classic big-3 lifts (squat, bench, deadlift) expressed as a fraction of their MS norm for their weight class and sex. Falls back to the level-based rank when no classic lift data is available. */
   currentRank: SportRank;
   /** Official competition weight class (kg) for the user's bodyweight and sex. Used to display "ваш класс X кг" on the rank card. */
   weightClassKg: number;
