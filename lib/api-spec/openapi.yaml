@@ -404,7 +404,9 @@ components:
           type: string
         isCustom:
           type: boolean
-      required: [id, name, muscleGroup, isCustom]
+        isMain:
+          type: boolean
+      required: [id, name, muscleGroup, isCustom, isMain]
 
     CreateExerciseInput:
       type: object

@@ -5,6 +5,7 @@ export const exercisesTable = pgTable("exercises", {
   name: text("name").notNull(),
   muscleGroup: text("muscle_group").notNull(),
   isCustom: boolean("is_custom").notNull().default(false),
+  isMain: boolean("is_main").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
