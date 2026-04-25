@@ -229,13 +229,13 @@ export interface SportRank {
 /** Ordered from lowest to highest. */
 const RANK_LADDER: SportRank[] = [
   { code: "NONE",        label: "Без разряда",    shortLabel: "Б/Р",    tier: 0, minLevel: 0  },
-  { code: "YOUTH_III",   label: "III юн. разряд", shortLabel: "Юн III", tier: 1, minLevel: 10 },
-  { code: "YOUTH_II",    label: "II юн. разряд",  shortLabel: "Юн II",  tier: 2, minLevel: 20 },
-  { code: "YOUTH_I",     label: "I юн. разряд",   shortLabel: "Юн I",   tier: 3, minLevel: 30 },
-  { code: "III_RAZRYAD", label: "III разряд",      shortLabel: "III р.", tier: 4, minLevel: 40 },
-  { code: "II_RAZRYAD",  label: "II разряд",       shortLabel: "II р.",  tier: 5, minLevel: 50 },
-  { code: "I_RAZRYAD",   label: "I разряд",        shortLabel: "I р.",   tier: 6, minLevel: 60 },
-  { code: "KMS",         label: "КМС",             shortLabel: "КМС",    tier: 7, minLevel: 70 },
+  { code: "YOUTH_III",   label: "III юн. разряд", shortLabel: "Юн III", tier: 1, minLevel: 8  },
+  { code: "YOUTH_II",    label: "II юн. разряд",  shortLabel: "Юн II",  tier: 2, minLevel: 18 },
+  { code: "YOUTH_I",     label: "I юн. разряд",   shortLabel: "Юн I",   tier: 3, minLevel: 28 },
+  { code: "III_RAZRYAD", label: "III разряд",      shortLabel: "III р.", tier: 4, minLevel: 38 },
+  { code: "II_RAZRYAD",  label: "II разряд",       shortLabel: "II р.",  tier: 5, minLevel: 48 },
+  { code: "I_RAZRYAD",   label: "I разряд",        shortLabel: "I р.",   tier: 6, minLevel: 58 },
+  { code: "KMS",         label: "КМС",             shortLabel: "КМС",    tier: 7, minLevel: 67 },
   { code: "MS",          label: "МС",              shortLabel: "МС",     tier: 8, minLevel: 76 },
 ];
 
@@ -246,6 +246,34 @@ export function rankForLevel(level: number): SportRank {
     if (level >= r.minLevel) rank = r;
   }
   return rank;
+}
+
+/**
+ * Returns the sport rank corresponding to a performance ratio relative to the
+ * MC standard (0.0 = nothing, 1.0 = full MS). Used to compute `currentRank`
+ * from the user's actual max weights on the big-3 exercises.
+ *
+ * Threshold percentages mirror the level-band boundaries:
+ *   0–10%  → Без разряда  (lvl 0–7)
+ *   10–22% → Юн III       (lvl 8–17)
+ *   22–34% → Юн II        (lvl 18–27)
+ *   35–47% → Юн I         (lvl 28–37)
+ *   47–59% → III разряд   (lvl 38–47)
+ *   60–72% → II разряд    (lvl 48–57)
+ *   72–83% → I разряд     (lvl 58–66)
+ *   84–94% → КМС          (lvl 67–75)
+ *   95%+   → МС           (lvl 76–80)
+ */
+export function rankForMcPercent(pct: number): SportRank {
+  if (pct >= 0.95) return RANK_LADDER[8]!; // МС
+  if (pct >= 0.84) return RANK_LADDER[7]!; // КМС
+  if (pct >= 0.72) return RANK_LADDER[6]!; // I разряд
+  if (pct >= 0.60) return RANK_LADDER[5]!; // II разряд
+  if (pct >= 0.47) return RANK_LADDER[4]!; // III разряд
+  if (pct >= 0.35) return RANK_LADDER[3]!; // Юн I
+  if (pct >= 0.22) return RANK_LADDER[2]!; // Юн II
+  if (pct >= 0.10) return RANK_LADDER[1]!; // Юн III
+  return RANK_LADDER[0]!;                  // Без разряда
 }
 
 export { RANK_LADDER };

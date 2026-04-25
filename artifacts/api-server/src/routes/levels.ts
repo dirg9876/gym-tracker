@@ -20,6 +20,7 @@ router.get("/levels", async (_req, res): Promise<void> => {
     currentRank: info.currentRank,
     weightClassKg: info.weightClassKg,
     sex: info.sex,
+    confirmedLevelMigrationNeeded: info.confirmedLevelMigrationNeeded,
     stats: info.stats,
   });
 });

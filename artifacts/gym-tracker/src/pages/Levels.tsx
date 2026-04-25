@@ -63,6 +63,7 @@ export function Levels() {
     levelFactorAnchor,
     currentRank,
     weightClassKg,
+    confirmedLevelMigrationNeeded,
   } = data;
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
@@ -155,6 +156,14 @@ export function Levels() {
                   </span>
                 </div>
               )}
+              {confirmedLevelMigrationNeeded && !droppedFromBest && (
+                <div className="flex items-center gap-1.5 text-[11px] text-blue-400/90 bg-blue-500/10 border border-blue-500/30 rounded-full px-2.5 py-1">
+                  <Info className="h-3 w-3" />
+                  <span>
+                    Нормативы обновлены — перепроверь свои максимумы в упражнениях.
+                  </span>
+                </div>
+              )}
             </motion.div>
           </div>
 
@@ -187,6 +196,28 @@ export function Levels() {
                     До уровня {next.level} — «{next.name}»
                   </div>
                 </div>
+
+                {/* Rank transition hint: "Сейчас твой разряд → Следующий разряд" */}
+                {(() => {
+                  const nextRankCode = next.rank.code;
+                  if (nextRankCode !== currentRank.code) {
+                    return (
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80 bg-muted/30 rounded-md px-2.5 py-2">
+                        <span>Твой разряд:</span>
+                        <RankBadge rank={currentRank} variant="compact" />
+                        <span className="text-muted-foreground/50">→</span>
+                        <RankBadge rank={next.rank} variant="compact" />
+                        <span className="text-muted-foreground/60">на этом уровне</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80 bg-muted/30 rounded-md px-2.5 py-2">
+                      <span>Твой разряд:</span>
+                      <RankBadge rank={currentRank} variant="compact" />
+                    </div>
+                  );
+                })()}
 
                 {showNextLevelPenalty && (
                   <div className="flex items-start gap-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md px-2.5 py-2">

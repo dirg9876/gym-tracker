@@ -369,6 +369,8 @@ export interface LevelsResponse {
   weightClassKg: number;
   /** Athlete sex used to select the MS standards table. */
   sex: LevelsResponseSex;
+  /** True when the user's confirmed level (saved in DB) is higher than the freshly computed current level. Indicates the norms were recalibrated or the user's data no longer qualifies; the UI should show a hint to re-verify personal records. */
+  confirmedLevelMigrationNeeded: boolean;
   stats: LevelStats;
 }
 

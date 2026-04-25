@@ -11,6 +11,7 @@ import {
   getMcKgForExercise,
   getWeightClassKg,
   rankForLevel,
+  rankForMcPercent,
   type McSource,
   type SportRank,
 } from "./sport-norms";
@@ -490,12 +491,22 @@ export type CurrentLevelInfo = {
   // the formula in three places.
   barWeightKg: number;
   levelFactorAnchor: number;
-  /** Sport rank corresponding to currentLevel (e.g. КМС, МС). */
+  /**
+   * Sport rank based on the user's actual max-weight-to-MC ratio averaged
+   * across main exercises with recorded data. Falls back to rankForLevel
+   * when no exercises have logged sets.
+   */
   currentRank: SportRank;
   /** Official competition weight class for the user's bodyweight. */
   weightClassKg: number;
   /** Athlete sex used to select the MS standards table. */
   sex: "male" | "female";
+  /**
+   * True when confirmed_level > computed currentLevel. Indicates the norms
+   * were recalibrated and the user's effective targets increased; UI should
+   * show a "check your maxes" hint.
+   */
+  confirmedLevelMigrationNeeded: boolean;
   levels: LevelDef[];
   stats: LevelStats;
 };
@@ -707,6 +718,32 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     };
   });
 
+  // Compute currentRank from actual performance ratio (max / mcKg) rather than
+  // from the computed level. This reflects how close the user is to the MC
+  // standard independent of tonnage/level dynamics. If no exercises have data,
+  // fall back to the level-based rank.
+  const exercisesWithRatio = mainRows.filter((r) => {
+    const mc = mcResultByExercise.get(r.id)!;
+    return mc.kg != null && (maxByExercise.get(r.id) ?? 0) > 0;
+  });
+  let currentRank: SportRank;
+  if (exercisesWithRatio.length > 0) {
+    const totalRatio = exercisesWithRatio.reduce((sum, r) => {
+      const mc = mcResultByExercise.get(r.id)!;
+      const maxW = maxByExercise.get(r.id) ?? 0;
+      return sum + maxW / mc.kg!;
+    }, 0);
+    const avgRatio = totalRatio / exercisesWithRatio.length;
+    currentRank = rankForMcPercent(round(avgRatio, 4));
+  } else {
+    currentRank = rankForLevel(currentLevel);
+  }
+
+  // Flag for the UI: if the user's current computed level dropped below their
+  // confirmed level (e.g. after a norm recalibration), show a "check your maxes"
+  // hint. Normal tonnage slumps show a separate bestLevelEver hint instead.
+  const confirmedLevelMigrationNeeded = confirmedLevel > currentLevel;
+
   return {
     currentLevel,
     bestLevelEver,
@@ -718,9 +755,10 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     bodyWeightIsFallback,
     barWeightKg: BAR_WEIGHT_KG,
     levelFactorAnchor: LEVEL_FACTOR_ANCHOR,
-    currentRank: rankForLevel(currentLevel),
+    currentRank,
     weightClassKg: getWeightClassKg(bodyWeightKg, sex),
     sex,
+    confirmedLevelMigrationNeeded,
     levels,
     stats: {
       currentTonnage7dKg: round(currentTonnage7dKg),

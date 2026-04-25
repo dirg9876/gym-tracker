@@ -1,6 +1,6 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
 import { and, asc, eq, isNotNull, inArray } from "drizzle-orm";
-import { computeCurrentLevel, LEVELS, MAX_LEVEL } from "./levels";
+import { computeCurrentLevel, LEVELS, MAX_LEVEL, referenceKg } from "./levels";
 
 export type Intent = "strength" | "hypertrophy" | "accessory";
 
@@ -229,8 +229,9 @@ export async function buildProgramPlan(
 
   const levelInfo = await computeCurrentLevel();
   const planningLevel = Math.max(1, Math.min(MAX_LEVEL, levelInfo.currentLevel));
-  const lvl = LEVELS[planningLevel];
-  const benchmark = lvl.benchmarkKg;
+  // Use the user's actual body weight for the benchmark reference so that the
+  // level-based fallback weight scales to the real MC anchor, not FALLBACK_BODY_WEIGHT_KG.
+  const benchmark = referenceKg(planningLevel, levelInfo.bodyWeightKg);
 
   const allExerciseRows = await db
     .select({

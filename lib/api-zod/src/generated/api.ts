@@ -654,6 +654,11 @@ export const GetLevelsResponse = zod.object({
   sex: zod
     .enum(["male", "female"])
     .describe("Athlete sex used to select the MS standards table."),
+  confirmedLevelMigrationNeeded: zod
+    .boolean()
+    .describe(
+      "True when the user's confirmed level (saved in DB) is higher than the freshly computed current level. Indicates the norms were recalibrated or the user's data no longer qualifies; the UI should show a hint to re-verify personal records.",
+    ),
   stats: zod.object({
     currentTonnage7dKg: zod
       .number()
