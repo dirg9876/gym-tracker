@@ -7,7 +7,7 @@
  */
 
 /**
- * How the MS-equivalent kg target (mcKg) was derived. `classic` — direct from the official ФПР big-3 table; `coefficient` — ratio of a classic lift's MS value; `bodyweight` — ratio of the athlete's bodyweight; `time` — time-based exercise, no kg requirement; `fallback` — unknown exercise, uses stored bodyweight_multiplier.
+ * How the MS-equivalent kg target (mcKg) was derived. `classic` — direct from the official ФПР big-3 table; `coefficient` — ratio of a classic lift's MS value; `bodyweight` — ratio of the athlete's bodyweight; `time` — time-based exercise, no kg requirement; `fallback` — unknown exercise, uses stored bodyweight_multiplier; `muscle_group_anchor` — unknown exercise approximated via muscle-group anchor coefficient.
  */
 export type McSource = (typeof McSource)[keyof typeof McSource];
 
@@ -17,4 +17,5 @@ export const McSource = {
   bodyweight: "bodyweight",
   time: "time",
   fallback: "fallback",
+  muscle_group_anchor: "muscle_group_anchor",
 } as const;

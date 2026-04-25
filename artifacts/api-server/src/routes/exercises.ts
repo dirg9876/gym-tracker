@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, max } from "drizzle-orm";
 import {
   db,
   exercisesTable,
@@ -19,7 +19,12 @@ import {
   FALLBACK_BODY_WEIGHT_KG,
   FALLBACK_SEX,
 } from "../lib/profile";
-import { getMcKgForExercise } from "../lib/sport-norms";
+import {
+  getMcKgForExercise,
+  getRankNormsForExercise,
+  rankForMcPercent,
+  type SportRank,
+} from "../lib/sport-norms";
 
 const router: IRouter = Router();
 
@@ -35,11 +40,34 @@ router.get("/exercises", async (_req, res): Promise<void> => {
   const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
   const sex = profile.sex ?? FALLBACK_SEX;
 
+  // Bulk-load max weight per exercise (only from finished workouts)
+  const maxWeightRows = await db
+    .select({
+      exerciseId: workoutSetsTable.exerciseId,
+      maxKg: max(workoutSetsTable.weightKg),
+    })
+    .from(workoutSetsTable)
+    .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
+    .where(isNotNull(workoutsTable.finishedAt))
+    .groupBy(workoutSetsTable.exerciseId);
+
+  const maxByExercise = new Map<number, number>();
+  for (const r of maxWeightRows) {
+    if (r.maxKg != null) maxByExercise.set(r.exerciseId, Number(r.maxKg));
+  }
+
   const enriched = rows.map((ex) => {
-    if (!ex.isMain) return ex;
     const fallbackMul = Number(ex.bodyweightMultiplier ?? 1);
-    const result = getMcKgForExercise(ex.name, bodyWeightKg, sex, fallbackMul);
-    return { ...ex, mcKg: result.kg };
+    const result = getMcKgForExercise(ex.name, bodyWeightKg, sex, fallbackMul, ex.muscleGroup);
+    const mcKg = ex.isMain ? result.kg : null;
+
+    const userMaxKg = maxByExercise.get(ex.id) ?? null;
+    let userRank: SportRank | null = null;
+    if (result.kg != null && userMaxKg != null && userMaxKg > 0) {
+      userRank = rankForMcPercent(userMaxKg / result.kg);
+    }
+
+    return { ...ex, mcKg, userMaxKg, userRank };
   });
 
   res.json(ListExercisesResponse.parse(enriched));
@@ -111,6 +139,97 @@ router.delete("/exercises/:exerciseId", async (req, res): Promise<void> => {
   }
   res.sendStatus(204);
 });
+
+router.get(
+  "/exercises/:exerciseId/norms",
+  async (req, res): Promise<void> => {
+    const exerciseId = parseInt(req.params.exerciseId ?? "", 10);
+    if (!Number.isFinite(exerciseId) || exerciseId <= 0) {
+      res.status(400).json({ error: "Invalid exerciseId" });
+      return;
+    }
+
+    const [exRow] = await db
+      .select()
+      .from(exercisesTable)
+      .where(eq(exercisesTable.id, exerciseId))
+      .limit(1);
+
+    if (!exRow) {
+      res.status(404).json({ error: "Не найдено" });
+      return;
+    }
+
+    const profile = await getProfile();
+    const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
+    const sex = profile.sex ?? FALLBACK_SEX;
+
+    const fallbackMul = Number(exRow.bodyweightMultiplier ?? 1);
+    const mcResult = getMcKgForExercise(
+      exRow.name,
+      bodyWeightKg,
+      sex,
+      fallbackMul,
+      exRow.muscleGroup,
+    );
+
+    // Max weight for this exercise across all finished workouts
+    const maxRows = await db
+      .select({ maxKg: max(workoutSetsTable.weightKg) })
+      .from(workoutSetsTable)
+      .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
+      .where(
+        and(
+          eq(workoutSetsTable.exerciseId, exerciseId),
+          isNotNull(workoutsTable.finishedAt),
+        ),
+      );
+
+    const userMaxWeightKg =
+      maxRows[0]?.maxKg != null ? Number(maxRows[0].maxKg) : null;
+
+    if (mcResult.kg == null) {
+      // Time-based exercise — no rank ladder
+      res.json({
+        mcKg: null,
+        mcSource: mcResult.source,
+        userMaxWeightKg,
+        currentRank: null,
+        nextRank: null,
+        kgToNextRank: null,
+        rankNorms: [],
+      });
+      return;
+    }
+
+    const rankNorms = getRankNormsForExercise(mcResult.kg);
+
+    let currentRank = rankNorms[0]!.rank;
+    if (userMaxWeightKg != null && userMaxWeightKg > 0) {
+      currentRank = rankForMcPercent(userMaxWeightKg / mcResult.kg);
+    }
+
+    const currentIdx = rankNorms.findIndex(
+      (r) => r.rank.code === currentRank.code,
+    );
+    const nextEntry = rankNorms[currentIdx + 1] ?? null;
+    const nextRank = nextEntry?.rank ?? null;
+    const kgToNextRank =
+      nextEntry != null && userMaxWeightKg != null
+        ? Math.max(0, nextEntry.kgTarget - userMaxWeightKg)
+        : null;
+
+    res.json({
+      mcKg: mcResult.kg,
+      mcSource: mcResult.source,
+      userMaxWeightKg,
+      currentRank,
+      nextRank,
+      kgToNextRank,
+      rankNorms,
+    });
+  },
+);
 
 router.get(
   "/exercises/:exerciseId/last-sets",

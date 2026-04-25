@@ -126,35 +126,90 @@ const EXERCISE_NORMS: Record<string, NormConfig> = {
   "Жим штанги лёжа":                { kind: "classic",      lift: "bench" },
   "Становая тяга":                  { kind: "classic",      lift: "deadlift" },
 
-  // Barbell accessories — coefficient of bench MS
-  "Жим штанги на наклонной скамье": { kind: "coefficient",  anchor: "bench", ratio: 0.85 },
-  "Тяга штанги в наклоне":          { kind: "coefficient",  anchor: "bench", ratio: 0.85 },
-  "Жим штанги стоя":                { kind: "coefficient",  anchor: "bench", ratio: 0.65 },
-  "Подъём штанги на бицепс":        { kind: "coefficient",  anchor: "bench", ratio: 0.50 },
+  // Barbell accessories — coefficient of bench/deadlift MS
+  "Жим штанги на наклонной скамье": { kind: "coefficient",  anchor: "bench",    ratio: 0.85 },
+  "Тяга штанги в наклоне":          { kind: "coefficient",  anchor: "bench",    ratio: 0.85 },
+  "Жим штанги стоя":                { kind: "coefficient",  anchor: "bench",    ratio: 0.65 },
+  "Подъём штанги на бицепс":        { kind: "coefficient",  anchor: "bench",    ratio: 0.50 },
   "Румынская тяга":                 { kind: "coefficient",  anchor: "deadlift", ratio: 0.75 },
+  "Французский жим":                { kind: "coefficient",  anchor: "bench",    ratio: 0.55 },
 
-  // Dumbbell — per-dumbbell target, coefficient of bench MS
-  "Жим гантелей лёжа":              { kind: "coefficient",  anchor: "bench", ratio: 0.40 },
-  "Жим гантелей сидя":              { kind: "coefficient",  anchor: "bench", ratio: 0.30 },
-  "Тяга гантели одной рукой":       { kind: "coefficient",  anchor: "bench", ratio: 0.45 },
+  // Dumbbell — per-dumbbell target, coefficient of bench/squat MS
+  "Жим гантелей лёжа":              { kind: "coefficient",  anchor: "bench",    ratio: 0.40 },
+  "Жим гантелей сидя":              { kind: "coefficient",  anchor: "bench",    ratio: 0.30 },
+  "Тяга гантели одной рукой":       { kind: "coefficient",  anchor: "bench",    ratio: 0.45 },
+  "Разводка гантелей":              { kind: "coefficient",  anchor: "bench",    ratio: 0.25 },
+  "Махи гантелями в стороны":       { kind: "coefficient",  anchor: "bench",    ratio: 0.12 },
+  "Махи в наклоне":                 { kind: "coefficient",  anchor: "bench",    ratio: 0.12 },
+  "Сгибания с гантелями":           { kind: "coefficient",  anchor: "bench",    ratio: 0.28 },
+  "Молотки с гантелями":            { kind: "coefficient",  anchor: "bench",    ratio: 0.28 },
+  "Выпады с гантелями":             { kind: "coefficient",  anchor: "squat",    ratio: 0.25 },
 
-  // Machine / cable — coefficient of bench MS
-  "Тяга верхнего блока":            { kind: "coefficient",  anchor: "bench", ratio: 0.75 },
-  "Тяга горизонтального блока":     { kind: "coefficient",  anchor: "bench", ratio: 0.75 },
+  // Machine / cable — coefficient of bench or squat MS
+  "Тяга верхнего блока":            { kind: "coefficient",  anchor: "bench",    ratio: 0.75 },
+  "Тяга горизонтального блока":     { kind: "coefficient",  anchor: "bench",    ratio: 0.75 },
+  "Разгибания на блоке":            { kind: "coefficient",  anchor: "bench",    ratio: 0.40 },
+  "Жим ногами":                     { kind: "coefficient",  anchor: "squat",    ratio: 1.80 },
+  "Сгибания ног лёжа":              { kind: "coefficient",  anchor: "squat",    ratio: 0.35 },
+  "Разгибания ног сидя":            { kind: "coefficient",  anchor: "squat",    ratio: 0.45 },
+  "Подъёмы на носки":               { kind: "coefficient",  anchor: "squat",    ratio: 0.60 },
 
   // Bodyweight — total weight (bodyweight + extra load) ratio at MS
   "Подтягивания":                   { kind: "bodyweight_ratio", ratio: 1.65 },
   "Отжимания узким хватом":         { kind: "bodyweight_ratio", ratio: 1.00 },
+  "Отжимания на брусьях":           { kind: "bodyweight_ratio", ratio: 1.30 },
 
   // Time-based — no kg requirement
   "Планка":                         { kind: "time_based", secondsAtMS: 60 },
+  "Скручивания":                    { kind: "time_based", secondsAtMS: 60 },
+  "Подъём ног в висе":              { kind: "time_based", secondsAtMS: 60 },
+};
+
+// ---------------------------------------------------------------------------
+// Muscle-group anchor fallback
+// ---------------------------------------------------------------------------
+
+/**
+ * For exercises not found in EXERCISE_NORMS, maps the exercise's muscle group
+ * to a classic lift anchor + ratio. Used as an intermediate fallback before
+ * the raw bodyweight multiplier.
+ * null means the group has no useful kg norm (e.g. core/abs).
+ */
+const MUSCLE_GROUP_ANCHORS: Record<
+  string,
+  { anchor: "squat" | "bench" | "deadlift"; ratio: number } | null
+> = {
+  "Грудь":      { anchor: "bench",    ratio: 0.80 },
+  "Спина":      { anchor: "deadlift", ratio: 0.70 },
+  "Ноги":       { anchor: "squat",    ratio: 0.80 },
+  "Плечи":      { anchor: "bench",    ratio: 0.55 },
+  "Бицепс":     { anchor: "bench",    ratio: 0.45 },
+  "Трицепс":    { anchor: "bench",    ratio: 0.50 },
+  "Пресс":      null,
+  "Икры":       { anchor: "squat",    ratio: 0.60 },
+  "Предплечья": { anchor: "bench",    ratio: 0.35 },
+  // English aliases
+  "Chest":      { anchor: "bench",    ratio: 0.80 },
+  "Back":       { anchor: "deadlift", ratio: 0.70 },
+  "Legs":       { anchor: "squat",    ratio: 0.80 },
+  "Shoulders":  { anchor: "bench",    ratio: 0.55 },
+  "Biceps":     { anchor: "bench",    ratio: 0.45 },
+  "Triceps":    { anchor: "bench",    ratio: 0.50 },
+  "Core":       null,
+  "Calves":     { anchor: "squat",    ratio: 0.60 },
 };
 
 // ---------------------------------------------------------------------------
 // Public helper
 // ---------------------------------------------------------------------------
 
-export type McSource = "classic" | "coefficient" | "bodyweight" | "time" | "fallback";
+export type McSource =
+  | "classic"
+  | "coefficient"
+  | "bodyweight"
+  | "time"
+  | "fallback"
+  | "muscle_group_anchor";
 
 export type McResult = {
   /** MS-equivalent kg for this exercise. null for time-based exercises. */
@@ -166,37 +221,81 @@ export type McResult = {
  * Returns the Master-of-Sport (МС) equivalent kg target for an exercise,
  * given the athlete's bodyweight and sex.
  *
- * For known exercises, uses the EXERCISE_NORMS config above.
- * For unknown / user-created exercises, falls back to:
- *   bodyWeightKg × fallbackMultiplier (same formula as before).
+ * Lookup order:
+ *  1. EXERCISE_NORMS exact name match.
+ *  2. MUSCLE_GROUP_ANCHORS (muscle-group coefficient) — only when muscleGroup provided.
+ *  3. bodyWeightKg × fallbackMultiplier.
  */
 export function getMcKgForExercise(
   exerciseName: string,
   bodyWeightKg: number,
   sex: Sex,
   fallbackMultiplier = 1,
+  muscleGroup?: string,
 ): McResult {
   const norm = EXERCISE_NORMS[exerciseName];
-  if (!norm) {
-    return { kg: bodyWeightKg * fallbackMultiplier, source: "fallback" };
+  if (norm) {
+    if (norm.kind === "time_based") {
+      return { kg: null, source: "time" };
+    }
+
+    const ms = interpolateMs(bodyWeightKg, sex);
+
+    if (norm.kind === "classic") {
+      return { kg: ms[norm.lift], source: "classic" };
+    }
+
+    if (norm.kind === "coefficient") {
+      return { kg: ms[norm.anchor] * norm.ratio, source: "coefficient" };
+    }
+
+    // bodyweight_ratio
+    return { kg: bodyWeightKg * norm.ratio, source: "bodyweight" };
   }
 
-  if (norm.kind === "time_based") {
-    return { kg: null, source: "time" };
+  // Try muscle-group anchor before the raw bodyweight fallback
+  if (muscleGroup !== undefined) {
+    if (Object.prototype.hasOwnProperty.call(MUSCLE_GROUP_ANCHORS, muscleGroup)) {
+      const anchor = MUSCLE_GROUP_ANCHORS[muscleGroup];
+      if (anchor === null) {
+        return { kg: null, source: "time" };
+      }
+      const ms = interpolateMs(bodyWeightKg, sex);
+      return { kg: ms[anchor.anchor] * anchor.ratio, source: "muscle_group_anchor" };
+    }
   }
 
-  const ms = interpolateMs(bodyWeightKg, sex);
+  return { kg: bodyWeightKg * fallbackMultiplier, source: "fallback" };
+}
 
-  if (norm.kind === "classic") {
-    return { kg: ms[norm.lift], source: "classic" };
-  }
+// ---------------------------------------------------------------------------
+// Rank norms ladder
+// ---------------------------------------------------------------------------
 
-  if (norm.kind === "coefficient") {
-    return { kg: ms[norm.anchor] * norm.ratio, source: "coefficient" };
-  }
+/**
+ * Returns the full 9-step rank threshold array for an exercise given its mcKg.
+ * Each entry gives the minimum kg lift needed to reach that rank.
+ * Thresholds mirror rankForMcPercent boundaries; kgTarget rounded to 2.5 kg.
+ */
+export function getRankNormsForExercise(
+  mcKg: number,
+): Array<{ rank: SportRank; kgTarget: number }> {
+  const THRESHOLDS: Array<{ pct: number; rankIdx: number }> = [
+    { pct: 0.00, rankIdx: 0 }, // Без разряда
+    { pct: 0.10, rankIdx: 1 }, // Юн III
+    { pct: 0.22, rankIdx: 2 }, // Юн II
+    { pct: 0.35, rankIdx: 3 }, // Юн I
+    { pct: 0.47, rankIdx: 4 }, // III разряд
+    { pct: 0.60, rankIdx: 5 }, // II разряд
+    { pct: 0.72, rankIdx: 6 }, // I разряд
+    { pct: 0.84, rankIdx: 7 }, // КМС
+    { pct: 0.95, rankIdx: 8 }, // МС
+  ];
 
-  // bodyweight_ratio
-  return { kg: bodyWeightKg * norm.ratio, source: "bodyweight" };
+  return THRESHOLDS.map(({ pct, rankIdx }) => ({
+    rank: RANK_LADDER[rankIdx]!,
+    kgTarget: Math.round((mcKg * pct) / 2.5) * 2.5,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -250,19 +349,7 @@ export function rankForLevel(level: number): SportRank {
 
 /**
  * Returns the sport rank corresponding to a performance ratio relative to the
- * MC standard (0.0 = nothing, 1.0 = full MS). Used to compute `currentRank`
- * from the user's actual max weights on the big-3 exercises.
- *
- * Threshold percentages mirror the level-band boundaries:
- *   0–10%  → Без разряда  (lvl 0–7)
- *   10–22% → Юн III       (lvl 8–17)
- *   22–34% → Юн II        (lvl 18–27)
- *   35–47% → Юн I         (lvl 28–37)
- *   47–59% → III разряд   (lvl 38–47)
- *   60–72% → II разряд    (lvl 48–57)
- *   72–83% → I разряд     (lvl 58–66)
- *   84–94% → КМС          (lvl 67–75)
- *   95%+   → МС           (lvl 76–80)
+ * MC standard (0.0 = nothing, 1.0 = full MS).
  */
 export function rankForMcPercent(pct: number): SportRank {
   if (pct >= 0.95) return RANK_LADDER[8]!; // МС

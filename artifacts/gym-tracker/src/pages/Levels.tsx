@@ -22,6 +22,44 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Client-side rank threshold table (mirrors sport-norms.ts).
+// pct = maxWeightKg / mcKg required to reach this rank.
+const RANK_THRESHOLDS_DESC: Array<{
+  pct: number;
+  code: string;
+  shortLabel: string;
+  label: string;
+  tier: number;
+  cls: string;
+}> = [
+  { pct: 0.95, code: "MS",    shortLabel: "МС",     label: "Мастер спорта",          tier: 8, cls: "bg-yellow-800/70 text-yellow-200 border-yellow-400/70" },
+  { pct: 0.84, code: "KMS",   shortLabel: "КМС",    label: "Кандидат в мастера",      tier: 7, cls: "bg-yellow-900/60 text-yellow-300 border-yellow-500/60" },
+  { pct: 0.72, code: "I",     shortLabel: "I р.",   label: "I разряд",                tier: 6, cls: "bg-gray-600/60 text-gray-100 border-gray-300/50" },
+  { pct: 0.60, code: "II",    shortLabel: "II р.",  label: "II разряд",               tier: 5, cls: "bg-gray-700/60 text-gray-200 border-gray-400/50" },
+  { pct: 0.47, code: "III",   shortLabel: "III р.", label: "III разряд",              tier: 4, cls: "bg-orange-950/70 text-orange-300 border-orange-600/50" },
+  { pct: 0.35, code: "YUN1",  shortLabel: "Юн I",  label: "Юношеский I разряд",      tier: 3, cls: "bg-stone-700/60 text-stone-200 border-stone-500/50" },
+  { pct: 0.22, code: "YUN2",  shortLabel: "Юн II", label: "Юношеский II разряд",     tier: 2, cls: "bg-slate-700/60 text-slate-300 border-slate-500/50" },
+  { pct: 0.10, code: "YUN3",  shortLabel: "Юн III",label: "Юношеский III разряд",    tier: 1, cls: "bg-slate-700/60 text-slate-300 border-slate-500/50" },
+  { pct: 0,    code: "NONE",  shortLabel: "Б/Р",   label: "Без разряда",             tier: 0, cls: "bg-zinc-800/60 text-zinc-400 border-zinc-600/50" },
+];
+
+function exerciseRankFromStats(maxWeightKg: number, mcKg: number | null): typeof RANK_THRESHOLDS_DESC[number] | null {
+  if (mcKg == null || mcKg <= 0 || maxWeightKg <= 0) return null;
+  const pct = maxWeightKg / mcKg;
+  return RANK_THRESHOLDS_DESC.find((r) => pct >= r.pct) ?? RANK_THRESHOLDS_DESC[RANK_THRESHOLDS_DESC.length - 1]!;
+}
+
+function nextRankFromStats(maxWeightKg: number, mcKg: number | null): { label: string; kgTarget: number } | null {
+  if (mcKg == null || mcKg <= 0) return null;
+  const cur = exerciseRankFromStats(maxWeightKg, mcKg);
+  if (!cur || cur.code === "MS") return null;
+  const curIdx = RANK_THRESHOLDS_DESC.findIndex((r) => r.code === cur.code);
+  const nextEntry = RANK_THRESHOLDS_DESC[curIdx - 1]; // one step higher
+  if (!nextEntry) return null;
+  const kgTarget = Math.ceil(mcKg * nextEntry.pct * 10) / 10;
+  return { label: nextEntry.shortLabel, kgTarget };
+}
+
 const TONNAGE_WINDOW_DAYS = 7;
 const TONNAGE_WINDOW_MS = TONNAGE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -557,11 +595,28 @@ function LevelDetailDialog({
                                 )}
                               </div>
                             </div>
-                            {!isTimeBased && ex.mcKg != null && (
-                              <div className="text-[10px] text-muted-foreground/70 pl-0">
-                                Норматив МС: {formatKg(ex.mcKg)}
-                              </div>
-                            )}
+                            {!isTimeBased && ex.mcKg != null && (() => {
+                              const nr = nextRankFromStats(ex.maxWeightKg, ex.mcKg);
+                              if (nr) {
+                                return (
+                                  <div className="text-[10px] text-muted-foreground/70">
+                                    до {nr.label}: {formatKg(nr.kgTarget)}
+                                  </div>
+                                );
+                              }
+                              if (ex.maxWeightKg >= ex.mcKg) {
+                                return (
+                                  <div className="text-[10px] text-primary/70">
+                                    МС достигнут ✓
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div className="text-[10px] text-muted-foreground/70">
+                                  МС: {formatKg(ex.mcKg)}
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
@@ -673,6 +728,18 @@ function MainExercisesGrid({
                 <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0 mt-0.5" />
               )}
               <span className="font-medium break-words flex-1">{e.name}</span>
+              {e.mcKg != null && e.maxWeightKg > 0 && (() => {
+                const r = exerciseRankFromStats(e.maxWeightKg, e.mcKg);
+                if (!r || r.code === "NONE") return null;
+                return (
+                  <span
+                    className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none ${r.cls}`}
+                    title={r.label}
+                  >
+                    {r.shortLabel}
+                  </span>
+                );
+              })()}
             </div>
             <div className="pl-5 flex items-center justify-end">
               {e.autoPassedReason === "time_based_exercise" ? (

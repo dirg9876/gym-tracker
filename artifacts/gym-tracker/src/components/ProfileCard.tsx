@@ -8,12 +8,16 @@ import {
   type BMICategory,
   type Profile,
 } from "@workspace/api-client-react";
+
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Pencil, Scale, Ruler, X, Check } from "lucide-react";
+import { ChevronRight, Pencil, Scale, Ruler, X, Check, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+
 import { Stepper } from "@/components/Stepper";
 import { formatNumber } from "@/lib/format";
+
+type Sex = "male" | "female";
 
 const BMI_LABEL: Record<BMICategory, string> = {
   underweight: "Недовес",
@@ -31,6 +35,12 @@ const BMI_BADGE: Record<BMICategory, string> = {
 
 const DEFAULT_WEIGHT = 80;
 const DEFAULT_HEIGHT = 178;
+const DEFAULT_SEX: Sex = "male";
+
+const SEX_LABEL: Record<Sex, string> = {
+  male: "Мужчина",
+  female: "Женщина",
+};
 
 export function ProfileCard() {
   const queryClient = useQueryClient();
@@ -38,13 +48,13 @@ export function ProfileCard() {
   const [editing, setEditing] = useState(false);
   const [weight, setWeight] = useState<number>(DEFAULT_WEIGHT);
   const [height, setHeight] = useState<number>(DEFAULT_HEIGHT);
+  const [sex, setSex] = useState<Sex>(DEFAULT_SEX);
 
   useEffect(() => {
-    // Only sync from server when not editing — otherwise a background refetch
-    // would clobber the user's in-progress changes.
     if (data && !editing) {
       setWeight(data.bodyWeightKg ?? DEFAULT_WEIGHT);
       setHeight(data.heightCm ?? DEFAULT_HEIGHT);
+      setSex((data.sex as Sex) ?? DEFAULT_SEX);
     }
   }, [data, editing]);
 
@@ -78,7 +88,7 @@ export function ProfileCard() {
         <div className="flex-1 min-w-0">
           <div className="font-bold text-foreground">Укажи свой вес</div>
           <div className="text-xs text-muted-foreground mt-0.5">
-            Без него нормативы считаются по умолчанию (80 кг). Вес влияет на
+            Без него нормативы считаются по умолчанию (80 кг, мужчина). Вес и пол влияют на
             требуемые штанги и тоннаж.
           </div>
         </div>
@@ -113,6 +123,27 @@ export function ProfileCard() {
               </Button>
             </div>
 
+            {/* Sex toggle */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground font-medium">Пол</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(["male", "female"] as Sex[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSex(s)}
+                    className={`h-10 rounded-xl border text-sm font-semibold transition-colors ${
+                      sex === s
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border hover:bg-accent"
+                    }`}
+                  >
+                    {SEX_LABEL[s]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Stepper
               label="Вес тела"
               value={weight}
@@ -139,7 +170,7 @@ export function ProfileCard() {
               className="w-full h-12 rounded-xl font-bold"
               onClick={() =>
                 update.mutate({
-                  data: { bodyWeightKg: weight, heightCm: height },
+                  data: { bodyWeightKg: weight, heightCm: height, sex },
                 })
               }
               disabled={update.isPending}
@@ -181,6 +212,11 @@ export function ProfileCard() {
               <span className="text-muted-foreground text-xs">см</span>
             </div>
           )}
+
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <User className="h-3.5 w-3.5" />
+            <span>{SEX_LABEL[(data.sex as Sex) ?? "male"]}</span>
+          </div>
 
           {data.bmi !== null && data.bmiCategory && (
             <div

@@ -5,6 +5,7 @@ import {
   useCreateExercise,
   useDeleteExercise,
   useListExercises,
+  type SportRank,
 } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
@@ -17,8 +18,40 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+function tierAccent(tier: number): string {
+  if (tier >= 8) return "#f59e0b";
+  if (tier >= 7) return "#eab308";
+  if (tier >= 6) return "#d1d5db";
+  if (tier >= 5) return "#9ca3af";
+  if (tier >= 4) return "#f97316";
+  if (tier >= 1) return "#94a3b8";
+  return "#6b7280";
+}
+
+function RankPill({ rank }: { rank: SportRank }) {
+  if (rank.code === "NONE") return null;
+  const color = tierAccent(rank.tier);
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: color + "55",
+        borderRadius: 5,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        backgroundColor: color + "18",
+        marginRight: 4,
+      }}
+    >
+      <Text style={{ color, fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.1 }}>
+        {rank.shortLabel}
+      </Text>
+    </View>
+  );
+}
+
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { useToast } from "@/components/Toast";
@@ -192,16 +225,22 @@ export default function ExercisesScreen() {
                       opacity: pressed ? 0.6 : 1,
                     })}
                   >
-                    <Text
-                      style={{
-                        color: colors.foreground,
-                        fontSize: 15,
-                        fontFamily: "Inter_500Medium",
-                        flex: 1,
-                      }}
-                    >
-                      {ex.name}
-                    </Text>
+                    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
+                      <Text
+                        style={{
+                          color: colors.foreground,
+                          fontSize: 15,
+                          fontFamily: "Inter_500Medium",
+                          flex: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {ex.name}
+                      </Text>
+                      {ex.userRank && ex.userRank.code !== "NONE" && (
+                        <RankPill rank={ex.userRank} />
+                      )}
+                    </View>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                       {ex.isCustom ? (
                         <Pressable

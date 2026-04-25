@@ -226,6 +226,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/WorkoutComparison"
 
+  /exercises/{exerciseId}/norms:
+    get:
+      operationId: getExerciseNorms
+      tags: [exercises]
+      summary: Sport rank ladder for a single exercise
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exercise rank norms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExerciseRankNorms"
+        "404":
+          description: Not found
+
   /exercises/{exerciseId}/last-sets:
     get:
       operationId: getExerciseLastSets
@@ -500,6 +521,19 @@ components:
             МС-equivalent target weight (kg) for this exercise given the user's
             body weight and sex. Present only for main (isMain=true) weight-based
             exercises; null or absent otherwise.
+        userMaxKg:
+          type: number
+          nullable: true
+          description: >-
+            User's all-time best recorded weight (kg) for this exercise across
+            finished workouts. Null if no sets have been logged yet.
+        userRank:
+          oneOf:
+            - $ref: "#/components/schemas/SportRank"
+            - type: "null"
+          description: >-
+            Computed sport rank for this exercise based on userMaxKg vs mcKg.
+            Null if userMaxKg is null or mcKg is null (e.g. time-based exercises).
       required: [id, name, muscleGroup, isCustom, isMain, equipment]
 
     CreateExerciseInput:
@@ -974,14 +1008,59 @@ components:
 
     McSource:
       type: string
-      enum: [classic, coefficient, bodyweight, time, fallback]
+      enum: [classic, coefficient, bodyweight, time, fallback, muscle_group_anchor]
       description: >-
         How the MS-equivalent kg target (mcKg) was derived.
         `classic` — direct from the official ФПР big-3 table;
         `coefficient` — ratio of a classic lift's MS value;
         `bodyweight` — ratio of the athlete's bodyweight;
         `time` — time-based exercise, no kg requirement;
-        `fallback` — unknown exercise, uses stored bodyweight_multiplier.
+        `fallback` — unknown exercise, uses stored bodyweight_multiplier;
+        `muscle_group_anchor` — unknown exercise approximated via muscle-group anchor coefficient.
+
+    RankNormEntry:
+      type: object
+      properties:
+        rank:
+          $ref: "#/components/schemas/SportRank"
+        kgTarget:
+          type: number
+          description: Minimum kg lift required to reach this rank for this exercise.
+      required: [rank, kgTarget]
+
+    ExerciseRankNorms:
+      type: object
+      properties:
+        mcKg:
+          type: number
+          nullable: true
+          description: МС-equivalent kg target for this exercise. Null for time-based exercises.
+        mcSource:
+          $ref: "#/components/schemas/McSource"
+        userMaxWeightKg:
+          type: number
+          nullable: true
+          description: User's all-time best recorded weight (kg). Null if no sets logged.
+        currentRank:
+          oneOf:
+            - $ref: "#/components/schemas/SportRank"
+            - type: "null"
+          description: User's current rank on this exercise based on userMaxWeightKg. Null for time-based or if no data.
+        nextRank:
+          oneOf:
+            - $ref: "#/components/schemas/SportRank"
+            - type: "null"
+          description: Next rank above currentRank. Null if already at МС or time-based.
+        kgToNextRank:
+          type: number
+          nullable: true
+          description: kg still needed on top of userMaxWeightKg to reach nextRank. Null if no data or at МС.
+        rankNorms:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankNormEntry"
+          description: Full 9-entry rank ladder from Б/Р to МС with kg thresholds.
+      required: [mcKg, mcSource, userMaxWeightKg, currentRank, nextRank, kgToNextRank, rankNorms]
 
     AutoPassedReason:
       type: string

@@ -536,7 +536,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
   const mcResultByExercise = new Map<number, { kg: number | null; source: McSource; effectiveMul: number }>();
   for (const r of mainRows) {
     const fallbackMul = Number(r.bodyweightMultiplier);
-    const result = getMcKgForExercise(r.name, bodyWeightKg, sex, fallbackMul);
+    const result = getMcKgForExercise(r.name, bodyWeightKg, sex, fallbackMul, r.muscleGroup);
     const effectiveMul = result.kg != null ? result.kg / bodyWeightKg : 0;
     mcResultByExercise.set(r.id, { kg: result.kg, source: result.source, effectiveMul });
   }

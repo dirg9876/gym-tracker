@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Equipment } from "./equipment";
+import type { SportRank } from "./sportRank";
 
 export interface Exercise {
   id: number;
@@ -17,4 +18,8 @@ export interface Exercise {
   /** МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.
    */
   mcKg?: number | null;
+  /** User's all-time best recorded weight (kg) for this exercise across finished workouts. Null if no sets have been logged yet. */
+  userMaxKg?: number | null;
+  /** Computed sport rank for this exercise based on userMaxKg vs mcKg. Null if userMaxKg is null or mcKg is null (e.g. time-based exercises). */
+  userRank?: SportRank | null;
 }

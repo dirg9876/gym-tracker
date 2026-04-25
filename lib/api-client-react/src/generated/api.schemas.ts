@@ -22,6 +22,35 @@ export const Equipment = {
   other: "other",
 } as const;
 
+/**
+ * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
+ */
+export type SportRankCode = (typeof SportRankCode)[keyof typeof SportRankCode];
+
+export const SportRankCode = {
+  NONE: "NONE",
+  YOUTH_III: "YOUTH_III",
+  YOUTH_II: "YOUTH_II",
+  YOUTH_I: "YOUTH_I",
+  III_RAZRYAD: "III_RAZRYAD",
+  II_RAZRYAD: "II_RAZRYAD",
+  I_RAZRYAD: "I_RAZRYAD",
+  KMS: "KMS",
+  MS: "MS",
+} as const;
+
+export interface SportRank {
+  code: SportRankCode;
+  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС". */
+  label: string;
+  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС". */
+  shortLabel: string;
+  /** 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping. */
+  tier: number;
+  /** Minimum level to display this rank on the ladder. */
+  minLevel: number;
+}
+
 export interface Exercise {
   id: number;
   name: string;
@@ -32,6 +61,10 @@ export interface Exercise {
   /** МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.
    */
   mcKg?: number | null;
+  /** User's all-time best recorded weight (kg) for this exercise across finished workouts. Null if no sets have been logged yet. */
+  userMaxKg?: number | null;
+  /** Computed sport rank for this exercise based on userMaxKg vs mcKg. Null if userMaxKg is null or mcKg is null (e.g. time-based exercises). */
+  userRank?: SportRank | null;
 }
 
 export interface CreateExerciseInput {
@@ -239,35 +272,6 @@ export interface ExerciseProgress {
   points: ExerciseProgressPoint[];
 }
 
-/**
- * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
- */
-export type SportRankCode = (typeof SportRankCode)[keyof typeof SportRankCode];
-
-export const SportRankCode = {
-  NONE: "NONE",
-  YOUTH_III: "YOUTH_III",
-  YOUTH_II: "YOUTH_II",
-  YOUTH_I: "YOUTH_I",
-  III_RAZRYAD: "III_RAZRYAD",
-  II_RAZRYAD: "II_RAZRYAD",
-  I_RAZRYAD: "I_RAZRYAD",
-  KMS: "KMS",
-  MS: "MS",
-} as const;
-
-export interface SportRank {
-  code: SportRankCode;
-  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС". */
-  label: string;
-  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС". */
-  shortLabel: string;
-  /** 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping. */
-  tier: number;
-  /** Minimum level to display this rank on the ladder. */
-  minLevel: number;
-}
-
 export interface Level {
   level: number;
   name: string;
@@ -283,7 +287,7 @@ export interface Level {
 }
 
 /**
- * How the MS-equivalent kg target (mcKg) was derived. `classic` — direct from the official ФПР big-3 table; `coefficient` — ratio of a classic lift's MS value; `bodyweight` — ratio of the athlete's bodyweight; `time` — time-based exercise, no kg requirement; `fallback` — unknown exercise, uses stored bodyweight_multiplier.
+ * How the MS-equivalent kg target (mcKg) was derived. `classic` — direct from the official ФПР big-3 table; `coefficient` — ratio of a classic lift's MS value; `bodyweight` — ratio of the athlete's bodyweight; `time` — time-based exercise, no kg requirement; `fallback` — unknown exercise, uses stored bodyweight_multiplier; `muscle_group_anchor` — unknown exercise approximated via muscle-group anchor coefficient.
  */
 export type McSource = (typeof McSource)[keyof typeof McSource];
 
@@ -293,7 +297,30 @@ export const McSource = {
   bodyweight: "bodyweight",
   time: "time",
   fallback: "fallback",
+  muscle_group_anchor: "muscle_group_anchor",
 } as const;
+
+export interface RankNormEntry {
+  rank: SportRank;
+  /** Minimum kg lift required to reach this rank for this exercise. */
+  kgTarget: number;
+}
+
+export interface ExerciseRankNorms {
+  /** МС-equivalent kg target for this exercise. Null for time-based exercises. */
+  mcKg: number | null;
+  mcSource: McSource;
+  /** User's all-time best recorded weight (kg). Null if no sets logged. */
+  userMaxWeightKg: number | null;
+  /** User's current rank on this exercise based on userMaxWeightKg. Null for time-based or if no data. */
+  currentRank: SportRank | null;
+  /** Next rank above currentRank. Null if already at МС or time-based. */
+  nextRank: SportRank | null;
+  /** kg still needed on top of userMaxWeightKg to reach nextRank. Null if no data or at МС. */
+  kgToNextRank: number | null;
+  /** Full 9-entry rank ladder from Б/Р to МС with kg thresholds. */
+  rankNorms: RankNormEntry[];
+}
 
 /**
  * Why the server auto-passed an exercise without requiring the user to actually lift the target. `below_bar_weight` — a barbell exercise whose required kg is less than the empty-bar floor (20 kg). `time_based_exercise` — a time-based exercise (e.g. Планка) that has no kg requirement.

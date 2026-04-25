@@ -24,6 +24,7 @@ import type {
   Exercise,
   ExerciseLastSets,
   ExerciseProgress,
+  ExerciseRankNorms,
   GetHeatmapParams,
   HealthStatus,
   HeatmapResponse,
@@ -1063,6 +1064,95 @@ export function useGetWorkoutComparison<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetWorkoutComparisonQueryOptions(workoutId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Sport rank ladder for a single exercise
+ */
+export const getGetExerciseNormsUrl = (exerciseId: number) => {
+  return `/api/exercises/${exerciseId}/norms`;
+};
+
+export const getExerciseNorms = async (
+  exerciseId: number,
+  options?: RequestInit,
+): Promise<ExerciseRankNorms> => {
+  return customFetch<ExerciseRankNorms>(getGetExerciseNormsUrl(exerciseId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetExerciseNormsQueryKey = (exerciseId: number) => {
+  return [`/api/exercises/${exerciseId}/norms`] as const;
+};
+
+export const getGetExerciseNormsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExerciseNorms>>,
+  TError = ErrorType<void>,
+>(
+  exerciseId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExerciseNorms>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExerciseNormsQueryKey(exerciseId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getExerciseNorms>>
+  > = ({ signal }) =>
+    getExerciseNorms(exerciseId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!exerciseId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getExerciseNorms>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetExerciseNormsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExerciseNorms>>
+>;
+export type GetExerciseNormsQueryError = ErrorType<void>;
+
+/**
+ * @summary Sport rank ladder for a single exercise
+ */
+
+export function useGetExerciseNorms<
+  TData = Awaited<ReturnType<typeof getExerciseNorms>>,
+  TError = ErrorType<void>,
+>(
+  exerciseId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExerciseNorms>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetExerciseNormsQueryOptions(exerciseId, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

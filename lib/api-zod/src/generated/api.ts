@@ -34,6 +34,55 @@ export const ListExercisesResponseItem = zod.object({
     .describe(
       "МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.\n",
     ),
+  userMaxKg: zod
+    .number()
+    .nullish()
+    .describe(
+      "User's all-time best recorded weight (kg) for this exercise across finished workouts. Null if no sets have been logged yet.",
+    ),
+  userRank: zod
+    .union([
+      zod.object({
+        code: zod
+          .enum([
+            "NONE",
+            "YOUTH_III",
+            "YOUTH_II",
+            "YOUTH_I",
+            "III_RAZRYAD",
+            "II_RAZRYAD",
+            "I_RAZRYAD",
+            "KMS",
+            "MS",
+          ])
+          .describe(
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+          ),
+        label: zod
+          .string()
+          .describe(
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+          ),
+        shortLabel: zod
+          .string()
+          .describe(
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+          ),
+        tier: zod
+          .number()
+          .describe(
+            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+          ),
+        minLevel: zod
+          .number()
+          .describe("Minimum level to display this rank on the ladder."),
+      }),
+      zod.null(),
+    ])
+    .optional()
+    .describe(
+      "Computed sport rank for this exercise based on userMaxKg vs mcKg. Null if userMaxKg is null or mcKg is null (e.g. time-based exercises).",
+    ),
 });
 export const ListExercisesResponse = zod.array(ListExercisesResponseItem);
 
@@ -92,6 +141,55 @@ export const UpdateExerciseResponse = zod.object({
     .nullish()
     .describe(
       "МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.\n",
+    ),
+  userMaxKg: zod
+    .number()
+    .nullish()
+    .describe(
+      "User's all-time best recorded weight (kg) for this exercise across finished workouts. Null if no sets have been logged yet.",
+    ),
+  userRank: zod
+    .union([
+      zod.object({
+        code: zod
+          .enum([
+            "NONE",
+            "YOUTH_III",
+            "YOUTH_II",
+            "YOUTH_I",
+            "III_RAZRYAD",
+            "II_RAZRYAD",
+            "I_RAZRYAD",
+            "KMS",
+            "MS",
+          ])
+          .describe(
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+          ),
+        label: zod
+          .string()
+          .describe(
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+          ),
+        shortLabel: zod
+          .string()
+          .describe(
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+          ),
+        tier: zod
+          .number()
+          .describe(
+            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+          ),
+        minLevel: zod
+          .number()
+          .describe("Minimum level to display this rank on the ladder."),
+      }),
+      zod.null(),
+    ])
+    .optional()
+    .describe(
+      "Computed sport rank for this exercise based on userMaxKg vs mcKg. Null if userMaxKg is null or mcKg is null (e.g. time-based exercises).",
     ),
 });
 
@@ -270,6 +368,176 @@ export const GetWorkoutComparisonResponse = zod.object({
       deltaReps: zod.number(),
     }),
   ),
+});
+
+/**
+ * @summary Sport rank ladder for a single exercise
+ */
+export const GetExerciseNormsParams = zod.object({
+  exerciseId: zod.coerce.number(),
+});
+
+export const GetExerciseNormsResponse = zod.object({
+  mcKg: zod
+    .number()
+    .nullable()
+    .describe(
+      "МС-equivalent kg target for this exercise. Null for time-based exercises.",
+    ),
+  mcSource: zod
+    .enum([
+      "classic",
+      "coefficient",
+      "bodyweight",
+      "time",
+      "fallback",
+      "muscle_group_anchor",
+    ])
+    .describe(
+      "How the MS-equivalent kg target (mcKg) was derived. `classic` — direct from the official ФПР big-3 table; `coefficient` — ratio of a classic lift's MS value; `bodyweight` — ratio of the athlete's bodyweight; `time` — time-based exercise, no kg requirement; `fallback` — unknown exercise, uses stored bodyweight_multiplier; `muscle_group_anchor` — unknown exercise approximated via muscle-group anchor coefficient.",
+    ),
+  userMaxWeightKg: zod
+    .number()
+    .nullable()
+    .describe(
+      "User's all-time best recorded weight (kg). Null if no sets logged.",
+    ),
+  currentRank: zod
+    .union([
+      zod.object({
+        code: zod
+          .enum([
+            "NONE",
+            "YOUTH_III",
+            "YOUTH_II",
+            "YOUTH_I",
+            "III_RAZRYAD",
+            "II_RAZRYAD",
+            "I_RAZRYAD",
+            "KMS",
+            "MS",
+          ])
+          .describe(
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+          ),
+        label: zod
+          .string()
+          .describe(
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+          ),
+        shortLabel: zod
+          .string()
+          .describe(
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+          ),
+        tier: zod
+          .number()
+          .describe(
+            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+          ),
+        minLevel: zod
+          .number()
+          .describe("Minimum level to display this rank on the ladder."),
+      }),
+      zod.null(),
+    ])
+    .describe(
+      "User's current rank on this exercise based on userMaxWeightKg. Null for time-based or if no data.",
+    ),
+  nextRank: zod
+    .union([
+      zod.object({
+        code: zod
+          .enum([
+            "NONE",
+            "YOUTH_III",
+            "YOUTH_II",
+            "YOUTH_I",
+            "III_RAZRYAD",
+            "II_RAZRYAD",
+            "I_RAZRYAD",
+            "KMS",
+            "MS",
+          ])
+          .describe(
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+          ),
+        label: zod
+          .string()
+          .describe(
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+          ),
+        shortLabel: zod
+          .string()
+          .describe(
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+          ),
+        tier: zod
+          .number()
+          .describe(
+            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+          ),
+        minLevel: zod
+          .number()
+          .describe("Minimum level to display this rank on the ladder."),
+      }),
+      zod.null(),
+    ])
+    .describe(
+      "Next rank above currentRank. Null if already at МС or time-based.",
+    ),
+  kgToNextRank: zod
+    .number()
+    .nullable()
+    .describe(
+      "kg still needed on top of userMaxWeightKg to reach nextRank. Null if no data or at МС.",
+    ),
+  rankNorms: zod
+    .array(
+      zod.object({
+        rank: zod.object({
+          code: zod
+            .enum([
+              "NONE",
+              "YOUTH_III",
+              "YOUTH_II",
+              "YOUTH_I",
+              "III_RAZRYAD",
+              "II_RAZRYAD",
+              "I_RAZRYAD",
+              "KMS",
+              "MS",
+            ])
+            .describe(
+              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            ),
+          label: zod
+            .string()
+            .describe(
+              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            ),
+          shortLabel: zod
+            .string()
+            .describe(
+              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            ),
+          tier: zod
+            .number()
+            .describe(
+              "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            ),
+          minLevel: zod
+            .number()
+            .describe("Minimum level to display this rank on the ladder."),
+        }),
+        kgTarget: zod
+          .number()
+          .describe(
+            "Minimum kg lift required to reach this rank for this exercise.",
+          ),
+      }),
+    )
+    .describe("Full 9-entry rank ladder from Б\/Р to МС with kg thresholds."),
 });
 
 /**
@@ -510,6 +778,55 @@ export const GetExerciseProgressResponse = zod.object({
       .describe(
         "МС-equivalent target weight (kg) for this exercise given the user's body weight and sex. Present only for main (isMain=true) weight-based exercises; null or absent otherwise.\n",
       ),
+    userMaxKg: zod
+      .number()
+      .nullish()
+      .describe(
+        "User's all-time best recorded weight (kg) for this exercise across finished workouts. Null if no sets have been logged yet.",
+      ),
+    userRank: zod
+      .union([
+        zod.object({
+          code: zod
+            .enum([
+              "NONE",
+              "YOUTH_III",
+              "YOUTH_II",
+              "YOUTH_I",
+              "III_RAZRYAD",
+              "II_RAZRYAD",
+              "I_RAZRYAD",
+              "KMS",
+              "MS",
+            ])
+            .describe(
+              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            ),
+          label: zod
+            .string()
+            .describe(
+              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            ),
+          shortLabel: zod
+            .string()
+            .describe(
+              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            ),
+          tier: zod
+            .number()
+            .describe(
+              "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            ),
+          minLevel: zod
+            .number()
+            .describe("Minimum level to display this rank on the ladder."),
+        }),
+        zod.null(),
+      ])
+      .optional()
+      .describe(
+        "Computed sport rank for this exercise based on userMaxKg vs mcKg. Null if userMaxKg is null or mcKg is null (e.g. time-based exercises).",
+      ),
   }),
   points: zod.array(
     zod.object({
@@ -736,7 +1053,14 @@ export const GetLevelsResponse = zod.object({
             'Master-of-Sport (МС) equivalent kg target for this exercise and the user\'s weight class. Null for time-based exercises (e.g. Планка). Use this to display \"Норматив МС: X кг\" in the UI.',
           ),
         mcSource: zod
-          .enum(["classic", "coefficient", "bodyweight", "time", "fallback"])
+          .enum([
+            "classic",
+            "coefficient",
+            "bodyweight",
+            "time",
+            "fallback",
+            "muscle_group_anchor",
+          ])
           .describe(
             "How mcKg was derived (official table, coefficient, bodyweight ratio, etc.).",
           ),
