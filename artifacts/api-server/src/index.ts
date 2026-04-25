@@ -16,21 +16,23 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-seedMainExercisesIfEmpty()
-  .then(({ seeded }) => {
+async function start() {
+  try {
+    const { seeded } = await seedMainExercisesIfEmpty();
     if (seeded > 0) {
       logger.info({ seeded }, "Seeded default main exercises");
     }
-  })
-  .catch((err) => {
+  } catch (err) {
     logger.error({ err }, "Failed to seed main exercises");
-  });
-
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
   }
 
-  logger.info({ port }, "Server listening");
-});
+  app.listen(port, (err) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
+    logger.info({ port }, "Server listening");
+  });
+}
+
+start();
