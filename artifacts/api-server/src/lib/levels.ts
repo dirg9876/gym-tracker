@@ -1,6 +1,11 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
 import { eq, and, isNotNull, asc, inArray, sql } from "drizzle-orm";
-import { getProfile, FALLBACK_BODY_WEIGHT_KG } from "./profile";
+import {
+  getProfile,
+  getConfirmedLevel,
+  setConfirmedLevel,
+  FALLBACK_BODY_WEIGHT_KG,
+} from "./profile";
 
 export type LevelDef = {
   level: number;
@@ -8,21 +13,30 @@ export type LevelDef = {
   description: string;
   tier: number;
   benchmarkKg: number;
-  tonnage30dKgRequired: number;
+  tonnage7dKgRequired: number;
   mainExercisesRequired: number;
 };
 
 const TIER_SIZE = 9;
 const MAIN_EXERCISES_REQUIRED = 3;
-const WORKOUTS_PER_MONTH_ASSUMED = 6;
-const SETS_PER_EXERCISE = 4;
-const REPS_PER_SET = 8;
+
+// Weekly tonnage assumptions. The required tonnage per week is:
+//   workouts/week × exercises/workout × sets × reps × workingWeight
+// where workingWeight = bodyWeight × levelFactor(level).
+// 9 reps is the midpoint of the 8–10 working-set range.
+const WORKOUTS_PER_WEEK_ASSUMED = 3;
 const EXERCISES_PER_WORKOUT = 5;
-const AVG_WEIGHT_FACTOR = 0.7;
+const SETS_PER_EXERCISE = 5;
+const REPS_PER_SET = 9;
 
 // Anchor: at level 60 ("Силач-новичок — Жмёшь свой вес") the level factor is 1.0,
 // meaning the required weight for a 1.0× exercise equals the user's bodyweight.
 const LEVEL_FACTOR_ANCHOR = 60;
+
+// Multi-level jump penalty: each level skipped beyond +1 from the confirmed
+// level adds 10% to both tonnage and per-exercise weight requirements. So a
+// jump of +1 has no penalty (×1.0), +2 has ×1.10, +3 has ×1.20, etc.
+const JUMP_PENALTY_PER_LEVEL = 0.10;
 
 const NAMES_AND_DESCRIPTIONS: Array<[string, string]> = [
   ["Дохляк", "Ты не держал ничего тяжелее компьютерной мышки."],
@@ -255,30 +269,56 @@ const MIN_REQUIRED_KG = 2.5;
 
 /**
  * Required weight for a specific main exercise at a given level, given the
- * user's bodyweight and the exercise's per-exercise multiplier. Floored at
- * MIN_REQUIRED_KG when multiplier > 0 so early levels remain meaningful.
+ * user's bodyweight, the exercise's per-exercise multiplier, and an optional
+ * jump penalty multiplier (≥ 1). Floored at MIN_REQUIRED_KG when multiplier > 0
+ * so early levels remain meaningful.
  */
 export function requiredKgForExercise(
   level: number,
   bodyWeightKg: number,
   multiplier: number,
+  penaltyMultiplier: number = 1,
 ): number {
   if (level <= 0 || multiplier <= 0) return 0;
-  const raw = bodyWeightKg * levelFactor(level) * multiplier;
+  const raw = bodyWeightKg * levelFactor(level) * multiplier * penaltyMultiplier;
   return Math.max(MIN_REQUIRED_KG, roundTo(raw, 2.5));
 }
 
-export function tonnage30dRequired(level: number, bodyWeightKg: number): number {
+/**
+ * Required tonnage (kg) per 7-day window to qualify for a given level.
+ * Formula: 3 workouts/week × 5 exercises × 5 sets × 9 reps × workingWeight,
+ * where workingWeight = bodyWeight × levelFactor(level). Multiplied by an
+ * optional jump-penalty multiplier (≥ 1) when computing penalised targets.
+ */
+export function tonnage7dRequired(
+  level: number,
+  bodyWeightKg: number,
+  penaltyMultiplier: number = 1,
+): number {
   if (level <= 0) return 0;
-  const perWorkout =
+  const workingWeight = bodyWeightKg * levelFactor(level);
+  const weekly =
+    WORKOUTS_PER_WEEK_ASSUMED *
     EXERCISES_PER_WORKOUT *
     SETS_PER_EXERCISE *
     REPS_PER_SET *
-    bodyWeightKg *
-    levelFactor(level) *
-    AVG_WEIGHT_FACTOR;
-  const monthly = perWorkout * WORKOUTS_PER_MONTH_ASSUMED;
-  return roundTo(monthly, 500);
+    workingWeight *
+    penaltyMultiplier;
+  return roundTo(weekly, 500);
+}
+
+/**
+ * Computes the jump penalty multiplier for a candidate level relative to the
+ * confirmed level. +1 jump = ×1.0 (no penalty). Each additional level adds
+ * +10%. Always ≥ 1.
+ */
+export function jumpPenaltyMultiplier(
+  candidateLevel: number,
+  confirmedLevel: number,
+): number {
+  const jump = candidateLevel - confirmedLevel;
+  if (jump <= 1) return 1;
+  return 1 + JUMP_PENALTY_PER_LEVEL * (jump - 1);
 }
 
 export function buildLevels(bodyWeightKg: number): LevelDef[] {
@@ -288,7 +328,7 @@ export function buildLevels(bodyWeightKg: number): LevelDef[] {
     description,
     tier: Math.min(8, Math.floor(idx / TIER_SIZE)),
     benchmarkKg: referenceKg(idx, bodyWeightKg),
-    tonnage30dKgRequired: tonnage30dRequired(idx, bodyWeightKg),
+    tonnage7dKgRequired: tonnage7dRequired(idx, bodyWeightKg),
     mainExercisesRequired: idx === 0 ? 0 : MAIN_EXERCISES_REQUIRED,
   }));
 }
@@ -306,11 +346,13 @@ export type MainExerciseStat = {
   maxWeightKg: number;
   multiplier: number;
   requiredKgForNextLevel: number | null;
+  // ≥ 1. When > 1, the requirement above already includes the jump penalty.
+  requiredKgPenaltyMultiplier: number;
 };
 
 export type LevelStats = {
-  currentTonnage30dKg: number;
-  maxTonnage30dKg: number;
+  currentTonnage7dKg: number;
+  maxTonnage7dKg: number;
   oldestSetInWindowAt: string | null;
   mainExercises: MainExerciseStat[];
 };
@@ -319,6 +361,17 @@ export type CurrentLevelInfo = {
   currentLevel: number;
   bestLevelEver: number;
   nextLevel: number | null;
+  // The user's last persisted level — anchor for the jump penalty. Equals
+  // currentLevel after a successful level-up has been persisted.
+  confirmedLevel: number;
+  // Penalty multiplier applied to the next level's tonnage and per-exercise
+  // requirements. ≥ 1; equals 1 when the next level is just confirmed+1.
+  nextLevelPenaltyMultiplier: number;
+  // Effective tonnage target the user actually has to hit to qualify for the
+  // next level (penalty applied, rounded the same way the server does it
+  // internally). Null at max level. Surfaced so all UIs agree with the
+  // backend's pass check at the rounding boundary.
+  nextLevelTonnage7dKgRequired: number | null;
   bodyWeightKg: number;
   bodyWeightIsFallback: boolean;
   levels: LevelDef[];
@@ -383,63 +436,92 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     volume: Number(s.weightKg) * s.reps,
   }));
 
-  const windowMs = 30 * 24 * 60 * 60 * 1000;
+  const windowMs = 7 * 24 * 60 * 60 * 1000;
   const now = Date.now();
   const windowStart = now - windowMs;
 
-  let currentTonnage30dKg = 0;
+  let currentTonnage7dKg = 0;
   let oldestSetInWindowTs: number | null = null;
   for (const e of events) {
     if (e.ts >= windowStart && e.ts <= now) {
-      currentTonnage30dKg += e.volume;
+      currentTonnage7dKg += e.volume;
       if (oldestSetInWindowTs === null || e.ts < oldestSetInWindowTs) {
         oldestSetInWindowTs = e.ts;
       }
     }
   }
 
-  const maxTonnage30dKg = computeMaxRollingTonnage(events, windowMs);
+  const maxTonnage7dKg = computeMaxRollingTonnage(events, windowMs);
 
-  // Holds, for the candidate level under test, the per-exercise required kg.
-  function requiredFor(lvl: LevelDef, multiplier: number): number {
-    return requiredKgForExercise(lvl.level, bodyWeightKg, multiplier);
-  }
-
-  function levelPasses(lvl: LevelDef, tonnage: number): boolean {
+  // Pass-check helpers. `penaltyMul` allows a candidate level beyond
+  // `confirmed + 1` to charge an extra fee on both tonnage and per-exercise
+  // weight requirements.
+  function levelPasses(
+    lvl: LevelDef,
+    tonnage: number,
+    penaltyMul: number,
+  ): boolean {
     if (lvl.level === 0) return true;
     let passedExercises = 0;
     for (const r of mainRows) {
       const mul = Number(r.bodyweightMultiplier);
-      const req = requiredFor(lvl, mul);
+      const req = requiredKgForExercise(lvl.level, bodyWeightKg, mul, penaltyMul);
       const cur = maxByExercise.get(r.id) ?? 0;
       if (cur >= req && req > 0) passedExercises += 1;
     }
-    return (
-      passedExercises >= lvl.mainExercisesRequired &&
-      tonnage >= lvl.tonnage30dKgRequired
+    if (passedExercises < lvl.mainExercisesRequired) return false;
+    const tonnageRequired = tonnage7dRequired(
+      lvl.level,
+      bodyWeightKg,
+      penaltyMul,
     );
+    return tonnage >= tonnageRequired;
   }
 
-  let currentLevel = 0;
-  for (const lvl of levels) {
-    if (levelPasses(lvl, currentTonnage30dKg)) {
-      currentLevel = lvl.level;
-    } else {
-      break;
-    }
-  }
-
+  // bestLevelEver — historical max, computed without the jump penalty.
   let bestLevelEver = 0;
   for (const lvl of levels) {
-    if (levelPasses(lvl, maxTonnage30dKg)) {
+    if (levelPasses(lvl, maxTonnage7dKg, 1)) {
       bestLevelEver = lvl.level;
     } else {
       break;
     }
   }
 
+  // Bootstrap the confirmed-level sentinel for new installs / pre-existing
+  // users. Without this, a user with significant history would suddenly drop
+  // to level 0 because the penalty against confirmed=0 makes level 1 unreachable.
+  let confirmedLevel = await getConfirmedLevel();
+  if (confirmedLevel === null) {
+    confirmedLevel = bestLevelEver;
+    await setConfirmedLevel(confirmedLevel);
+  }
+
+  // currentLevel — bounded above by confirmed + ladder length, with each step
+  // beyond confirmed + 1 charged the jump penalty.
+  let currentLevel = 0;
+  for (const lvl of levels) {
+    const penaltyMul = jumpPenaltyMultiplier(lvl.level, confirmedLevel);
+    if (levelPasses(lvl, currentTonnage7dKg, penaltyMul)) {
+      currentLevel = lvl.level;
+    } else {
+      break;
+    }
+  }
+
+  // Persist the new floor when the user has earned a higher level.
+  if (currentLevel > confirmedLevel) {
+    await setConfirmedLevel(currentLevel);
+    confirmedLevel = currentLevel;
+  }
+
   const nextLevelIdx = currentLevel >= MAX_LEVEL ? null : currentLevel + 1;
   const nextLvl = nextLevelIdx !== null ? levels[nextLevelIdx]! : null;
+  const nextLevelPenaltyMultiplier =
+    nextLvl !== null ? jumpPenaltyMultiplier(nextLvl.level, confirmedLevel) : 1;
+  const nextLevelTonnage7dKgRequired = nextLvl
+    ? tonnage7dRequired(nextLvl.level, bodyWeightKg, nextLevelPenaltyMultiplier)
+    : null;
 
   const mainExercises: MainExerciseStat[] = mainRows.map((r) => {
     const mul = Number(r.bodyweightMultiplier);
@@ -449,7 +531,15 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
       muscleGroup: r.muscleGroup,
       maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
       multiplier: round(mul),
-      requiredKgForNextLevel: nextLvl ? requiredFor(nextLvl, mul) : null,
+      requiredKgForNextLevel: nextLvl
+        ? requiredKgForExercise(
+            nextLvl.level,
+            bodyWeightKg,
+            mul,
+            nextLevelPenaltyMultiplier,
+          )
+        : null,
+      requiredKgPenaltyMultiplier: round(nextLevelPenaltyMultiplier),
     };
   });
 
@@ -457,12 +547,15 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     currentLevel,
     bestLevelEver,
     nextLevel: nextLevelIdx,
+    confirmedLevel,
+    nextLevelPenaltyMultiplier: round(nextLevelPenaltyMultiplier),
+    nextLevelTonnage7dKgRequired,
     bodyWeightKg,
     bodyWeightIsFallback,
     levels,
     stats: {
-      currentTonnage30dKg: round(currentTonnage30dKg),
-      maxTonnage30dKg: round(maxTonnage30dKg),
+      currentTonnage7dKg: round(currentTonnage7dKg),
+      maxTonnage7dKg: round(maxTonnage7dKg),
       oldestSetInWindowAt:
         oldestSetInWindowTs !== null
           ? new Date(oldestSetInWindowTs).toISOString()

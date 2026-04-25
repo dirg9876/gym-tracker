@@ -5,6 +5,7 @@ export const FALLBACK_BODY_WEIGHT_KG = 80;
 
 export const BODY_WEIGHT_KEY = "body_weight_kg";
 export const HEIGHT_KEY = "height_cm";
+export const CONFIRMED_LEVEL_KEY = "confirmed_level_v1";
 
 export const BODY_WEIGHT_MIN = 30;
 export const BODY_WEIGHT_MAX = 250;
@@ -104,4 +105,19 @@ export async function updateProfile(input: UpdateProfileInput): Promise<Profile>
     }
   }
   return getProfile();
+}
+
+/**
+ * Confirmed level — the user's last persisted level. Used as the anchor for
+ * the multi-level jump penalty in `computeCurrentLevel`. Returns null when no
+ * value is persisted yet (first-time bootstrap).
+ */
+export async function getConfirmedLevel(): Promise<number | null> {
+  const v = await readMetaNumber(CONFIRMED_LEVEL_KEY);
+  if (v == null) return null;
+  return Math.max(0, Math.floor(v));
+}
+
+export async function setConfirmedLevel(level: number): Promise<void> {
+  await writeMetaNumber(CONFIRMED_LEVEL_KEY, Math.max(0, Math.floor(level)));
 }

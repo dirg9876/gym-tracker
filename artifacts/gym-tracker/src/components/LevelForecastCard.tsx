@@ -74,7 +74,7 @@ export function LevelForecastCard() {
       <div className="space-y-1 text-xs text-muted-foreground">
         <div className="flex justify-between">
           <span className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" /> Темп (30 дн., в среднем за день)
+            <TrendingUp className="h-3 w-3" /> Темп (7 дн., в среднем за день)
           </span>
           <span className="font-mono">{formatNumber(data.avgDailyTonnageKg)} кг</span>
         </div>
@@ -83,14 +83,14 @@ export function LevelForecastCard() {
           <span className="font-mono">{formatNumber(data.tonnage7dKg)} кг</span>
         </div>
         <div className="flex justify-between">
-          <span>Осталось набрать за окно 30 дн.</span>
+          <span>Осталось набрать за окно 7 дн.</span>
           <span className="font-mono">{formatNumber(data.tonnageNeededKg)} кг</span>
         </div>
       </div>
 
       {data.estimatedDays === null && data.avgDailyTonnageKg <= 0 && (
         <div className="text-xs text-muted-foreground/70 italic">
-          Пока нет данных за последние 30 дней — потренируйся, чтобы увидеть прогноз.
+          Пока нет данных за последние 7 дней — потренируйся, чтобы увидеть прогноз.
         </div>
       )}
     </motion.div>

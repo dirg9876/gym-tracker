@@ -13,6 +13,7 @@ export interface Level {
   tier: number;
   /** Legacy 1.0× reference weight for this level, computed as `bodyWeight × levelFactor(level)`. New per-exercise targets should use `MainExerciseStat.requiredKgForNextLevel` instead; this field is retained for backwards compatibility with the program builder. */
   benchmarkKg: number;
-  tonnage30dKgRequired: number;
+  /** Required total tonnage (kg) over the last 7 days at this level, computed from `3 workouts/week × 5 exercises × 5 sets × 9 reps × workingWeight`, where `workingWeight = bodyWeight × levelFactor(level)`. */
+  tonnage7dKgRequired: number;
   mainExercisesRequired: number;
 }

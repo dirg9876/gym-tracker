@@ -289,15 +289,18 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
   const window7 = now - 7 * dayMs;
-  const window30 = now - 30 * dayMs;
+  const window14 = now - 14 * dayMs;
   let tonnage7 = 0;
-  let tonnage30 = 0;
+  let tonnage14 = 0;
   for (const s of sets) {
     const t = new Date(s.createdAt).getTime();
-    if (t >= window30) tonnage30 += s.volume;
+    if (t >= window14) tonnage14 += s.volume;
     if (t >= window7) tonnage7 += s.volume;
   }
-  const avgDaily = tonnage30 / 30;
+  // Average daily tonnage is computed over the last 7 days — same window the
+  // tonnage requirement is now expressed in. tonnage14 is used only to assess
+  // pacing confidence (current week vs. previous week trend).
+  const avgDaily = tonnage7 / 7;
 
   if (next === null || cur >= info.levels.length - 1) {
     res.json({
@@ -306,7 +309,6 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
       nextLevelName: null,
       tonnageNeededKg: 0,
       tonnage7dKg: round(tonnage7),
-      tonnage30dKg: round(tonnage30),
       avgDailyTonnageKg: round(avgDaily),
       estimatedDays: null,
       confidence: "achieved" as const,
@@ -315,9 +317,13 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
   }
 
   const nextDef = info.levels[next]!;
+  // Use the effective (penalty-applied, server-rounded) target so the forecast
+  // agrees with computeCurrentLevel's pass check exactly.
+  const effectiveTarget =
+    info.nextLevelTonnage7dKgRequired ?? nextDef.tonnage7dKgRequired;
   const tonnageNeeded = Math.max(
     0,
-    nextDef.tonnage30dKgRequired - info.stats.currentTonnage30dKg,
+    effectiveTarget - info.stats.currentTonnage7dKg,
   );
 
   let estimatedDays: number | null = null;
@@ -325,10 +331,13 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
   if (avgDaily > 0) {
     estimatedDays = Math.ceil(tonnageNeeded / avgDaily);
     if (estimatedDays > 365) estimatedDays = 365;
-    if (tonnage7 > 0 && tonnage30 > 0) {
-      const ratio = tonnage7 / 7 / avgDaily;
+    if (tonnage14 > tonnage7) {
+      const prevWeek = tonnage14 - tonnage7;
+      const ratio = prevWeek > 0 ? tonnage7 / prevWeek : 1.5;
       if (ratio >= 0.8 && ratio <= 1.5) confidence = "high";
       else confidence = "medium";
+    } else if (tonnage7 > 0) {
+      confidence = "medium";
     }
   }
 
@@ -338,7 +347,6 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
     nextLevelName: nextDef.name,
     tonnageNeededKg: round(tonnageNeeded),
     tonnage7dKg: round(tonnage7),
-    tonnage30dKg: round(tonnage30),
     avgDailyTonnageKg: round(avgDaily),
     estimatedDays,
     confidence,

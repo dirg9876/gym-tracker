@@ -286,10 +286,19 @@ export const GetLevelForecastResponse = zod.object({
   currentLevel: zod.number(),
   nextLevel: zod.number().nullable(),
   nextLevelName: zod.string().nullish(),
-  tonnageNeededKg: zod.number(),
-  tonnage7dKg: zod.number(),
-  tonnage30dKg: zod.number(),
-  avgDailyTonnageKg: zod.number(),
+  tonnageNeededKg: zod
+    .number()
+    .describe(
+      "Tonnage (kg) still needed in the 7-day window to reach the next level.",
+    ),
+  tonnage7dKg: zod
+    .number()
+    .describe("Total tonnage (kg) lifted in the last 7 days."),
+  avgDailyTonnageKg: zod
+    .number()
+    .describe(
+      "Average daily tonnage (kg\/day), computed over the last 7 days.",
+    ),
   estimatedDays: zod.number().nullish(),
   confidence: zod.enum(["low", "medium", "high", "achieved"]),
 });
@@ -483,13 +492,33 @@ export const GetLevelsResponse = zod.object({
         .describe(
           "Legacy 1.0× reference weight for this level, computed as `bodyWeight × levelFactor(level)`. New per-exercise targets should use `MainExerciseStat.requiredKgForNextLevel` instead; this field is retained for backwards compatibility with the program builder.",
         ),
-      tonnage30dKgRequired: zod.number(),
+      tonnage7dKgRequired: zod
+        .number()
+        .describe(
+          "Required total tonnage (kg) over the last 7 days at this level, computed from `3 workouts\/week × 5 exercises × 5 sets × 9 reps × workingWeight`, where `workingWeight = bodyWeight × levelFactor(level)`.",
+        ),
       mainExercisesRequired: zod.number(),
     }),
   ),
   currentLevel: zod.number(),
   bestLevelEver: zod.number(),
   nextLevel: zod.number().nullable(),
+  confirmedLevel: zod
+    .number()
+    .describe(
+      "The user's last persisted level — anchor for the multi-level jump penalty. Equals `currentLevel` once a level-up is persisted.",
+    ),
+  nextLevelPenaltyMultiplier: zod
+    .number()
+    .describe(
+      "Penalty multiplier (>= 1) applied to the next level's tonnage and per-exercise requirements. Equals 1 when the next level is just `confirmedLevel + 1`; grows by 0.10 per additional skipped level.",
+    ),
+  nextLevelTonnage7dKgRequired: zod
+    .number()
+    .nullable()
+    .describe(
+      "Effective tonnage target (kg, 7-day window) the user must hit to reach the next level — penalty already applied and rounded the same way the server's pass check rounds. Null at max level. UIs should prefer this value over recomputing locally to avoid rounding drift.",
+    ),
   bodyWeightKg: zod
     .number()
     .describe(
@@ -501,9 +530,16 @@ export const GetLevelsResponse = zod.object({
       "True when the user has not set their bodyweight and a default is being used.",
     ),
   stats: zod.object({
-    currentTonnage30dKg: zod.number(),
-    maxTonnage30dKg: zod.number(),
-    oldestSetInWindowAt: zod.coerce.date().nullable(),
+    currentTonnage7dKg: zod
+      .number()
+      .describe("Total tonnage (kg) lifted in the last 7 days."),
+    maxTonnage7dKg: zod
+      .number()
+      .describe("Best rolling 7-day tonnage (kg) ever achieved."),
+    oldestSetInWindowAt: zod.coerce
+      .date()
+      .nullable()
+      .describe("Timestamp of the oldest set inside the current 7-day window."),
     mainExercises: zod.array(
       zod.object({
         exerciseId: zod.number(),
@@ -519,7 +555,12 @@ export const GetLevelsResponse = zod.object({
           .number()
           .nullable()
           .describe(
-            "Required top-set weight to pass this exercise at the next level. Null at max level.",
+            "Required top-set weight to pass this exercise at the next level, already including the multi-level jump penalty when applicable. Null at max level.",
+          ),
+        requiredKgPenaltyMultiplier: zod
+          .number()
+          .describe(
+            "Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1 when the user is attempting to skip more than one level above their confirmed level; UI uses this to surface why the target is higher than the base bodyweight × multiplier × levelFactor would suggest.",
           ),
       }),
     ),

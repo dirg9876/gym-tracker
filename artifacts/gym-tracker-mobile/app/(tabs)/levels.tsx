@@ -61,8 +61,8 @@ export default function LevelsScreen() {
     ? Math.min(100, (passedCount / next.mainExercisesRequired) * 100)
     : 100;
   const tonnageProgress =
-    next && next.tonnage30dKgRequired > 0
-      ? Math.min(100, (stats.currentTonnage30dKg / next.tonnage30dKgRequired) * 100)
+    next && next.tonnage7dKgRequired > 0
+      ? Math.min(100, (stats.currentTonnage7dKg / next.tonnage7dKgRequired) * 100)
       : 100;
 
   const oldestSetMs = stats.oldestSetInWindowAt
@@ -72,7 +72,7 @@ export default function LevelsScreen() {
     ? Math.max(
         0,
         Math.ceil(
-          (oldestSetMs + 30 * 24 * 60 * 60 * 1000 - Date.now()) /
+          (oldestSetMs + 7 * 24 * 60 * 60 * 1000 - Date.now()) /
             (24 * 60 * 60 * 1000),
         ),
       )
@@ -211,15 +211,15 @@ export default function LevelsScreen() {
 
             <ProgressRow
               icon={<Feather name="zap" size={14} color={colors.mutedForeground} />}
-              label="Тоннаж за 30 дней"
-              valueText={`${formatNumber(stats.currentTonnage30dKg)} / ${formatNumber(next.tonnage30dKgRequired)} кг`}
+              label="Тоннаж за 7 дней"
+              valueText={`${formatNumber(stats.currentTonnage7dKg)} / ${formatNumber(next.tonnage7dKgRequired)} кг`}
               progress={tonnageProgress}
-              reached={stats.currentTonnage30dKg >= next.tonnage30dKgRequired}
+              reached={stats.currentTonnage7dKg >= next.tonnage7dKgRequired}
             />
 
             {daysUntilOldestExpires !== null &&
-            stats.currentTonnage30dKg > 0 &&
-            stats.currentTonnage30dKg < next.tonnage30dKgRequired ? (
+            stats.currentTonnage7dKg > 0 &&
+            stats.currentTonnage7dKg < next.tonnage7dKgRequired ? (
               <View
                 style={{
                   flexDirection: "row",
@@ -238,7 +238,7 @@ export default function LevelsScreen() {
                     flex: 1,
                   }}
                 >
-                  Окно тоннажа — последние 30 дней. Самые ранние подходы «сгорят» через{" "}
+                  Окно тоннажа — последние 7 дней. Самые ранние подходы «сгорят» через{" "}
                   {daysUntilOldestExpires} {pluralizeDays(daysUntilOldestExpires)}.
                 </Text>
               </View>
@@ -380,7 +380,7 @@ export default function LevelsScreen() {
                         marginTop: 2,
                       }}
                     >
-                      3 упр. от {formatKg(lvl.benchmarkKg)} · {formatNumber(lvl.tonnage30dKgRequired)} кг / 30 дней
+                      3 упр. от {formatKg(lvl.benchmarkKg)} · {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дней
                     </Text>
                   ) : null}
                 </View>

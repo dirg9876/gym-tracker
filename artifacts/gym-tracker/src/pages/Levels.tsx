@@ -4,13 +4,21 @@ import {
   type Level,
   type MainExerciseStat,
 } from "@workspace/api-client-react";
-import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star, AlertTriangle, ChevronRight } from "lucide-react";
+import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star, AlertTriangle, ChevronRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/tierImages";
 import { LevelForecastCard } from "@/components/LevelForecastCard";
 import { ProfileCard } from "@/components/ProfileCard";
+import { AppShell } from "@/components/layout/AppShell";
+
+const TONNAGE_WINDOW_DAYS = 7;
+const TONNAGE_WINDOW_MS = TONNAGE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+function formatPenaltyPct(mul: number): string {
+  return `+${Math.round((mul - 1) * 100)}%`;
+}
 
 export function Levels() {
   const { data, isLoading } = useGetLevels();
@@ -24,12 +32,29 @@ export function Levels() {
   }, [data?.currentLevel]);
 
   if (isLoading || !data) {
-    return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>;
+    return (
+      <AppShell>
+        <div className="p-8 text-center text-muted-foreground">Загрузка...</div>
+      </AppShell>
+    );
   }
 
-  const { levels, currentLevel, bestLevelEver, stats, bodyWeightKg, bodyWeightIsFallback } = data;
+  const {
+    levels,
+    currentLevel,
+    bestLevelEver,
+    confirmedLevel,
+    nextLevelPenaltyMultiplier,
+    nextLevelTonnage7dKgRequired,
+    stats,
+    bodyWeightKg,
+    bodyWeightIsFallback,
+  } = data;
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
+
+  // Server-canonical effective target (penalty + same rounding as pass check).
+  const nextTonnageTarget = nextLevelTonnage7dKgRequired ?? 0;
 
   const passedExercises = next
     ? stats.mainExercises.filter(
@@ -44,8 +69,8 @@ export function Levels() {
     ? Math.min(100, (passedCount / next.mainExercisesRequired) * 100)
     : 100;
   const tonnageProgress =
-    next && next.tonnage30dKgRequired > 0
-      ? Math.min(100, (stats.currentTonnage30dKg / next.tonnage30dKgRequired) * 100)
+    next && nextTonnageTarget > 0
+      ? Math.min(100, (stats.currentTonnage7dKg / nextTonnageTarget) * 100)
       : 100;
 
   const oldestSetMs = stats.oldestSetInWindowAt
@@ -55,15 +80,18 @@ export function Levels() {
     ? Math.max(
         0,
         Math.ceil(
-          (oldestSetMs + 30 * 24 * 60 * 60 * 1000 - Date.now()) /
+          (oldestSetMs + TONNAGE_WINDOW_MS - Date.now()) /
             (24 * 60 * 60 * 1000),
         ),
       )
     : null;
   const droppedFromBest = bestLevelEver > currentLevel;
+  const jumpLevels = next ? next.level - confirmedLevel : 0;
+  const showNextLevelPenalty = next && nextLevelPenaltyMultiplier > 1;
 
   return (
-    <div className="min-h-[100dvh] bg-background pb-24">
+    <AppShell>
+      <div className="min-h-[100dvh] bg-background pb-24">
       {/* Hero: current level */}
       <div className="bg-gradient-to-b from-primary/10 to-transparent pt-6 pb-6 px-4 border-b border-border">
         <div className="max-w-md mx-auto space-y-4">
@@ -130,9 +158,22 @@ export function Levels() {
             <>
               <LevelForecastCard />
               <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                  До уровня {next.level} — «{next.name}»
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                    До уровня {next.level} — «{next.name}»
+                  </div>
                 </div>
+
+                {showNextLevelPenalty && (
+                  <div className="flex items-start gap-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md px-2.5 py-2">
+                    <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      Прыжок через {jumpLevels - 1}{" "}
+                      {pluralizeLevels(jumpLevels - 1)}: нормы тоннажа и
+                      штанг увеличены на {formatPenaltyPct(nextLevelPenaltyMultiplier)}.
+                    </span>
+                  </div>
+                )}
 
                 <ProgressRow
                   icon={<Dumbbell className="h-4 w-4" />}
@@ -143,24 +184,27 @@ export function Levels() {
                   progress={exerciseProgress}
                 />
 
-                <MainExercisesGrid exercises={stats.mainExercises} />
+                <MainExercisesGrid
+                  exercises={stats.mainExercises}
+                  penaltyMultiplier={nextLevelPenaltyMultiplier}
+                />
 
                 <ProgressRow
                   icon={<Flame className="h-4 w-4" />}
-                  label="Тоннаж за последние 30 дней"
-                  value={stats.currentTonnage30dKg}
-                  target={next.tonnage30dKgRequired}
+                  label="Тоннаж за последние 7 дней"
+                  value={stats.currentTonnage7dKg}
+                  target={nextTonnageTarget}
                   unit="кг"
                   progress={tonnageProgress}
                 />
 
                 {daysUntilOldestExpires !== null &&
-                  stats.currentTonnage30dKg > 0 &&
-                  stats.currentTonnage30dKg < next.tonnage30dKgRequired && (
+                  stats.currentTonnage7dKg > 0 &&
+                  stats.currentTonnage7dKg < nextTonnageTarget && (
                     <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-2">
                       <Hourglass className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                       <span>
-                        Окно тоннажа — последние 30 дней. Самые ранние подходы «сгорят»
+                        Окно тоннажа — последние 7 дней. Самые ранние подходы «сгорят»
                         через {daysUntilOldestExpires}{" "}
                         {pluralizeDays(daysUntilOldestExpires)}, если не успеешь добрать норму.
                       </span>
@@ -237,7 +281,7 @@ export function Levels() {
                         ? `3 упр. по нормативу (укажи вес — сейчас расчёт по ${formatNumber(bodyWeightKg)} кг)`
                         : `3 упр. по нормативу для ${formatNumber(bodyWeightKg)} кг`}
                       {" · Тоннаж "}
-                      {formatNumber(lvl.tonnage30dKgRequired)} кг / 30 дн
+                      {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
                     </div>
                   )}
                 </div>
@@ -246,7 +290,8 @@ export function Levels() {
           })}
         </div>
       </div>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 
@@ -256,6 +301,14 @@ function pluralizeDays(n: number): string {
   if (mod10 === 1 && mod100 !== 11) return "день";
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "дня";
   return "дней";
+}
+
+function pluralizeLevels(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "уровень";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "уровня";
+  return "уровней";
 }
 
 function ProgressRow({
@@ -299,7 +352,14 @@ function ProgressRow({
   );
 }
 
-function MainExercisesGrid({ exercises }: { exercises: MainExerciseStat[] }) {
+function MainExercisesGrid({
+  exercises,
+  penaltyMultiplier,
+}: {
+  exercises: MainExerciseStat[];
+  penaltyMultiplier: number;
+}) {
+  const showPenaltyHint = penaltyMultiplier > 1;
   return (
     <div className="grid grid-cols-1 gap-1.5">
       {exercises.map((e) => {
@@ -309,38 +369,45 @@ function MainExercisesGrid({ exercises }: { exercises: MainExerciseStat[] }) {
         return (
           <div
             key={e.exerciseId}
-            className={`flex items-center justify-between gap-2 text-xs px-2.5 py-2 rounded-md border ${
+            className={`flex flex-col gap-1 text-xs px-2.5 py-2 rounded-md border ${
               passed
                 ? "border-primary/40 bg-primary/10 text-foreground"
                 : "border-border bg-card/40 text-muted-foreground"
             }`}
           >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {passed ? (
-                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-              ) : (
-                <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
-              )}
-              <span className="truncate font-medium">{e.name}</span>
-            </div>
-            <div className="flex flex-col items-end shrink-0 leading-tight">
-              {required != null && required > 0 ? (
-                <>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                    нужно {formatKg(required)}
-                  </span>
-                  <span
-                    className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
-                  >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {passed ? (
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                ) : (
+                  <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
+                )}
+                <span className="truncate font-medium">{e.name}</span>
+              </div>
+              <div className="flex flex-col items-end shrink-0 leading-tight">
+                {required != null && required > 0 ? (
+                  <>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                      нужно {formatKg(required)}
+                    </span>
+                    <span
+                      className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
+                    >
+                      сейчас {formatNumber(e.maxWeightKg)} кг
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-mono text-[11px] text-foreground/80">
                     сейчас {formatNumber(e.maxWeightKg)} кг
                   </span>
-                </>
-              ) : (
-                <span className="font-mono text-[11px] text-foreground/80">
-                  сейчас {formatNumber(e.maxWeightKg)} кг
-                </span>
-              )}
+                )}
+              </div>
             </div>
+            {showPenaltyHint && required != null && required > 0 && !passed && (
+              <div className="text-[10px] text-amber-400/80 pl-5">
+                {formatPenaltyPct(penaltyMultiplier)} из-за прыжка через уровни
+              </div>
+            )}
           </div>
         );
       })}

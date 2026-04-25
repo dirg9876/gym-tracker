@@ -75,8 +75,9 @@ export function Home() {
         {levelsData && (() => {
           const cur = levelsData.levels[levelsData.currentLevel];
           const nxt = levelsData.levels[levelsData.currentLevel + 1];
-          const tonProg = nxt && nxt.tonnage30dKgRequired > 0
-            ? Math.min(100, (levelsData.stats.currentTonnage30dKg / nxt.tonnage30dKgRequired) * 100)
+          const nxtTarget = levelsData.nextLevelTonnage7dKgRequired ?? 0;
+          const tonProg = nxt && nxtTarget > 0
+            ? Math.min(100, (levelsData.stats.currentTonnage7dKg / nxtTarget) * 100)
             : 100;
           return (
             <button
@@ -97,7 +98,7 @@ export function Home() {
                 {nxt ? (
                   <>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnage30dKg)} / {formatNumber(nxt.tonnage30dKgRequired)} кг за 30 дн.
+                      До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnage7dKg)} / {formatNumber(nxtTarget)} кг за 7 дн.
                     </div>
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
                       <div className="h-full bg-primary transition-all" style={{ width: `${tonProg}%` }} />

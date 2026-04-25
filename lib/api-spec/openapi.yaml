@@ -899,8 +899,13 @@ components:
             should use `MainExerciseStat.requiredKgForNextLevel` instead;
             this field is retained for backwards compatibility with the
             program builder.
-        tonnage30dKgRequired:
+        tonnage7dKgRequired:
           type: number
+          description: >-
+            Required total tonnage (kg) over the last 7 days at this level,
+            computed from `3 workouts/week × 5 exercises × 5 sets × 9 reps ×
+            workingWeight`, where `workingWeight = bodyWeight ×
+            levelFactor(level)`.
         mainExercisesRequired:
           type: integer
       required:
@@ -909,7 +914,7 @@ components:
         - description
         - tier
         - benchmarkKg
-        - tonnage30dKgRequired
+        - tonnage7dKgRequired
         - mainExercisesRequired
 
     MainExerciseStat:
@@ -929,7 +934,17 @@ components:
         requiredKgForNextLevel:
           type: number
           nullable: true
-          description: Required top-set weight to pass this exercise at the next level. Null at max level.
+          description: >-
+            Required top-set weight to pass this exercise at the next level,
+            already including the multi-level jump penalty when applicable.
+            Null at max level.
+        requiredKgPenaltyMultiplier:
+          type: number
+          description: >-
+            Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1
+            when the user is attempting to skip more than one level above their
+            confirmed level; UI uses this to surface why the target is higher
+            than the base bodyweight × multiplier × levelFactor would suggest.
       required:
         - exerciseId
         - name
@@ -937,25 +952,29 @@ components:
         - maxWeightKg
         - multiplier
         - requiredKgForNextLevel
+        - requiredKgPenaltyMultiplier
 
     LevelStats:
       type: object
       properties:
-        currentTonnage30dKg:
+        currentTonnage7dKg:
           type: number
-        maxTonnage30dKg:
+          description: Total tonnage (kg) lifted in the last 7 days.
+        maxTonnage7dKg:
           type: number
+          description: Best rolling 7-day tonnage (kg) ever achieved.
         oldestSetInWindowAt:
           type: string
           format: date-time
           nullable: true
+          description: Timestamp of the oldest set inside the current 7-day window.
         mainExercises:
           type: array
           items:
             $ref: "#/components/schemas/MainExerciseStat"
       required:
-        - currentTonnage30dKg
-        - maxTonnage30dKg
+        - currentTonnage7dKg
+        - maxTonnage7dKg
         - oldestSetInWindowAt
         - mainExercises
 
@@ -973,6 +992,25 @@ components:
         nextLevel:
           type: integer
           nullable: true
+        confirmedLevel:
+          type: integer
+          description: >-
+            The user's last persisted level — anchor for the multi-level jump
+            penalty. Equals `currentLevel` once a level-up is persisted.
+        nextLevelPenaltyMultiplier:
+          type: number
+          description: >-
+            Penalty multiplier (>= 1) applied to the next level's tonnage and
+            per-exercise requirements. Equals 1 when the next level is just
+            `confirmedLevel + 1`; grows by 0.10 per additional skipped level.
+        nextLevelTonnage7dKgRequired:
+          type: number
+          nullable: true
+          description: >-
+            Effective tonnage target (kg, 7-day window) the user must hit to
+            reach the next level — penalty already applied and rounded the same
+            way the server's pass check rounds. Null at max level. UIs should
+            prefer this value over recomputing locally to avoid rounding drift.
         bodyWeightKg:
           type: number
           description: Bodyweight used to compute requirements (falls back to a default if not set).
@@ -986,6 +1024,9 @@ components:
         - currentLevel
         - bestLevelEver
         - nextLevel
+        - confirmedLevel
+        - nextLevelPenaltyMultiplier
+        - nextLevelTonnage7dKgRequired
         - bodyWeightKg
         - bodyWeightIsFallback
         - stats
@@ -1275,12 +1316,13 @@ components:
           nullable: true
         tonnageNeededKg:
           type: number
+          description: Tonnage (kg) still needed in the 7-day window to reach the next level.
         tonnage7dKg:
           type: number
-        tonnage30dKg:
-          type: number
+          description: Total tonnage (kg) lifted in the last 7 days.
         avgDailyTonnageKg:
           type: number
+          description: Average daily tonnage (kg/day), computed over the last 7 days.
         estimatedDays:
           type: integer
           nullable: true
@@ -1292,6 +1334,5 @@ components:
         - nextLevel
         - tonnageNeededKg
         - tonnage7dKg
-        - tonnage30dKg
         - avgDailyTonnageKg
         - confidence

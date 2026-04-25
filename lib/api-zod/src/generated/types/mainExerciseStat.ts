@@ -13,6 +13,8 @@ export interface MainExerciseStat {
   maxWeightKg: number;
   /** Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat). */
   multiplier: number;
-  /** Required top-set weight to pass this exercise at the next level. Null at max level. */
+  /** Required top-set weight to pass this exercise at the next level, already including the multi-level jump penalty when applicable. Null at max level. */
   requiredKgForNextLevel: number | null;
+  /** Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1 when the user is attempting to skip more than one level above their confirmed level; UI uses this to surface why the target is higher than the base bodyweight × multiplier × levelFactor would suggest. */
+  requiredKgPenaltyMultiplier: number;
 }

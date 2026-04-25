@@ -224,7 +224,8 @@ export interface Level {
   tier: number;
   /** Legacy 1.0× reference weight for this level, computed as `bodyWeight × levelFactor(level)`. New per-exercise targets should use `MainExerciseStat.requiredKgForNextLevel` instead; this field is retained for backwards compatibility with the program builder. */
   benchmarkKg: number;
-  tonnage30dKgRequired: number;
+  /** Required total tonnage (kg) over the last 7 days at this level, computed from `3 workouts/week × 5 exercises × 5 sets × 9 reps × workingWeight`, where `workingWeight = bodyWeight × levelFactor(level)`. */
+  tonnage7dKgRequired: number;
   mainExercisesRequired: number;
 }
 
@@ -235,13 +236,18 @@ export interface MainExerciseStat {
   maxWeightKg: number;
   /** Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat). */
   multiplier: number;
-  /** Required top-set weight to pass this exercise at the next level. Null at max level. */
+  /** Required top-set weight to pass this exercise at the next level, already including the multi-level jump penalty when applicable. Null at max level. */
   requiredKgForNextLevel: number | null;
+  /** Penalty multiplier (>= 1) baked into `requiredKgForNextLevel`. >1 when the user is attempting to skip more than one level above their confirmed level; UI uses this to surface why the target is higher than the base bodyweight × multiplier × levelFactor would suggest. */
+  requiredKgPenaltyMultiplier: number;
 }
 
 export interface LevelStats {
-  currentTonnage30dKg: number;
-  maxTonnage30dKg: number;
+  /** Total tonnage (kg) lifted in the last 7 days. */
+  currentTonnage7dKg: number;
+  /** Best rolling 7-day tonnage (kg) ever achieved. */
+  maxTonnage7dKg: number;
+  /** Timestamp of the oldest set inside the current 7-day window. */
   oldestSetInWindowAt: string | null;
   mainExercises: MainExerciseStat[];
 }
@@ -251,6 +257,12 @@ export interface LevelsResponse {
   currentLevel: number;
   bestLevelEver: number;
   nextLevel: number | null;
+  /** The user's last persisted level — anchor for the multi-level jump penalty. Equals `currentLevel` once a level-up is persisted. */
+  confirmedLevel: number;
+  /** Penalty multiplier (>= 1) applied to the next level's tonnage and per-exercise requirements. Equals 1 when the next level is just `confirmedLevel + 1`; grows by 0.10 per additional skipped level. */
+  nextLevelPenaltyMultiplier: number;
+  /** Effective tonnage target (kg, 7-day window) the user must hit to reach the next level — penalty already applied and rounded the same way the server's pass check rounds. Null at max level. UIs should prefer this value over recomputing locally to avoid rounding drift. */
+  nextLevelTonnage7dKgRequired: number | null;
   /** Bodyweight used to compute requirements (falls back to a default if not set). */
   bodyWeightKg: number;
   /** True when the user has not set their bodyweight and a default is being used. */
@@ -412,9 +424,11 @@ export interface LevelForecast {
   currentLevel: number;
   nextLevel: number | null;
   nextLevelName?: string | null;
+  /** Tonnage (kg) still needed in the 7-day window to reach the next level. */
   tonnageNeededKg: number;
+  /** Total tonnage (kg) lifted in the last 7 days. */
   tonnage7dKg: number;
-  tonnage30dKg: number;
+  /** Average daily tonnage (kg/day), computed over the last 7 days. */
   avgDailyTonnageKg: number;
   estimatedDays?: number | null;
   confidence: LevelForecastConfidence;

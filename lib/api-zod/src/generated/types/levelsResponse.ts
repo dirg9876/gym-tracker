@@ -13,6 +13,12 @@ export interface LevelsResponse {
   currentLevel: number;
   bestLevelEver: number;
   nextLevel: number | null;
+  /** The user's last persisted level — anchor for the multi-level jump penalty. Equals `currentLevel` once a level-up is persisted. */
+  confirmedLevel: number;
+  /** Penalty multiplier (>= 1) applied to the next level's tonnage and per-exercise requirements. Equals 1 when the next level is just `confirmedLevel + 1`; grows by 0.10 per additional skipped level. */
+  nextLevelPenaltyMultiplier: number;
+  /** Effective tonnage target (kg, 7-day window) the user must hit to reach the next level — penalty already applied and rounded the same way the server's pass check rounds. Null at max level. UIs should prefer this value over recomputing locally to avoid rounding drift. */
+  nextLevelTonnage7dKgRequired: number | null;
   /** Bodyweight used to compute requirements (falls back to a default if not set). */
   bodyWeightKg: number;
   /** True when the user has not set their bodyweight and a default is being used. */

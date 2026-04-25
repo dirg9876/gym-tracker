@@ -8,8 +8,11 @@
 import type { MainExerciseStat } from "./mainExerciseStat";
 
 export interface LevelStats {
-  currentTonnage30dKg: number;
-  maxTonnage30dKg: number;
+  /** Total tonnage (kg) lifted in the last 7 days. */
+  currentTonnage7dKg: number;
+  /** Best rolling 7-day tonnage (kg) ever achieved. */
+  maxTonnage7dKg: number;
+  /** Timestamp of the oldest set inside the current 7-day window. */
   oldestSetInWindowAt: Date | null;
   mainExercises: MainExerciseStat[];
 }

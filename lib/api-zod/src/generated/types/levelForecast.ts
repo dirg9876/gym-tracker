@@ -11,9 +11,11 @@ export interface LevelForecast {
   currentLevel: number;
   nextLevel: number | null;
   nextLevelName?: string | null;
+  /** Tonnage (kg) still needed in the 7-day window to reach the next level. */
   tonnageNeededKg: number;
+  /** Total tonnage (kg) lifted in the last 7 days. */
   tonnage7dKg: number;
-  tonnage30dKg: number;
+  /** Average daily tonnage (kg/day), computed over the last 7 days. */
   avgDailyTonnageKg: number;
   estimatedDays?: number | null;
   confidence: LevelForecastConfidence;
