@@ -60,9 +60,10 @@ export default function LevelsScreen() {
   const exerciseProgress = next
     ? Math.min(100, (passedCount / next.mainExercisesRequired) * 100)
     : 100;
+  const nextTonnageTarget = data.nextLevelTonnage7dKgRequired ?? 0;
   const tonnageProgress =
-    next && next.tonnage7dKgRequired > 0
-      ? Math.min(100, (stats.currentTonnage7dKg / next.tonnage7dKgRequired) * 100)
+    next && nextTonnageTarget > 0
+      ? Math.min(100, (stats.currentTonnage7dKg / nextTonnageTarget) * 100)
       : 100;
 
   const oldestSetMs = stats.oldestSetInWindowAt
@@ -212,14 +213,14 @@ export default function LevelsScreen() {
             <ProgressRow
               icon={<Feather name="zap" size={14} color={colors.mutedForeground} />}
               label="Тоннаж за 7 дней"
-              valueText={`${formatNumber(stats.currentTonnage7dKg)} / ${formatNumber(next.tonnage7dKgRequired)} кг`}
+              valueText={`${formatNumber(stats.currentTonnage7dKg)} / ${formatNumber(nextTonnageTarget)} кг`}
               progress={tonnageProgress}
-              reached={stats.currentTonnage7dKg >= next.tonnage7dKgRequired}
+              reached={stats.currentTonnage7dKg >= nextTonnageTarget}
             />
 
             {daysUntilOldestExpires !== null &&
             stats.currentTonnage7dKg > 0 &&
-            stats.currentTonnage7dKg < next.tonnage7dKgRequired ? (
+            stats.currentTonnage7dKg < nextTonnageTarget ? (
               <View
                 style={{
                   flexDirection: "row",

@@ -62,9 +62,10 @@ export default function HomeScreen() {
 
   const cur = levelsData ? levelsData.levels[levelsData.currentLevel] : null;
   const nxt = levelsData ? levelsData.levels[levelsData.currentLevel + 1] : null;
+  const nxtTarget = levelsData?.nextLevelTonnage7dKgRequired ?? 0;
   const tonProg =
-    nxt && nxt.tonnage7dKgRequired > 0 && levelsData
-      ? Math.min(100, (levelsData.stats.currentTonnage7dKg / nxt.tonnage7dKgRequired) * 100)
+    nxt && nxtTarget > 0 && levelsData
+      ? Math.min(100, (levelsData.stats.currentTonnage7dKg / nxtTarget) * 100)
       : 100;
 
   return (
@@ -120,7 +121,7 @@ export default function HomeScreen() {
                     numberOfLines={1}
                   >
                     До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnage7dKg)} /{" "}
-                    {formatNumber(nxt.tonnage7dKgRequired)} кг
+                    {formatNumber(nxtTarget)} кг
                   </Text>
                   <View
                     style={{

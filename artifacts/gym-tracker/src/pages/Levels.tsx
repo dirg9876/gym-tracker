@@ -184,10 +184,7 @@ export function Levels() {
                   progress={exerciseProgress}
                 />
 
-                <MainExercisesGrid
-                  exercises={stats.mainExercises}
-                  penaltyMultiplier={nextLevelPenaltyMultiplier}
-                />
+                <MainExercisesGrid exercises={stats.mainExercises} />
 
                 <ProgressRow
                   icon={<Flame className="h-4 w-4" />}
@@ -354,18 +351,17 @@ function ProgressRow({
 
 function MainExercisesGrid({
   exercises,
-  penaltyMultiplier,
 }: {
   exercises: MainExerciseStat[];
-  penaltyMultiplier: number;
 }) {
-  const showPenaltyHint = penaltyMultiplier > 1;
   return (
     <div className="grid grid-cols-1 gap-1.5">
       {exercises.map((e) => {
         const required = e.requiredKgForNextLevel;
         const passed =
           required != null && required > 0 && e.maxWeightKg >= required;
+        const rowPenalty = e.requiredKgPenaltyMultiplier ?? 1;
+        const showPenaltyHint = rowPenalty > 1;
         return (
           <div
             key={e.exerciseId}
@@ -405,7 +401,7 @@ function MainExercisesGrid({
             </div>
             {showPenaltyHint && required != null && required > 0 && !passed && (
               <div className="text-[10px] text-amber-400/80 pl-5">
-                {formatPenaltyPct(penaltyMultiplier)} из-за прыжка через уровни
+                {formatPenaltyPct(rowPenalty)} из-за прыжка через уровни
               </div>
             )}
           </div>
