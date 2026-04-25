@@ -181,7 +181,16 @@ export function ActiveWorkout() {
     }
     // For bodyweight exercises the user enters extra weight (e.g. plate on
     // a belt for pull-ups); the actual top-set weight stored in the DB is
-    // bodyweight + extra so tonnage and PRs reflect the real load.
+    // bodyweight + extra so tonnage and PRs reflect the real load. Guard
+    // against logging while /levels is still in flight — bodyWeightKg
+    // would be 0 in that window and we'd write only the extra weight,
+    // silently corrupting tonnage/PRs for the user.
+    if (isBwSelected && bodyWeightKg <= 0) {
+      toast.error(
+        "Подожди секунду — загружаем твой вес. Если он не подгрузится, укажи его в профиле.",
+      );
+      return;
+    }
     const submittedWeight = isBwSelected
       ? Math.max(0, bodyWeightKg + weight)
       : weight;
