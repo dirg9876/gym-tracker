@@ -718,36 +718,52 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     };
   });
 
-  // Compute currentRank from actual performance ratio (max / mcKg) rather than
-  // from the computed level. This reflects how close the user is to the MC
-  // standard independent of tonnage/level dynamics. If no exercises have data,
-  // fall back to the level-based rank.
-  const exercisesWithRatio = mainRows.filter((r) => {
+  // Compute currentRank from the user's actual big-3 performance (squat,
+  // bench, deadlift) as a fraction of their MC target. Only classic lifts are
+  // used so that accessory PRs don't inflate the displayed rank.
+  // Falls back to level-based rank when no classic lifts have logged sets.
+  const CLASSIC_NAMES = new Set([
+    "Приседания со штангой",
+    "Жим штанги лёжа",
+    "Становая тяга",
+  ]);
+  const classicWithData = mainRows.filter((r) => {
     const mc = mcResultByExercise.get(r.id)!;
-    return mc.kg != null && (maxByExercise.get(r.id) ?? 0) > 0;
+    return (
+      CLASSIC_NAMES.has(r.name) &&
+      mc.kg != null &&
+      (maxByExercise.get(r.id) ?? 0) > 0
+    );
   });
   let currentRank: SportRank;
-  if (exercisesWithRatio.length > 0) {
-    const totalRatio = exercisesWithRatio.reduce((sum, r) => {
+  if (classicWithData.length > 0) {
+    const totalRatio = classicWithData.reduce((sum, r) => {
       const mc = mcResultByExercise.get(r.id)!;
       const maxW = maxByExercise.get(r.id) ?? 0;
       return sum + maxW / mc.kg!;
     }, 0);
-    const avgRatio = totalRatio / exercisesWithRatio.length;
+    const avgRatio = totalRatio / classicWithData.length;
     currentRank = rankForMcPercent(round(avgRatio, 4));
   } else {
+    // No big-3 data → fall back to level-based rank
     currentRank = rankForLevel(currentLevel);
   }
 
-  // Flag for the UI: if the user's current computed level dropped below their
-  // confirmed level (e.g. after a norm recalibration), show a "check your maxes"
-  // hint. Normal tonnage slumps show a separate bestLevelEver hint instead.
+  // Guard: if the stored confirmed level is higher than the freshly computed
+  // level (e.g. after a norm recalibration made targets harder), use the
+  // confirmed level as the floor for display. We still show a banner so the
+  // user knows the norms changed and they should re-verify their maxes.
   const confirmedLevelMigrationNeeded = confirmedLevel > currentLevel;
+  const effectiveCurrentLevel = confirmedLevelMigrationNeeded
+    ? confirmedLevel
+    : currentLevel;
 
   return {
-    currentLevel,
+    // Use effectiveCurrentLevel as the floor: when confirmed > computed (e.g.
+    // after norm recalibration), we don't visually demote the user.
+    currentLevel: effectiveCurrentLevel,
     bestLevelEver,
-    nextLevel: nextLevelIdx,
+    nextLevel: effectiveCurrentLevel >= MAX_LEVEL ? null : effectiveCurrentLevel + 1,
     confirmedLevel,
     nextLevelPenaltyMultiplier: round(nextLevelPenaltyMultiplier),
     nextLevelTonnage7dKgRequired,

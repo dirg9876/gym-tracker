@@ -37,8 +37,6 @@ export function RankBadge({
 }) {
   const style = TIER_STYLES[rank.tier] ?? TIER_STYLES[0]!;
 
-  if (rank.code === "NONE" && variant !== "hero") return null;
-
   if (variant === "hero") {
     return (
       <div
