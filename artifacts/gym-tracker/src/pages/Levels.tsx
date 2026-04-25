@@ -8,6 +8,7 @@ import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star } from "lucide-re
 import { motion } from "framer-motion";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/tierImages";
+import { LevelForecastCard } from "@/components/LevelForecastCard";
 
 export function Levels() {
   const { data, isLoading } = useGetLevels();
@@ -95,10 +96,14 @@ export function Levels() {
           </motion.div>
 
           {next ? (
-            <div className="mt-6 bg-card border border-border rounded-2xl p-4 space-y-4">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                До уровня {next.level} — «{next.name}»
+            <>
+              <div className="mt-6">
+                <LevelForecastCard />
               </div>
+              <div className="mt-4 bg-card border border-border rounded-2xl p-4 space-y-4">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                  До уровня {next.level} — «{next.name}»
+                </div>
 
               <ProgressRow
                 icon={<Dumbbell className="h-4 w-4" />}
@@ -135,7 +140,8 @@ export function Levels() {
                     </span>
                   </div>
                 )}
-            </div>
+              </div>
+            </>
           ) : (
             <div className="mt-6 bg-card border border-primary/40 rounded-2xl p-4 flex items-center gap-3">
               <Trophy className="h-6 w-6 text-primary" />

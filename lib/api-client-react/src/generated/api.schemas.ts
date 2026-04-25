@@ -282,10 +282,93 @@ export interface ProgramPlan {
   exercises: PlannedExercise[];
 }
 
+export interface ExerciseLastSetEntry {
+  weightKg: number;
+  reps: number;
+}
+
+export interface ExerciseLastSets {
+  exerciseId: number;
+  workoutId?: number | null;
+  workoutName?: string | null;
+  workoutDate?: string | null;
+  sets: ExerciseLastSetEntry[];
+  bestEverWeightKg?: number | null;
+  bestEverReps?: number | null;
+}
+
+export interface WorkoutComparisonExercise {
+  exerciseId: number;
+  name: string;
+  currentVolume: number;
+  previousVolume: number;
+  deltaVolume: number;
+  currentMaxWeight: number;
+  previousMaxWeight: number;
+  deltaMaxWeight: number;
+  currentReps: number;
+  previousReps: number;
+  deltaReps: number;
+}
+
+export interface WorkoutComparison {
+  workoutId: number;
+  previousWorkoutId: number | null;
+  previousWorkoutDate?: string | null;
+  previousWorkoutName?: string | null;
+  deltaVolume: number;
+  deltaReps: number;
+  deltaSets: number;
+  durationDeltaMinutes?: number | null;
+  exercises: WorkoutComparisonExercise[];
+}
+
+export interface HeatmapDay {
+  /** ISO date YYYY-MM-DD */
+  date: string;
+  volume: number;
+  sets: number;
+  /** 0..4 bucket */
+  intensity: number;
+}
+
+export interface HeatmapResponse {
+  days: HeatmapDay[];
+  maxVolume: number;
+  totalDays: number;
+  activeDays: number;
+}
+
+export type LevelForecastConfidence =
+  (typeof LevelForecastConfidence)[keyof typeof LevelForecastConfidence];
+
+export const LevelForecastConfidence = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  achieved: "achieved",
+} as const;
+
+export interface LevelForecast {
+  currentLevel: number;
+  nextLevel: number | null;
+  nextLevelName?: string | null;
+  tonnageNeededKg: number;
+  tonnage7dKg: number;
+  tonnage30dKg: number;
+  avgDailyTonnageKg: number;
+  estimatedDays?: number | null;
+  confidence: LevelForecastConfidence;
+}
+
 export type ListWorkoutsParams = {
   /**
    * @minimum 1
    * @maximum 100
    */
   limit?: number;
+};
+
+export type GetHeatmapParams = {
+  days?: number;
 };

@@ -82,6 +82,46 @@ The plan is also stashed in `localStorage` keyed by workout id
 already exists, the button switches to "Открыть текущую тренировку" and
 just navigates — it never overwrites the existing workout's plan.
 
+## Live Workout Helpers
+
+While inside `/workout/:id`, the logger now offers four assistants:
+
+- **Auto-fill from program plan**: when the workout was started from a
+  program, the first set selection auto-fills weight + reps from the stashed
+  plan (`gym-tracker:program-plan:<id>`). After each successful add the next
+  exercise's plan is queued automatically (mirrors mobile).
+- **Previous performance card** (`PreviousSets`): fetches the user's last
+  workout sets for the chosen exercise from `GET /api/exercises/:id/last-sets`
+  and shows weight × reps plus a "повторить последний" button that fills the
+  current weight/reps inputs.
+- **Rest timer** (`RestTimer`): 60/90/120/180 s presets with a Web Audio
+  beep + vibration when the rest ends. The component is keyed by
+  `restTimerKey`, which bumps on every successful set add so the timer
+  resets automatically.
+
+## Insights & PWA
+
+- **Strength card on Home** (`HomeStrengthCard`): shows the max-weight
+  trajectory of the user's top exercise (skips when fewer than two data
+  points exist).
+- **Workout vs previous comparison** (`WorkoutComparisonPanel` on
+  `/workout/:id/report` and history detail): backed by
+  `GET /api/workouts/:id/comparison`, listing per-exercise volume / max
+  weight deltas vs the prior finished workout.
+- **Year heatmap** (`HeatmapCalendar` on `/stats`): year-long calendar grid
+  rendered as inline SVG, fed by `GET /api/stats/heatmap?days=365`.
+  Date strings are parsed with a local-time helper to avoid timezone shift.
+- **Level forecast** (`LevelForecastCard` on `/levels`): shows estimated
+  days to next level + confidence (`low`/`medium`/`high`/`achieved`),
+  using `GET /api/stats/forecast` (regression based on the last-30 days
+  tonnage trajectory).
+- **PWA**: `vite-plugin-pwa` (autoUpdate) generates a manifest and service
+  worker. `start_url` / `scope` follow the artifact's `BASE_PATH`. Runtime
+  caching: NetworkFirst (5 s timeout) for `/api/*`, CacheFirst for Google
+  Fonts, precache for the app shell. Icons are generated PNGs in
+  `public/pwa-{192,512,maskable-512}.png`. SW is only registered in
+  production via `registerSW({ immediate: true })`.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

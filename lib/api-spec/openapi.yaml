@@ -163,6 +163,77 @@ paths:
         "204":
           description: Deleted
 
+  /workouts/{workoutId}/comparison:
+    get:
+      operationId: getWorkoutComparison
+      tags: [workouts]
+      summary: Compare a finished workout against the previous similar workout
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comparison report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutComparison"
+
+  /exercises/{exerciseId}/last-sets:
+    get:
+      operationId: getExerciseLastSets
+      tags: [exercises]
+      summary: Last finished workout's sets for this exercise
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Last sets snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExerciseLastSets"
+
+  /stats/heatmap:
+    get:
+      operationId: getHeatmap
+      tags: [stats]
+      summary: Daily training intensity for the past N days
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 365
+      responses:
+        "200":
+          description: Heatmap series
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeatmapResponse"
+
+  /stats/forecast:
+    get:
+      operationId: getLevelForecast
+      tags: [stats]
+      summary: Estimated days to reach next level based on recent trajectory
+      responses:
+        "200":
+          description: Level forecast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LevelForecast"
+
   /workouts/{workoutId}/finish:
     post:
       operationId: finishWorkout
@@ -839,3 +910,177 @@ components:
         - basedOnLevelName
         - benchmarkKg
         - exercises
+
+    ExerciseLastSetEntry:
+      type: object
+      properties:
+        weightKg:
+          type: number
+        reps:
+          type: integer
+      required: [weightKg, reps]
+
+    ExerciseLastSets:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        workoutId:
+          type: integer
+          nullable: true
+        workoutName:
+          type: string
+          nullable: true
+        workoutDate:
+          type: string
+          format: date-time
+          nullable: true
+        sets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExerciseLastSetEntry"
+        bestEverWeightKg:
+          type: number
+          nullable: true
+        bestEverReps:
+          type: integer
+          nullable: true
+      required: [exerciseId, sets]
+
+    WorkoutComparisonExercise:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        name:
+          type: string
+        currentVolume:
+          type: number
+        previousVolume:
+          type: number
+        deltaVolume:
+          type: number
+        currentMaxWeight:
+          type: number
+        previousMaxWeight:
+          type: number
+        deltaMaxWeight:
+          type: number
+        currentReps:
+          type: integer
+        previousReps:
+          type: integer
+        deltaReps:
+          type: integer
+      required:
+        - exerciseId
+        - name
+        - currentVolume
+        - previousVolume
+        - deltaVolume
+        - currentMaxWeight
+        - previousMaxWeight
+        - deltaMaxWeight
+        - currentReps
+        - previousReps
+        - deltaReps
+
+    WorkoutComparison:
+      type: object
+      properties:
+        workoutId:
+          type: integer
+        previousWorkoutId:
+          type: integer
+          nullable: true
+        previousWorkoutDate:
+          type: string
+          format: date-time
+          nullable: true
+        previousWorkoutName:
+          type: string
+          nullable: true
+        deltaVolume:
+          type: number
+        deltaReps:
+          type: integer
+        deltaSets:
+          type: integer
+        durationDeltaMinutes:
+          type: number
+          nullable: true
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutComparisonExercise"
+      required:
+        - workoutId
+        - previousWorkoutId
+        - deltaVolume
+        - deltaReps
+        - deltaSets
+        - exercises
+
+    HeatmapDay:
+      type: object
+      properties:
+        date:
+          type: string
+          description: ISO date YYYY-MM-DD
+        volume:
+          type: number
+        sets:
+          type: integer
+        intensity:
+          type: integer
+          description: 0..4 bucket
+      required: [date, volume, sets, intensity]
+
+    HeatmapResponse:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/HeatmapDay"
+        maxVolume:
+          type: number
+        totalDays:
+          type: integer
+        activeDays:
+          type: integer
+      required: [days, maxVolume, totalDays, activeDays]
+
+    LevelForecast:
+      type: object
+      properties:
+        currentLevel:
+          type: integer
+        nextLevel:
+          type: integer
+          nullable: true
+        nextLevelName:
+          type: string
+          nullable: true
+        tonnageNeededKg:
+          type: number
+        tonnage7dKg:
+          type: number
+        tonnage30dKg:
+          type: number
+        avgDailyTonnageKg:
+          type: number
+        estimatedDays:
+          type: integer
+          nullable: true
+        confidence:
+          type: string
+          enum: [low, medium, high, achieved]
+      required:
+        - currentLevel
+        - nextLevel
+        - tonnageNeededKg
+        - tonnage7dKg
+        - tonnage30dKg
+        - avgDailyTonnageKg
+        - confidence

@@ -149,6 +149,99 @@ export const DeleteWorkoutParams = zod.object({
 });
 
 /**
+ * @summary Compare a finished workout against the previous similar workout
+ */
+export const GetWorkoutComparisonParams = zod.object({
+  workoutId: zod.coerce.number(),
+});
+
+export const GetWorkoutComparisonResponse = zod.object({
+  workoutId: zod.number(),
+  previousWorkoutId: zod.number().nullable(),
+  previousWorkoutDate: zod.coerce.date().nullish(),
+  previousWorkoutName: zod.string().nullish(),
+  deltaVolume: zod.number(),
+  deltaReps: zod.number(),
+  deltaSets: zod.number(),
+  durationDeltaMinutes: zod.number().nullish(),
+  exercises: zod.array(
+    zod.object({
+      exerciseId: zod.number(),
+      name: zod.string(),
+      currentVolume: zod.number(),
+      previousVolume: zod.number(),
+      deltaVolume: zod.number(),
+      currentMaxWeight: zod.number(),
+      previousMaxWeight: zod.number(),
+      deltaMaxWeight: zod.number(),
+      currentReps: zod.number(),
+      previousReps: zod.number(),
+      deltaReps: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Last finished workout's sets for this exercise
+ */
+export const GetExerciseLastSetsParams = zod.object({
+  exerciseId: zod.coerce.number(),
+});
+
+export const GetExerciseLastSetsResponse = zod.object({
+  exerciseId: zod.number(),
+  workoutId: zod.number().nullish(),
+  workoutName: zod.string().nullish(),
+  workoutDate: zod.coerce.date().nullish(),
+  sets: zod.array(
+    zod.object({
+      weightKg: zod.number(),
+      reps: zod.number(),
+    }),
+  ),
+  bestEverWeightKg: zod.number().nullish(),
+  bestEverReps: zod.number().nullish(),
+});
+
+/**
+ * @summary Daily training intensity for the past N days
+ */
+export const getHeatmapQueryDaysDefault = 365;
+
+export const GetHeatmapQueryParams = zod.object({
+  days: zod.coerce.number().default(getHeatmapQueryDaysDefault),
+});
+
+export const GetHeatmapResponse = zod.object({
+  days: zod.array(
+    zod.object({
+      date: zod.string().describe("ISO date YYYY-MM-DD"),
+      volume: zod.number(),
+      sets: zod.number(),
+      intensity: zod.number().describe("0..4 bucket"),
+    }),
+  ),
+  maxVolume: zod.number(),
+  totalDays: zod.number(),
+  activeDays: zod.number(),
+});
+
+/**
+ * @summary Estimated days to reach next level based on recent trajectory
+ */
+export const GetLevelForecastResponse = zod.object({
+  currentLevel: zod.number(),
+  nextLevel: zod.number().nullable(),
+  nextLevelName: zod.string().nullish(),
+  tonnageNeededKg: zod.number(),
+  tonnage7dKg: zod.number(),
+  tonnage30dKg: zod.number(),
+  avgDailyTonnageKg: zod.number(),
+  estimatedDays: zod.number().nullish(),
+  confidence: zod.enum(["low", "medium", "high", "achieved"]),
+});
+
+/**
  * @summary Finish a workout and get the report with new records
  */
 export const FinishWorkoutParams = zod.object({

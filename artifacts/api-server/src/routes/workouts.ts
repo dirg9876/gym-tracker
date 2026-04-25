@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, isNotNull } from "drizzle-orm";
 import {
   db,
   workoutsTable,
@@ -15,6 +15,7 @@ import {
   AddSetParams,
   AddSetBody,
   DeleteSetParams,
+  GetWorkoutComparisonParams,
 } from "@workspace/api-zod";
 import {
   getWorkoutSets,
@@ -456,5 +457,140 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
     exerciseBreakdown,
   });
 });
+
+router.get(
+  "/workouts/:workoutId/comparison",
+  async (req, res): Promise<void> => {
+    const parsed = GetWorkoutComparisonParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const workoutId = parsed.data.workoutId;
+    const [w] = await db
+      .select()
+      .from(workoutsTable)
+      .where(eq(workoutsTable.id, workoutId));
+    if (!w) {
+      res.status(404).json({ error: "Тренировка не найдена" });
+      return;
+    }
+
+    const currentSets = await getWorkoutSets(workoutId);
+    const currentExerciseIds = new Set(currentSets.map((s) => s.exerciseId));
+
+    const previousCandidates = await db
+      .select()
+      .from(workoutsTable)
+      .where(isNotNull(workoutsTable.finishedAt))
+      .orderBy(desc(workoutsTable.startedAt));
+
+    let previous:
+      | { workout: typeof previousCandidates[number]; sets: EnrichedSet[]; score: number }
+      | null = null;
+    for (const cand of previousCandidates) {
+      if (cand.id === workoutId) continue;
+      if (cand.startedAt >= w.startedAt) continue;
+      const sets = await getWorkoutSets(cand.id);
+      const exIds = new Set(sets.map((s) => s.exerciseId));
+      let overlap = 0;
+      for (const id of exIds) if (currentExerciseIds.has(id)) overlap += 1;
+      const sameName =
+        (w.name ?? "").trim() !== "" && cand.name === w.name ? 100 : 0;
+      const score = sameName + overlap;
+      if (score > 0 && (!previous || score > previous.score)) {
+        previous = { workout: cand, sets, score };
+      }
+      if (sameName > 0 && previous && previous.score >= 100) break;
+    }
+
+    const currentTotals = totalsFromSets(currentSets);
+    const previousTotals = previous
+      ? totalsFromSets(previous.sets)
+      : { totalVolume: 0, totalReps: 0, totalSets: 0 };
+
+    type ExAgg = {
+      name: string;
+      volume: number;
+      reps: number;
+      maxWeight: number;
+    };
+    function aggByExercise(sets: EnrichedSet[]): Map<number, ExAgg> {
+      const m = new Map<number, ExAgg>();
+      for (const s of sets) {
+        const e = m.get(s.exerciseId) ?? {
+          name: s.exerciseName,
+          volume: 0,
+          reps: 0,
+          maxWeight: 0,
+        };
+        e.volume += s.volume;
+        e.reps += s.reps;
+        if (s.weightKg > e.maxWeight) e.maxWeight = s.weightKg;
+        m.set(s.exerciseId, e);
+      }
+      return m;
+    }
+    const curAgg = aggByExercise(currentSets);
+    const prevAgg = previous ? aggByExercise(previous.sets) : new Map();
+
+    const allIds = new Set<number>([...curAgg.keys(), ...prevAgg.keys()]);
+    const exercises = [...allIds].map((id) => {
+      const c = curAgg.get(id) ?? {
+        name: prevAgg.get(id)?.name ?? "",
+        volume: 0,
+        reps: 0,
+        maxWeight: 0,
+      };
+      const p = prevAgg.get(id) ?? {
+        name: c.name,
+        volume: 0,
+        reps: 0,
+        maxWeight: 0,
+      };
+      return {
+        exerciseId: id,
+        name: c.name || p.name,
+        currentVolume: round(c.volume),
+        previousVolume: round(p.volume),
+        deltaVolume: round(c.volume - p.volume),
+        currentMaxWeight: c.maxWeight,
+        previousMaxWeight: p.maxWeight,
+        deltaMaxWeight: round(c.maxWeight - p.maxWeight),
+        currentReps: c.reps,
+        previousReps: p.reps,
+        deltaReps: c.reps - p.reps,
+      };
+    });
+    exercises.sort((a, b) => Math.abs(b.deltaVolume) - Math.abs(a.deltaVolume));
+
+    const curDuration =
+      w.finishedAt && w.startedAt
+        ? (w.finishedAt.getTime() - w.startedAt.getTime()) / 60000
+        : null;
+    const prevDuration =
+      previous && previous.workout.finishedAt
+        ? (previous.workout.finishedAt.getTime() -
+            previous.workout.startedAt.getTime()) /
+          60000
+        : null;
+    const durationDeltaMinutes =
+      curDuration !== null && prevDuration !== null
+        ? round(curDuration - prevDuration)
+        : null;
+
+    res.json({
+      workoutId,
+      previousWorkoutId: previous?.workout.id ?? null,
+      previousWorkoutDate: previous?.workout.startedAt.toISOString() ?? null,
+      previousWorkoutName: previous?.workout.name ?? null,
+      deltaVolume: round(currentTotals.totalVolume - previousTotals.totalVolume),
+      deltaReps: currentTotals.totalReps - previousTotals.totalReps,
+      deltaSets: currentTotals.totalSets - previousTotals.totalSets,
+      durationDeltaMinutes,
+      exercises,
+    });
+  },
+);
 
 export default router;

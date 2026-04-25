@@ -2,6 +2,7 @@ import { useGetStatsOverview, useGetProgress } from "@workspace/api-client-react
 import { AppShell } from "@/components/layout/AppShell";
 import { ProgressLineChart } from "@/components/charts/ProgressLineChart";
 import { MuscleGroupBarChart } from "@/components/charts/MuscleGroupBarChart";
+import { HeatmapCalendar } from "@/components/HeatmapCalendar";
 import { formatKg, formatNumber } from "@/lib/format";
 import { Dumbbell, Activity, CalendarDays, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
@@ -49,6 +50,9 @@ export function Stats() {
             <div className="text-xl font-black">{stats.currentStreakDays}</div>
           </div>
         </div>
+
+        {/* Heatmap */}
+        <HeatmapCalendar />
 
         {/* Charts */}
         {progress.points.length > 0 && (

@@ -1,10 +1,16 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, exercisesTable } from "@workspace/db";
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
+import {
+  db,
+  exercisesTable,
+  workoutsTable,
+  workoutSetsTable,
+} from "@workspace/db";
 import {
   ListExercisesResponse,
   CreateExerciseBody,
   DeleteExerciseParams,
+  GetExerciseLastSetsParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -50,5 +56,80 @@ router.delete("/exercises/:exerciseId", async (req, res): Promise<void> => {
   }
   res.sendStatus(204);
 });
+
+router.get(
+  "/exercises/:exerciseId/last-sets",
+  async (req, res): Promise<void> => {
+    const parsed = GetExerciseLastSetsParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const exerciseId = parsed.data.exerciseId;
+
+    const sets = await db
+      .select({
+        setId: workoutSetsTable.id,
+        workoutId: workoutSetsTable.workoutId,
+        weightKg: workoutSetsTable.weightKg,
+        reps: workoutSetsTable.reps,
+        createdAt: workoutSetsTable.createdAt,
+        workoutName: workoutsTable.name,
+        workoutStartedAt: workoutsTable.startedAt,
+      })
+      .from(workoutSetsTable)
+      .innerJoin(
+        workoutsTable,
+        eq(workoutSetsTable.workoutId, workoutsTable.id),
+      )
+      .where(
+        and(
+          eq(workoutSetsTable.exerciseId, exerciseId),
+          isNotNull(workoutsTable.finishedAt),
+        ),
+      )
+      .orderBy(desc(workoutsTable.startedAt), asc(workoutSetsTable.createdAt));
+
+    let bestEverWeightKg: number | null = null;
+    let bestEverReps: number | null = null;
+    for (const s of sets) {
+      const w = Number(s.weightKg);
+      if (bestEverWeightKg === null || w > bestEverWeightKg) {
+        bestEverWeightKg = w;
+        bestEverReps = s.reps;
+      } else if (w === bestEverWeightKg && (bestEverReps ?? 0) < s.reps) {
+        bestEverReps = s.reps;
+      }
+    }
+
+    if (sets.length === 0) {
+      res.json({
+        exerciseId,
+        workoutId: null,
+        workoutName: null,
+        workoutDate: null,
+        sets: [],
+        bestEverWeightKg: null,
+        bestEverReps: null,
+      });
+      return;
+    }
+
+    const lastWorkoutId = sets[0]!.workoutId;
+    const lastSets = sets
+      .filter((s) => s.workoutId === lastWorkoutId)
+      .map((s) => ({ weightKg: Number(s.weightKg), reps: s.reps }));
+
+    res.json({
+      exerciseId,
+      workoutId: lastWorkoutId,
+      workoutName: sets[0]!.workoutName,
+      workoutDate: sets[0]!.workoutStartedAt.toISOString(),
+      sets: lastSets,
+      bestEverWeightKg,
+      bestEverReps,
+    });
+  },
+);
 
 export default router;

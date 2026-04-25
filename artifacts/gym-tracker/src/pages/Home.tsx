@@ -6,6 +6,7 @@ import { formatKg, formatNumber, formatDate } from "@/lib/format";
 import { Dumbbell, Activity, Flame, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { levelImage } from "@/lib/tierImages";
+import { HomeStrengthCard } from "@/components/HomeStrengthCard";
 
 export function Home() {
   const [, setLocation] = useLocation();
@@ -130,6 +131,9 @@ export function Home() {
             </div>
           </section>
         )}
+
+        {/* Strength progress for top exercise */}
+        <HomeStrengthCard />
 
         {/* Recent Workouts */}
         {recentWorkouts && recentWorkouts.length > 0 && (

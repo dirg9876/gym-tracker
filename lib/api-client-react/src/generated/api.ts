@@ -22,8 +22,12 @@ import type {
   CreateExerciseInput,
   CreateWorkoutInput,
   Exercise,
+  ExerciseLastSets,
   ExerciseProgress,
+  GetHeatmapParams,
   HealthStatus,
+  HeatmapResponse,
+  LevelForecast,
   LevelsResponse,
   ListWorkoutsParams,
   ProgramPlan,
@@ -31,6 +35,7 @@ import type {
   ProgressSeries,
   StatsOverview,
   Workout,
+  WorkoutComparison,
   WorkoutReport,
   WorkoutSet,
   WorkoutSummary,
@@ -790,6 +795,353 @@ export const useDeleteWorkout = <
 > => {
   return useMutation(getDeleteWorkoutMutationOptions(options));
 };
+
+/**
+ * @summary Compare a finished workout against the previous similar workout
+ */
+export const getGetWorkoutComparisonUrl = (workoutId: number) => {
+  return `/api/workouts/${workoutId}/comparison`;
+};
+
+export const getWorkoutComparison = async (
+  workoutId: number,
+  options?: RequestInit,
+): Promise<WorkoutComparison> => {
+  return customFetch<WorkoutComparison>(getGetWorkoutComparisonUrl(workoutId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWorkoutComparisonQueryKey = (workoutId: number) => {
+  return [`/api/workouts/${workoutId}/comparison`] as const;
+};
+
+export const getGetWorkoutComparisonQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWorkoutComparison>>,
+  TError = ErrorType<unknown>,
+>(
+  workoutId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWorkoutComparison>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetWorkoutComparisonQueryKey(workoutId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWorkoutComparison>>
+  > = ({ signal }) =>
+    getWorkoutComparison(workoutId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!workoutId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWorkoutComparison>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWorkoutComparisonQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWorkoutComparison>>
+>;
+export type GetWorkoutComparisonQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Compare a finished workout against the previous similar workout
+ */
+
+export function useGetWorkoutComparison<
+  TData = Awaited<ReturnType<typeof getWorkoutComparison>>,
+  TError = ErrorType<unknown>,
+>(
+  workoutId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWorkoutComparison>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWorkoutComparisonQueryOptions(workoutId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Last finished workout's sets for this exercise
+ */
+export const getGetExerciseLastSetsUrl = (exerciseId: number) => {
+  return `/api/exercises/${exerciseId}/last-sets`;
+};
+
+export const getExerciseLastSets = async (
+  exerciseId: number,
+  options?: RequestInit,
+): Promise<ExerciseLastSets> => {
+  return customFetch<ExerciseLastSets>(getGetExerciseLastSetsUrl(exerciseId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetExerciseLastSetsQueryKey = (exerciseId: number) => {
+  return [`/api/exercises/${exerciseId}/last-sets`] as const;
+};
+
+export const getGetExerciseLastSetsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExerciseLastSets>>,
+  TError = ErrorType<unknown>,
+>(
+  exerciseId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExerciseLastSets>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExerciseLastSetsQueryKey(exerciseId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getExerciseLastSets>>
+  > = ({ signal }) =>
+    getExerciseLastSets(exerciseId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!exerciseId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getExerciseLastSets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetExerciseLastSetsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExerciseLastSets>>
+>;
+export type GetExerciseLastSetsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Last finished workout's sets for this exercise
+ */
+
+export function useGetExerciseLastSets<
+  TData = Awaited<ReturnType<typeof getExerciseLastSets>>,
+  TError = ErrorType<unknown>,
+>(
+  exerciseId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExerciseLastSets>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetExerciseLastSetsQueryOptions(exerciseId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Daily training intensity for the past N days
+ */
+export const getGetHeatmapUrl = (params?: GetHeatmapParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/stats/heatmap?${stringifiedParams}`
+    : `/api/stats/heatmap`;
+};
+
+export const getHeatmap = async (
+  params?: GetHeatmapParams,
+  options?: RequestInit,
+): Promise<HeatmapResponse> => {
+  return customFetch<HeatmapResponse>(getGetHeatmapUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetHeatmapQueryKey = (params?: GetHeatmapParams) => {
+  return [`/api/stats/heatmap`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetHeatmapQueryOptions = <
+  TData = Awaited<ReturnType<typeof getHeatmap>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetHeatmapParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHeatmap>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetHeatmapQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getHeatmap>>> = ({
+    signal,
+  }) => getHeatmap(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getHeatmap>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetHeatmapQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getHeatmap>>
+>;
+export type GetHeatmapQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Daily training intensity for the past N days
+ */
+
+export function useGetHeatmap<
+  TData = Awaited<ReturnType<typeof getHeatmap>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetHeatmapParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getHeatmap>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetHeatmapQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Estimated days to reach next level based on recent trajectory
+ */
+export const getGetLevelForecastUrl = () => {
+  return `/api/stats/forecast`;
+};
+
+export const getLevelForecast = async (
+  options?: RequestInit,
+): Promise<LevelForecast> => {
+  return customFetch<LevelForecast>(getGetLevelForecastUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetLevelForecastQueryKey = () => {
+  return [`/api/stats/forecast`] as const;
+};
+
+export const getGetLevelForecastQueryOptions = <
+  TData = Awaited<ReturnType<typeof getLevelForecast>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLevelForecast>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetLevelForecastQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getLevelForecast>>
+  > = ({ signal }) => getLevelForecast({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getLevelForecast>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetLevelForecastQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getLevelForecast>>
+>;
+export type GetLevelForecastQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Estimated days to reach next level based on recent trajectory
+ */
+
+export function useGetLevelForecast<
+  TData = Awaited<ReturnType<typeof getLevelForecast>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLevelForecast>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLevelForecastQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Finish a workout and get the report with new records

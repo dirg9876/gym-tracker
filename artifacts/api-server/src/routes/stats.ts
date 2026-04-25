@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, exercisesTable } from "@workspace/db";
-import { GetExerciseProgressParams } from "@workspace/api-zod";
+import { GetExerciseProgressParams, GetHeatmapQueryParams } from "@workspace/api-zod";
 import {
   getAllSetsForFinishedWorkouts,
   listFinishedWorkouts,
@@ -9,6 +9,7 @@ import {
   round,
   type EnrichedSet,
 } from "../lib/stats";
+import { LEVELS, computeCurrentLevel } from "../lib/levels";
 
 const router: IRouter = Router();
 
@@ -202,5 +203,146 @@ router.get(
     });
   },
 );
+
+router.get("/stats/heatmap", async (req, res): Promise<void> => {
+  const parsed = GetHeatmapQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const days = Math.max(7, Math.min(parsed.data.days ?? 365, 730));
+  const sets = await getAllSetsForFinishedWorkouts();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - (days - 1));
+
+  function toKey(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  const buckets = new Map<string, { volume: number; sets: number }>();
+  for (const s of sets) {
+    const dt = new Date(s.createdAt);
+    if (dt < start) continue;
+    const key = toKey(dt);
+    const e = buckets.get(key) ?? { volume: 0, sets: 0 };
+    e.volume += s.volume;
+    e.sets += 1;
+    buckets.set(key, e);
+  }
+
+  const daysOut: Array<{
+    date: string;
+    volume: number;
+    sets: number;
+    intensity: number;
+  }> = [];
+  let maxVolume = 0;
+  for (const [, v] of buckets) {
+    if (v.volume > maxVolume) maxVolume = v.volume;
+  }
+
+  function intensityFor(v: number): number {
+    if (v <= 0 || maxVolume <= 0) return 0;
+    const ratio = v / maxVolume;
+    if (ratio < 0.25) return 1;
+    if (ratio < 0.5) return 2;
+    if (ratio < 0.75) return 3;
+    return 4;
+  }
+
+  let activeDays = 0;
+  const cursor = new Date(start);
+  while (cursor <= today) {
+    const key = toKey(cursor);
+    const v = buckets.get(key) ?? { volume: 0, sets: 0 };
+    if (v.volume > 0) activeDays += 1;
+    daysOut.push({
+      date: key,
+      volume: round(v.volume),
+      sets: v.sets,
+      intensity: intensityFor(v.volume),
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  res.json({
+    days: daysOut,
+    maxVolume: round(maxVolume),
+    totalDays: daysOut.length,
+    activeDays,
+  });
+});
+
+router.get("/stats/forecast", async (_req, res): Promise<void> => {
+  const info = await computeCurrentLevel();
+  const cur = info.currentLevel;
+  const next = info.nextLevel;
+
+  const sets = await getAllSetsForFinishedWorkouts();
+
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const window7 = now - 7 * dayMs;
+  const window30 = now - 30 * dayMs;
+  let tonnage7 = 0;
+  let tonnage30 = 0;
+  for (const s of sets) {
+    const t = new Date(s.createdAt).getTime();
+    if (t >= window30) tonnage30 += s.volume;
+    if (t >= window7) tonnage7 += s.volume;
+  }
+  const avgDaily = tonnage30 / 30;
+
+  if (next === null || cur >= LEVELS.length - 1) {
+    res.json({
+      currentLevel: cur,
+      nextLevel: null,
+      nextLevelName: null,
+      tonnageNeededKg: 0,
+      tonnage7dKg: round(tonnage7),
+      tonnage30dKg: round(tonnage30),
+      avgDailyTonnageKg: round(avgDaily),
+      estimatedDays: null,
+      confidence: "achieved" as const,
+    });
+    return;
+  }
+
+  const nextDef = LEVELS[next]!;
+  const tonnageNeeded = Math.max(
+    0,
+    nextDef.tonnage30dKgRequired - info.stats.currentTonnage30dKg,
+  );
+
+  let estimatedDays: number | null = null;
+  let confidence: "low" | "medium" | "high" = "low";
+  if (avgDaily > 0) {
+    estimatedDays = Math.ceil(tonnageNeeded / avgDaily);
+    if (estimatedDays > 365) estimatedDays = 365;
+    if (tonnage7 > 0 && tonnage30 > 0) {
+      const ratio = tonnage7 / 7 / avgDaily;
+      if (ratio >= 0.8 && ratio <= 1.5) confidence = "high";
+      else confidence = "medium";
+    }
+  }
+
+  res.json({
+    currentLevel: cur,
+    nextLevel: next,
+    nextLevelName: nextDef.name,
+    tonnageNeededKg: round(tonnageNeeded),
+    tonnage7dKg: round(tonnage7),
+    tonnage30dKg: round(tonnage30),
+    avgDailyTonnageKg: round(avgDaily),
+    estimatedDays,
+    confidence,
+  });
+});
 
 export default router;

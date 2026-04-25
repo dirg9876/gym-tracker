@@ -3,6 +3,7 @@ import { useGetWorkout, getGetWorkoutQueryKey, WorkoutReport as WorkoutReportTyp
 import { useQueryClient } from "@tanstack/react-query";
 import { PRBadge } from "@/components/PRBadge";
 import { Button } from "@/components/ui/button";
+import { WorkoutComparisonPanel } from "@/components/WorkoutComparisonPanel";
 import { formatKg, formatNumber, formatDuration } from "@/lib/format";
 import { CheckCircle2, Trophy, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -74,6 +75,9 @@ export function WorkoutReport() {
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-8 mt-6">
+        {/* Comparison vs previous workout */}
+        <WorkoutComparisonPanel workoutId={workoutId} />
+
         {/* Personal Records */}
         {report && report.newPersonalRecords.length > 0 && (
           <section className="space-y-4">
