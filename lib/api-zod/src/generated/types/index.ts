@@ -8,6 +8,7 @@
 
 export * from "./activeWorkoutResponse";
 export * from "./addSetInput";
+export * from "./bMICategory";
 export * from "./createExerciseInput";
 export * from "./createWorkoutInput";
 export * from "./exercise";
@@ -34,6 +35,7 @@ export * from "./personalRecordKind";
 export * from "./plannedExercise";
 export * from "./plannedExerciseBasedOn";
 export * from "./plannedExerciseIntent";
+export * from "./profile";
 export * from "./programPlan";
 export * from "./programsListResponse";
 export * from "./programSummary";
@@ -43,6 +45,7 @@ export * from "./statsOverview";
 export * from "./statsOverviewMuscleGroupVolumeItem";
 export * from "./statsOverviewTopExercisesItem";
 export * from "./updateExerciseInput";
+export * from "./updateProfileInput";
 export * from "./workout";
 export * from "./workoutComparison";
 export * from "./workoutComparisonExercise";

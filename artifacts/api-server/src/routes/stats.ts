@@ -9,7 +9,7 @@ import {
   round,
   type EnrichedSet,
 } from "../lib/stats";
-import { LEVELS, computeCurrentLevel } from "../lib/levels";
+import { computeCurrentLevel } from "../lib/levels";
 
 const router: IRouter = Router();
 
@@ -299,7 +299,7 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
   }
   const avgDaily = tonnage30 / 30;
 
-  if (next === null || cur >= LEVELS.length - 1) {
+  if (next === null || cur >= info.levels.length - 1) {
     res.json({
       currentLevel: cur,
       nextLevel: null,
@@ -314,7 +314,7 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
     return;
   }
 
-  const nextDef = LEVELS[next]!;
+  const nextDef = info.levels[next]!;
   const tonnageNeeded = Math.max(
     0,
     nextDef.tonnage30dKgRequired - info.stats.currentTonnage30dKg,

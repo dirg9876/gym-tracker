@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 
 export const exercisesTable = pgTable("exercises", {
   id: serial("id").primaryKey(),
@@ -6,6 +6,9 @@ export const exercisesTable = pgTable("exercises", {
   muscleGroup: text("muscle_group").notNull(),
   isCustom: boolean("is_custom").notNull().default(false),
   isMain: boolean("is_main").notNull().default(false),
+  bodyweightMultiplier: numeric("bodyweight_multiplier", { precision: 5, scale: 2 })
+    .notNull()
+    .default("1.00"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

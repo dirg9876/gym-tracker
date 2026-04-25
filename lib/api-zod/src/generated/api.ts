@@ -486,6 +486,16 @@ export const GetLevelsResponse = zod.object({
   currentLevel: zod.number(),
   bestLevelEver: zod.number(),
   nextLevel: zod.number().nullable(),
+  bodyWeightKg: zod
+    .number()
+    .describe(
+      "Bodyweight used to compute requirements (falls back to a default if not set).",
+    ),
+  bodyWeightIsFallback: zod
+    .boolean()
+    .describe(
+      "True when the user has not set their bodyweight and a default is being used.",
+    ),
   stats: zod.object({
     currentTonnage30dKg: zod.number(),
     maxTonnage30dKg: zod.number(),
@@ -496,9 +506,65 @@ export const GetLevelsResponse = zod.object({
         name: zod.string(),
         muscleGroup: zod.string(),
         maxWeightKg: zod.number(),
+        multiplier: zod
+          .number()
+          .describe(
+            "Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat).",
+          ),
+        requiredKgForNextLevel: zod
+          .number()
+          .nullable()
+          .describe(
+            "Required top-set weight to pass this exercise at the next level. Null at max level.",
+          ),
       }),
     ),
   }),
+});
+
+/**
+ * @summary Get the user's body profile (weight, height, BMI)
+ */
+export const GetProfileResponse = zod.object({
+  bodyWeightKg: zod.number().nullable(),
+  heightCm: zod.number().nullable(),
+  bmi: zod.number().nullable(),
+  bmiCategory: zod.union([
+    zod.enum(["underweight", "normal", "overweight", "obese"]),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary Update the user's body profile. Pass null to clear a field.
+ */
+export const updateProfileBodyBodyWeightKgMin = 30;
+export const updateProfileBodyBodyWeightKgMax = 250;
+
+export const updateProfileBodyHeightCmMin = 100;
+export const updateProfileBodyHeightCmMax = 230;
+
+export const UpdateProfileBody = zod.object({
+  bodyWeightKg: zod
+    .number()
+    .min(updateProfileBodyBodyWeightKgMin)
+    .max(updateProfileBodyBodyWeightKgMax)
+    .nullish(),
+  heightCm: zod
+    .number()
+    .min(updateProfileBodyHeightCmMin)
+    .max(updateProfileBodyHeightCmMax)
+    .nullish(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  bodyWeightKg: zod.number().nullable(),
+  heightCm: zod.number().nullable(),
+  bmi: zod.number().nullable(),
+  bmiCategory: zod.union([
+    zod.enum(["underweight", "normal", "overweight", "obese"]),
+    zod.null(),
+  ]),
 });
 
 /**

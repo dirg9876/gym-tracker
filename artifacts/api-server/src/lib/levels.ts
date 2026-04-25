@@ -1,5 +1,6 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
 import { eq, and, isNotNull, asc, inArray, sql } from "drizzle-orm";
+import { getProfile, FALLBACK_BODY_WEIGHT_KG } from "./profile";
 
 export type LevelDef = {
   level: number;
@@ -18,6 +19,10 @@ const SETS_PER_EXERCISE = 4;
 const REPS_PER_SET = 8;
 const EXERCISES_PER_WORKOUT = 5;
 const AVG_WEIGHT_FACTOR = 0.7;
+
+// Anchor: at level 60 ("Силач-новичок — Жмёшь свой вес") the level factor is 1.0,
+// meaning the required weight for a 1.0× exercise equals the user's bodyweight.
+const LEVEL_FACTOR_ANCHOR = 60;
 
 const NAMES_AND_DESCRIPTIONS: Array<[string, string]> = [
   ["Дохляк", "Ты не держал ничего тяжелее компьютерной мышки."],
@@ -120,7 +125,26 @@ export const DEFAULT_MAIN_EXERCISE_NAMES = [
   "Подъём штанги на бицепс",
 ];
 
+// Per-exercise bodyweight multipliers. For dumbbell movements, the multiplier
+// reflects the weight of ONE dumbbell relative to bodyweight (so 0.4 = 40% of
+// bodyweight per dumbbell, e.g. an 80 kg trainee aims for ~32 kg dumbbells at
+// the anchor level).
+export const DEFAULT_MAIN_EXERCISE_MULTIPLIERS: Record<string, number> = {
+  "Жим штанги лёжа": 1.0,
+  "Жим штанги на наклонной скамье": 0.85,
+  "Приседания со штангой": 1.5,
+  "Румынская тяга": 1.5,
+  "Становая тяга": 2.0,
+  "Тяга штанги в наклоне": 1.0,
+  "Жим штанги стоя": 0.65,
+  "Подъём штанги на бицепс": 0.65,
+  "Жим гантелей лёжа": 0.4,
+  "Тяга гантели одной рукой": 0.5,
+  "Жим гантелей сидя": 0.4,
+};
+
 const MAIN_EXERCISES_SEED_KEY = "main_exercises_seeded_v1";
+const DEFAULT_MULTIPLIERS_SEED_KEY = "default_multipliers_seeded_v1";
 
 /**
  * One-time seed: marks the historical default 11 names as main so existing
@@ -153,12 +177,45 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
     seededCount = updated.length;
   }
 
-  // Always write the sentinel after the first run, even if `cnt > 0` (i.e.
-  // the user already had mains). This keeps the run a true one-shot.
   await db
     .insert(appMetaTable)
     .values({
       key: MAIN_EXERCISES_SEED_KEY,
+      value: new Date().toISOString(),
+    })
+    .onConflictDoNothing({ target: appMetaTable.key });
+
+  return { seeded: seededCount };
+}
+
+/**
+ * One-time seed: applies default bodyweight multipliers to the historical 11
+ * main exercises. Runs once (gated by sentinel) so a user's later edits are
+ * never overwritten on restart. Custom or unknown exercises keep the column
+ * default (1.0×).
+ */
+export async function seedDefaultMultipliersIfEmpty(): Promise<{ seeded: number }> {
+  const sentinel = await db
+    .select({ key: appMetaTable.key })
+    .from(appMetaTable)
+    .where(eq(appMetaTable.key, DEFAULT_MULTIPLIERS_SEED_KEY))
+    .limit(1);
+  if (sentinel.length > 0) return { seeded: 0 };
+
+  let seededCount = 0;
+  for (const [name, mul] of Object.entries(DEFAULT_MAIN_EXERCISE_MULTIPLIERS)) {
+    const updated = await db
+      .update(exercisesTable)
+      .set({ bodyweightMultiplier: mul.toFixed(2) })
+      .where(eq(exercisesTable.name, name))
+      .returning({ id: exercisesTable.id });
+    seededCount += updated.length;
+  }
+
+  await db
+    .insert(appMetaTable)
+    .values({
+      key: DEFAULT_MULTIPLIERS_SEED_KEY,
       value: new Date().toISOString(),
     })
     .onConflictDoNothing({ target: appMetaTable.key });
@@ -175,29 +232,70 @@ function roundTo(n: number, step: number): number {
   return Math.round(n / step) * step;
 }
 
-function benchmarkKg(level: number): number {
+export function levelFactor(level: number): number {
   if (level <= 0) return 0;
-  const raw = 20 + (level - 1) * (180 / 79);
-  return roundTo(raw, 2.5);
+  return level / LEVEL_FACTOR_ANCHOR;
 }
 
-function tonnageKg(level: number): number {
+/**
+ * Reference weight at this level for a 1.0× exercise = bodyweight × levelFactor.
+ * This replaces the old single-number `benchmarkKg` and is what programs.ts
+ * uses as a base when no PR is available for an exercise.
+ */
+export function referenceKg(level: number, bodyWeightKg: number): number {
+  if (level <= 0) return 0;
+  return roundTo(bodyWeightKg * levelFactor(level), 2.5);
+}
+
+// Smallest plate increment we use for required weights and the practical floor
+// for any positive multiplier. Without this floor, very low multipliers at low
+// levels would round to 0 kg, which both looks wrong in the UI and would
+// trivially count as "passed" for any user.
+const MIN_REQUIRED_KG = 2.5;
+
+/**
+ * Required weight for a specific main exercise at a given level, given the
+ * user's bodyweight and the exercise's per-exercise multiplier. Floored at
+ * MIN_REQUIRED_KG when multiplier > 0 so early levels remain meaningful.
+ */
+export function requiredKgForExercise(
+  level: number,
+  bodyWeightKg: number,
+  multiplier: number,
+): number {
+  if (level <= 0 || multiplier <= 0) return 0;
+  const raw = bodyWeightKg * levelFactor(level) * multiplier;
+  return Math.max(MIN_REQUIRED_KG, roundTo(raw, 2.5));
+}
+
+export function tonnage30dRequired(level: number, bodyWeightKg: number): number {
   if (level <= 0) return 0;
   const perWorkout =
-    EXERCISES_PER_WORKOUT * SETS_PER_EXERCISE * REPS_PER_SET * benchmarkKg(level) * AVG_WEIGHT_FACTOR;
+    EXERCISES_PER_WORKOUT *
+    SETS_PER_EXERCISE *
+    REPS_PER_SET *
+    bodyWeightKg *
+    levelFactor(level) *
+    AVG_WEIGHT_FACTOR;
   const monthly = perWorkout * WORKOUTS_PER_MONTH_ASSUMED;
   return roundTo(monthly, 500);
 }
 
-export const LEVELS: LevelDef[] = NAMES_AND_DESCRIPTIONS.map(([name, description], idx) => ({
-  level: idx,
-  name,
-  description,
-  tier: Math.min(8, Math.floor(idx / TIER_SIZE)),
-  benchmarkKg: benchmarkKg(idx),
-  tonnage30dKgRequired: tonnageKg(idx),
-  mainExercisesRequired: idx === 0 ? 0 : MAIN_EXERCISES_REQUIRED,
-}));
+export function buildLevels(bodyWeightKg: number): LevelDef[] {
+  return NAMES_AND_DESCRIPTIONS.map(([name, description], idx) => ({
+    level: idx,
+    name,
+    description,
+    tier: Math.min(8, Math.floor(idx / TIER_SIZE)),
+    benchmarkKg: referenceKg(idx, bodyWeightKg),
+    tonnage30dKgRequired: tonnage30dRequired(idx, bodyWeightKg),
+    mainExercisesRequired: idx === 0 ? 0 : MAIN_EXERCISES_REQUIRED,
+  }));
+}
+
+// Default ladder built with the fallback bodyweight — exposed for callers
+// that don't (yet) need a per-user computation.
+export const LEVELS: LevelDef[] = buildLevels(FALLBACK_BODY_WEIGHT_KG);
 
 export const MAX_LEVEL = LEVELS.length - 1;
 
@@ -206,6 +304,8 @@ export type MainExerciseStat = {
   name: string;
   muscleGroup: string;
   maxWeightKg: number;
+  multiplier: number;
+  requiredKgForNextLevel: number | null;
 };
 
 export type LevelStats = {
@@ -219,15 +319,24 @@ export type CurrentLevelInfo = {
   currentLevel: number;
   bestLevelEver: number;
   nextLevel: number | null;
+  bodyWeightKg: number;
+  bodyWeightIsFallback: boolean;
+  levels: LevelDef[];
   stats: LevelStats;
 };
 
 export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
+  const profile = await getProfile();
+  const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
+  const bodyWeightIsFallback = profile.bodyWeightKg == null;
+  const levels = buildLevels(bodyWeightKg);
+
   const mainRows = await db
     .select({
       id: exercisesTable.id,
       name: exercisesTable.name,
       muscleGroup: exercisesTable.muscleGroup,
+      bodyweightMultiplier: exercisesTable.bodyweightMultiplier,
     })
     .from(exercisesTable)
     .where(eq(exercisesTable.isMain, true))
@@ -257,13 +366,6 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
       if (w > prev) maxByExercise.set(s.exerciseId, w);
     }
   }
-
-  const mainExercises: MainExerciseStat[] = mainRows.map((r) => ({
-    exerciseId: r.id,
-    name: r.name,
-    muscleGroup: r.muscleGroup,
-    maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
-  }));
 
   const allSets = await db
     .select({
@@ -298,10 +400,20 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
 
   const maxTonnage30dKg = computeMaxRollingTonnage(events, windowMs);
 
+  // Holds, for the candidate level under test, the per-exercise required kg.
+  function requiredFor(lvl: LevelDef, multiplier: number): number {
+    return requiredKgForExercise(lvl.level, bodyWeightKg, multiplier);
+  }
+
   function levelPasses(lvl: LevelDef, tonnage: number): boolean {
-    const passedExercises = mainExercises.filter(
-      (e) => e.maxWeightKg >= lvl.benchmarkKg,
-    ).length;
+    if (lvl.level === 0) return true;
+    let passedExercises = 0;
+    for (const r of mainRows) {
+      const mul = Number(r.bodyweightMultiplier);
+      const req = requiredFor(lvl, mul);
+      const cur = maxByExercise.get(r.id) ?? 0;
+      if (cur >= req && req > 0) passedExercises += 1;
+    }
     return (
       passedExercises >= lvl.mainExercisesRequired &&
       tonnage >= lvl.tonnage30dKgRequired
@@ -309,7 +421,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
   }
 
   let currentLevel = 0;
-  for (const lvl of LEVELS) {
+  for (const lvl of levels) {
     if (levelPasses(lvl, currentTonnage30dKg)) {
       currentLevel = lvl.level;
     } else {
@@ -318,7 +430,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
   }
 
   let bestLevelEver = 0;
-  for (const lvl of LEVELS) {
+  for (const lvl of levels) {
     if (levelPasses(lvl, maxTonnage30dKg)) {
       bestLevelEver = lvl.level;
     } else {
@@ -326,12 +438,28 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     }
   }
 
-  const nextLevel = currentLevel >= MAX_LEVEL ? null : currentLevel + 1;
+  const nextLevelIdx = currentLevel >= MAX_LEVEL ? null : currentLevel + 1;
+  const nextLvl = nextLevelIdx !== null ? levels[nextLevelIdx]! : null;
+
+  const mainExercises: MainExerciseStat[] = mainRows.map((r) => {
+    const mul = Number(r.bodyweightMultiplier);
+    return {
+      exerciseId: r.id,
+      name: r.name,
+      muscleGroup: r.muscleGroup,
+      maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
+      multiplier: round(mul),
+      requiredKgForNextLevel: nextLvl ? requiredFor(nextLvl, mul) : null,
+    };
+  });
 
   return {
     currentLevel,
     bestLevelEver,
-    nextLevel,
+    nextLevel: nextLevelIdx,
+    bodyWeightKg,
+    bodyWeightIsFallback,
+    levels,
     stats: {
       currentTonnage30dKg: round(currentTonnage30dKg),
       maxTonnage30dKg: round(maxTonnage30dKg),

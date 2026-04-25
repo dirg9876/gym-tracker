@@ -13,5 +13,9 @@ export interface LevelsResponse {
   currentLevel: number;
   bestLevelEver: number;
   nextLevel: number | null;
+  /** Bodyweight used to compute requirements (falls back to a default if not set). */
+  bodyWeightKg: number;
+  /** True when the user has not set their bodyweight and a default is being used. */
+  bodyWeightIsFallback: boolean;
   stats: LevelStats;
 }

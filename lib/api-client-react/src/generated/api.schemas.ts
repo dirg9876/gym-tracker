@@ -232,6 +232,10 @@ export interface MainExerciseStat {
   name: string;
   muscleGroup: string;
   maxWeightKg: number;
+  /** Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat). */
+  multiplier: number;
+  /** Required top-set weight to pass this exercise at the next level. Null at max level. */
+  requiredKgForNextLevel: number | null;
 }
 
 export interface LevelStats {
@@ -246,7 +250,40 @@ export interface LevelsResponse {
   currentLevel: number;
   bestLevelEver: number;
   nextLevel: number | null;
+  /** Bodyweight used to compute requirements (falls back to a default if not set). */
+  bodyWeightKg: number;
+  /** True when the user has not set their bodyweight and a default is being used. */
+  bodyWeightIsFallback: boolean;
   stats: LevelStats;
+}
+
+export type BMICategory = (typeof BMICategory)[keyof typeof BMICategory];
+
+export const BMICategory = {
+  underweight: "underweight",
+  normal: "normal",
+  overweight: "overweight",
+  obese: "obese",
+} as const;
+
+export interface Profile {
+  bodyWeightKg: number | null;
+  heightCm: number | null;
+  bmi: number | null;
+  bmiCategory: BMICategory | null;
+}
+
+export interface UpdateProfileInput {
+  /**
+   * @minimum 30
+   * @maximum 250
+   */
+  bodyWeightKg?: number | null;
+  /**
+   * @minimum 100
+   * @maximum 230
+   */
+  heightCm?: number | null;
 }
 
 export interface ProgramSummary {

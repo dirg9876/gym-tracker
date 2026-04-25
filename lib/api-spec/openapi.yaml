@@ -395,6 +395,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/LevelsResponse"
 
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get the user's body profile (weight, height, BMI)
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update the user's body profile. Pass null to clear a field.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Validation error
+
   /programs:
     get:
       operationId: listPrograms
@@ -885,7 +917,20 @@ components:
           type: string
         maxWeightKg:
           type: number
-      required: [exerciseId, name, muscleGroup, maxWeightKg]
+        multiplier:
+          type: number
+          description: Bodyweight multiplier for this exercise (e.g. 1.0 for bench, 1.5 for squat).
+        requiredKgForNextLevel:
+          type: number
+          nullable: true
+          description: Required top-set weight to pass this exercise at the next level. Null at max level.
+      required:
+        - exerciseId
+        - name
+        - muscleGroup
+        - maxWeightKg
+        - multiplier
+        - requiredKgForNextLevel
 
     LevelStats:
       type: object
@@ -922,6 +967,12 @@ components:
         nextLevel:
           type: integer
           nullable: true
+        bodyWeightKg:
+          type: number
+          description: Bodyweight used to compute requirements (falls back to a default if not set).
+        bodyWeightIsFallback:
+          type: boolean
+          description: True when the user has not set their bodyweight and a default is being used.
         stats:
           $ref: "#/components/schemas/LevelStats"
       required:
@@ -929,7 +980,45 @@ components:
         - currentLevel
         - bestLevelEver
         - nextLevel
+        - bodyWeightKg
+        - bodyWeightIsFallback
         - stats
+
+    BMICategory:
+      type: string
+      enum: [underweight, normal, overweight, obese]
+
+    Profile:
+      type: object
+      properties:
+        bodyWeightKg:
+          type: number
+          nullable: true
+        heightCm:
+          type: number
+          nullable: true
+        bmi:
+          type: number
+          nullable: true
+        bmiCategory:
+          oneOf:
+            - $ref: "#/components/schemas/BMICategory"
+            - type: "null"
+      required: [bodyWeightKg, heightCm, bmi, bmiCategory]
+
+    UpdateProfileInput:
+      type: object
+      properties:
+        bodyWeightKg:
+          type: number
+          nullable: true
+          minimum: 30
+          maximum: 250
+        heightCm:
+          type: number
+          nullable: true
+          minimum: 100
+          maximum: 230
 
     ProgramSummary:
       type: object

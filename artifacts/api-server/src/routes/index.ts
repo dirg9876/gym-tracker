@@ -5,6 +5,7 @@ import workoutsRouter from "./workouts";
 import statsRouter from "./stats";
 import levelsRouter from "./levels";
 import programsRouter from "./programs";
+import profileRouter from "./profile";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(workoutsRouter);
 router.use(statsRouter);
 router.use(levelsRouter);
 router.use(programsRouter);
+router.use(profileRouter);
 
 export default router;

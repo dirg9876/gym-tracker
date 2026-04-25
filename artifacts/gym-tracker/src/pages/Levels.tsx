@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/tierImages";
 import { LevelForecastCard } from "@/components/LevelForecastCard";
+import { ProfileCard } from "@/components/ProfileCard";
 
 export function Levels() {
   const { data, isLoading } = useGetLevels();
@@ -26,12 +27,17 @@ export function Levels() {
     return <div className="p-8 text-center text-muted-foreground">Загрузка...</div>;
   }
 
-  const { levels, currentLevel, bestLevelEver, stats } = data;
+  const { levels, currentLevel, bestLevelEver, stats, bodyWeightKg, bodyWeightIsFallback } = data;
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
 
   const passedExercises = next
-    ? stats.mainExercises.filter((e) => e.maxWeightKg >= next.benchmarkKg)
+    ? stats.mainExercises.filter(
+        (e) =>
+          e.requiredKgForNextLevel != null &&
+          e.requiredKgForNextLevel > 0 &&
+          e.maxWeightKg >= e.requiredKgForNextLevel,
+      )
     : [];
   const passedCount = passedExercises.length;
   const exerciseProgress = next
@@ -59,47 +65,51 @@ export function Levels() {
   return (
     <div className="min-h-[100dvh] bg-background pb-24">
       {/* Hero: current level */}
-      <div className="bg-gradient-to-b from-primary/10 to-transparent pt-8 pb-6 px-4 border-b border-border">
-        <div className="max-w-md mx-auto">
-          <div className="text-center text-xs uppercase tracking-widest text-muted-foreground mb-2">
-            Твой уровень
-          </div>
-          <motion.div
-            key={current.level}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 18 }}
-            className="flex flex-col items-center gap-3"
-          >
-            <div className="relative">
-              <img
-                src={levelImage(current.level, current.tier)}
-                alt={current.name}
-                className="h-40 w-40 object-contain drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
-                style={{ imageRendering: "pixelated" }}
-              />
-              <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-sm shadow-lg">
-                {current.level}
-              </div>
+      <div className="bg-gradient-to-b from-primary/10 to-transparent pt-6 pb-6 px-4 border-b border-border">
+        <div className="max-w-md mx-auto space-y-4">
+          <ProfileCard />
+
+          <div>
+            <div className="text-center text-xs uppercase tracking-widest text-muted-foreground mb-2">
+              Твой уровень
             </div>
-            <div className="text-2xl font-bold">{current.name}</div>
-            <p className="text-sm text-muted-foreground text-center max-w-xs">
-              {current.description}
-            </p>
-            {droppedFromBest && (
-              <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
-                <Star className="h-3 w-3" />
-                <span>
-                  Лучший уровень — {bestLevelEver}. Тоннаж сбросился, верни форму!
-                </span>
+            <motion.div
+              key={current.level}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 18 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <div className="relative">
+                <img
+                  src={levelImage(current.level, current.tier)}
+                  alt={current.name}
+                  className="h-40 w-40 object-contain drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
+                  style={{ imageRendering: "pixelated" }}
+                />
+                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-sm shadow-lg">
+                  {current.level}
+                </div>
               </div>
-            )}
-          </motion.div>
+              <div className="text-2xl font-bold">{current.name}</div>
+              <p className="text-sm text-muted-foreground text-center max-w-xs">
+                {current.description}
+              </p>
+              {droppedFromBest && (
+                <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
+                  <Star className="h-3 w-3" />
+                  <span>
+                    Лучший уровень — {bestLevelEver}. Тоннаж сбросился, верни форму!
+                  </span>
+                </div>
+              )}
+            </motion.div>
+          </div>
 
           {stats.mainExercises.length < 3 && (
             <Link
               href="/exercises"
-              className="mt-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 text-sm hover:bg-amber-500/15 transition-colors"
+              className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 text-sm hover:bg-amber-500/15 transition-colors"
             >
               <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
@@ -118,53 +128,48 @@ export function Levels() {
 
           {next ? (
             <>
-              <div className="mt-6">
-                <LevelForecastCard />
-              </div>
-              <div className="mt-4 bg-card border border-border rounded-2xl p-4 space-y-4">
+              <LevelForecastCard />
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
                   До уровня {next.level} — «{next.name}»
                 </div>
 
-              <ProgressRow
-                icon={<Dumbbell className="h-4 w-4" />}
-                label={`Основные упражнения от ${formatKg(next.benchmarkKg)}`}
-                value={passedCount}
-                target={next.mainExercisesRequired}
-                unit=""
-                progress={exerciseProgress}
-              />
+                <ProgressRow
+                  icon={<Dumbbell className="h-4 w-4" />}
+                  label="Основные упражнения"
+                  value={passedCount}
+                  target={next.mainExercisesRequired}
+                  unit=""
+                  progress={exerciseProgress}
+                />
 
-              <MainExercisesGrid
-                exercises={stats.mainExercises}
-                target={next.benchmarkKg}
-              />
+                <MainExercisesGrid exercises={stats.mainExercises} />
 
-              <ProgressRow
-                icon={<Flame className="h-4 w-4" />}
-                label="Тоннаж за последние 30 дней"
-                value={stats.currentTonnage30dKg}
-                target={next.tonnage30dKgRequired}
-                unit="кг"
-                progress={tonnageProgress}
-              />
+                <ProgressRow
+                  icon={<Flame className="h-4 w-4" />}
+                  label="Тоннаж за последние 30 дней"
+                  value={stats.currentTonnage30dKg}
+                  target={next.tonnage30dKgRequired}
+                  unit="кг"
+                  progress={tonnageProgress}
+                />
 
-              {daysUntilOldestExpires !== null &&
-                stats.currentTonnage30dKg > 0 &&
-                stats.currentTonnage30dKg < next.tonnage30dKgRequired && (
-                  <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-2">
-                    <Hourglass className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    <span>
-                      Окно тоннажа — последние 30 дней. Самые ранние подходы «сгорят»
-                      через {daysUntilOldestExpires}{" "}
-                      {pluralizeDays(daysUntilOldestExpires)}, если не успеешь добрать норму.
-                    </span>
-                  </div>
-                )}
+                {daysUntilOldestExpires !== null &&
+                  stats.currentTonnage30dKg > 0 &&
+                  stats.currentTonnage30dKg < next.tonnage30dKgRequired && (
+                    <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-2">
+                      <Hourglass className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <span>
+                        Окно тоннажа — последние 30 дней. Самые ранние подходы «сгорят»
+                        через {daysUntilOldestExpires}{" "}
+                        {pluralizeDays(daysUntilOldestExpires)}, если не успеешь добрать норму.
+                      </span>
+                    </div>
+                  )}
               </div>
             </>
           ) : (
-            <div className="mt-6 bg-card border border-primary/40 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-card border border-primary/40 rounded-2xl p-4 flex items-center gap-3">
               <Trophy className="h-6 w-6 text-primary" />
               <div className="text-sm">
                 Максимальный уровень. Ты — легенда.
@@ -228,8 +233,11 @@ export function Levels() {
                   </div>
                   {lvl.level > 0 && (
                     <div className="text-[11px] text-muted-foreground/80 mt-1">
-                      3 упр. от {formatKg(lvl.benchmarkKg)} · Тоннаж{" "}
-                      {formatNumber(lvl.tonnage30dKgRequired)} кг / 30 дней
+                      {bodyWeightIsFallback
+                        ? `3 упр. по нормативу (укажи вес — сейчас расчёт по ${formatNumber(bodyWeightKg)} кг)`
+                        : `3 упр. по нормативу для ${formatNumber(bodyWeightKg)} кг`}
+                      {" · Тоннаж "}
+                      {formatNumber(lvl.tonnage30dKgRequired)} кг / 30 дн
                     </div>
                   )}
                 </div>
@@ -291,37 +299,48 @@ function ProgressRow({
   );
 }
 
-function MainExercisesGrid({
-  exercises,
-  target,
-}: {
-  exercises: MainExerciseStat[];
-  target: number;
-}) {
+function MainExercisesGrid({ exercises }: { exercises: MainExerciseStat[] }) {
   return (
     <div className="grid grid-cols-1 gap-1.5">
       {exercises.map((e) => {
-        const passed = e.maxWeightKg >= target;
+        const required = e.requiredKgForNextLevel;
+        const passed =
+          required != null && required > 0 && e.maxWeightKg >= required;
         return (
           <div
             key={e.exerciseId}
-            className={`flex items-center justify-between text-xs px-2.5 py-1.5 rounded-md border ${
+            className={`flex items-center justify-between gap-2 text-xs px-2.5 py-2 rounded-md border ${
               passed
                 ? "border-primary/40 bg-primary/10 text-foreground"
                 : "border-border bg-card/40 text-muted-foreground"
             }`}
           >
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               {passed ? (
                 <Check className="h-3.5 w-3.5 text-primary shrink-0" />
               ) : (
                 <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0" />
               )}
-              <span className="truncate">{e.name}</span>
+              <span className="truncate font-medium">{e.name}</span>
             </div>
-            <span className={`font-mono ${passed ? "text-primary" : ""}`}>
-              {formatNumber(e.maxWeightKg)} кг
-            </span>
+            <div className="flex flex-col items-end shrink-0 leading-tight">
+              {required != null && required > 0 ? (
+                <>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                    нужно {formatKg(required)}
+                  </span>
+                  <span
+                    className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
+                  >
+                    сейчас {formatNumber(e.maxWeightKg)} кг
+                  </span>
+                </>
+              ) : (
+                <span className="font-mono text-[11px] text-foreground/80">
+                  сейчас {formatNumber(e.maxWeightKg)} кг
+                </span>
+              )}
+            </div>
           </div>
         );
       })}

@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedMainExercisesIfEmpty } from "./lib/levels";
+import { seedMainExercisesIfEmpty, seedDefaultMultipliersIfEmpty } from "./lib/levels";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +24,15 @@ async function start() {
     }
   } catch (err) {
     logger.error({ err }, "Failed to seed main exercises");
+  }
+
+  try {
+    const { seeded } = await seedDefaultMultipliersIfEmpty();
+    if (seeded > 0) {
+      logger.info({ seeded }, "Seeded default bodyweight multipliers");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to seed default multipliers");
   }
 
   app.listen(port, (err) => {
