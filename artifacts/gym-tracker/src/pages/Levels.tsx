@@ -4,8 +4,9 @@ import {
   type Level,
   type MainExerciseStat,
 } from "@workspace/api-client-react";
-import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star } from "lucide-react";
+import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star, AlertTriangle, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/tierImages";
 import { LevelForecastCard } from "@/components/LevelForecastCard";
@@ -94,6 +95,26 @@ export function Levels() {
               </div>
             )}
           </motion.div>
+
+          {stats.mainExercises.length < 3 && (
+            <Link
+              href="/exercises"
+              className="mt-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 text-sm hover:bg-amber-500/15 transition-colors"
+            >
+              <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-foreground">
+                  Отметь хотя бы 3 основных упражнения
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Сейчас отмечено {stats.mainExercises.length}. Без них уровень
+                  не будет повышаться. Открой «Упражнения» и нажми звёздочку
+                  рядом с теми, по которым растёшь.
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+            </Link>
+          )}
 
           {next ? (
             <>

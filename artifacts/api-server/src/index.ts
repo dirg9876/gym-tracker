@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedMainExercisesIfEmpty } from "./lib/levels";
 
 const rawPort = process.env["PORT"];
 
@@ -14,6 +15,16 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+seedMainExercisesIfEmpty()
+  .then(({ seeded }) => {
+    if (seeded > 0) {
+      logger.info({ seeded }, "Seeded default main exercises");
+    }
+  })
+  .catch((err) => {
+    logger.error({ err }, "Failed to seed main exercises");
+  });
 
 app.listen(port, (err) => {
   if (err) {

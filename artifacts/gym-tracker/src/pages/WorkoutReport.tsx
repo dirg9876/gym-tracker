@@ -1,7 +1,14 @@
 import { useLocation, useParams } from "wouter";
-import { useGetWorkout, getGetWorkoutQueryKey, WorkoutReport as WorkoutReportType } from "@workspace/api-client-react";
+import {
+  useGetWorkout,
+  useGetWorkoutExerciseBreakdown,
+  getGetWorkoutQueryKey,
+  getGetWorkoutExerciseBreakdownQueryKey,
+  WorkoutReport as WorkoutReportType,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PRBadge } from "@/components/PRBadge";
+import { ExerciseProgressCard } from "@/components/ExerciseProgressCard";
 import { Button } from "@/components/ui/button";
 import { WorkoutComparisonPanel } from "@/components/WorkoutComparisonPanel";
 import { formatKg, formatNumber, formatDuration } from "@/lib/format";
@@ -21,11 +28,21 @@ export function WorkoutReport() {
     query: { enabled: !report && !!workoutId, queryKey: getGetWorkoutQueryKey(workoutId) }
   });
 
+  // If we don't have the in-memory report (e.g. user navigated here directly),
+  // fetch the per-exercise breakdown from the dedicated endpoint.
+  const { data: standaloneBreakdown } = useGetWorkoutExerciseBreakdown(workoutId, {
+    query: {
+      enabled: !report && !!workoutId,
+      queryKey: getGetWorkoutExerciseBreakdownQueryKey(workoutId),
+    },
+  });
+
   if (isLoading) return <div className="p-8 text-center">Загрузка...</div>;
   if (!report && !workout) return <div className="p-8 text-center">Отчет не найден</div>;
 
   const w = report?.workout || workout!;
   const hasPRs = report && (report.newPersonalRecords.length > 0 || report.newExerciseRecords.length > 0);
+  const breakdown = report?.exerciseBreakdown ?? standaloneBreakdown?.items ?? [];
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -116,22 +133,14 @@ export function WorkoutReport() {
           </section>
         )}
 
-        {/* Exercise Breakdown */}
-        {report && report.exerciseBreakdown.length > 0 && (
+        {/* Per-exercise progress */}
+        {breakdown.length > 0 && (
           <section className="space-y-4">
-            <h2 className="text-xl font-bold px-2">Сводка</h2>
-            <div className="bg-card rounded-3xl border border-border overflow-hidden">
-              <div className="divide-y divide-border">
-                {report.exerciseBreakdown.map((ex) => (
-                  <div key={ex.exerciseId} className="p-4 flex flex-col gap-2">
-                    <div className="font-semibold">{ex.exerciseName}</div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{ex.sets} подх. / {ex.reps} повт.</span>
-                      <span className="font-mono font-medium text-foreground">{formatKg(ex.volume)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <h2 className="text-xl font-bold px-2">Сводка по упражнениям</h2>
+            <div className="space-y-3">
+              {breakdown.map((item) => (
+                <ExerciseProgressCard key={item.exerciseId} item={item} />
+              ))}
             </div>
           </section>
         )}

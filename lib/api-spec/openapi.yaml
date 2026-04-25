@@ -63,6 +63,31 @@ paths:
                 $ref: "#/components/schemas/Exercise"
 
   /exercises/{exerciseId}:
+    patch:
+      operationId: updateExercise
+      tags: [exercises]
+      summary: Update mutable flags on an exercise (e.g. isMain)
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateExerciseInput"
+      responses:
+        "200":
+          description: Updated exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "404":
+          description: Not found
     delete:
       operationId: deleteExercise
       tags: [exercises]
@@ -162,6 +187,25 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /workouts/{workoutId}/exercise-breakdown:
+    get:
+      operationId: getWorkoutExerciseBreakdown
+      tags: [workouts]
+      summary: Per-exercise breakdown with deltas vs the previous time this exercise was trained
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Per-exercise breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutExerciseBreakdownResponse"
 
   /workouts/{workoutId}/comparison:
     get:
@@ -590,25 +634,95 @@ components:
         exerciseBreakdown:
           type: array
           items:
-            type: object
-            properties:
-              exerciseId:
-                type: integer
-              exerciseName:
-                type: string
-              muscleGroup:
-                type: string
-              sets:
-                type: integer
-              reps:
-                type: integer
-              volume:
-                type: number
-              topSetWeight:
-                type: number
-            required:
-              [exerciseId, exerciseName, muscleGroup, sets, reps, volume, topSetWeight]
+            $ref: "#/components/schemas/WorkoutExerciseBreakdownItem"
       required: [workout, newPersonalRecords, newExerciseRecords, durationMinutes, exerciseBreakdown]
+
+    UpdateExerciseInput:
+      type: object
+      properties:
+        isMain:
+          type: boolean
+      required: [isMain]
+
+    WorkoutExerciseBreakdownItem:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        exerciseName:
+          type: string
+        muscleGroup:
+          type: string
+        sets:
+          type: integer
+        reps:
+          type: integer
+        volume:
+          type: number
+        topSetWeight:
+          type: number
+        topSetReps:
+          type: integer
+        previousSessionWorkoutId:
+          type: integer
+          nullable: true
+        previousSessionWorkoutName:
+          type: string
+          nullable: true
+        previousSessionDate:
+          type: string
+          format: date-time
+          nullable: true
+        previousVolume:
+          type: number
+          nullable: true
+        previousTopSetWeight:
+          type: number
+          nullable: true
+        previousTotalReps:
+          type: integer
+          nullable: true
+        deltaVolume:
+          type: number
+          nullable: true
+        deltaTopSetWeight:
+          type: number
+          nullable: true
+        deltaReps:
+          type: integer
+          nullable: true
+        isPersonalRecord:
+          type: boolean
+      required:
+        - exerciseId
+        - exerciseName
+        - muscleGroup
+        - sets
+        - reps
+        - volume
+        - topSetWeight
+        - topSetReps
+        - previousSessionWorkoutId
+        - previousSessionWorkoutName
+        - previousSessionDate
+        - previousVolume
+        - previousTopSetWeight
+        - previousTotalReps
+        - deltaVolume
+        - deltaTopSetWeight
+        - deltaReps
+        - isPersonalRecord
+
+    WorkoutExerciseBreakdownResponse:
+      type: object
+      properties:
+        workoutId:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkoutExerciseBreakdownItem"
+      required: [workoutId, items]
 
     StatsOverview:
       type: object

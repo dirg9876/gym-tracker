@@ -1,5 +1,5 @@
-import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
-import { eq, and, isNotNull, asc, inArray } from "drizzle-orm";
+import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
+import { eq, and, isNotNull, asc, inArray, sql } from "drizzle-orm";
 
 export type LevelDef = {
   level: number;
@@ -103,7 +103,10 @@ const NAMES_AND_DESCRIPTIONS: Array<[string, string]> = [
   ["Легенда", "Твоё имя будут помнить века."],
 ];
 
-const MAIN_EXERCISE_NAMES = [
+// Historical default list — used only on first-run seeding so existing users
+// keep level behavior. After seeding, the source of truth is the `is_main`
+// column on the exercises table, which the user can edit on the Exercises page.
+export const DEFAULT_MAIN_EXERCISE_NAMES = [
   "Жим штанги лёжа",
   "Жим гантелей лёжа",
   "Жим штанги на наклонной скамье",
@@ -116,6 +119,40 @@ const MAIN_EXERCISE_NAMES = [
   "Жим гантелей сидя",
   "Подъём штанги на бицепс",
 ];
+
+const MAIN_EXERCISES_SEED_KEY = "main_exercises_seeded_v1";
+
+/**
+ * One-time seed: marks the historical default 11 names as main so existing
+ * users keep the same level behavior. Guarded by a sentinel row in
+ * `app_meta` so this runs at most once per database — even if the user
+ * later unstars every main exercise, a server restart will NOT re-apply
+ * the canonical list.
+ */
+export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
+  const sentinel = await db
+    .select({ key: appMetaTable.key })
+    .from(appMetaTable)
+    .where(eq(appMetaTable.key, MAIN_EXERCISES_SEED_KEY))
+    .limit(1);
+  if (sentinel.length > 0) return { seeded: 0 };
+
+  const updated = await db
+    .update(exercisesTable)
+    .set({ isMain: true })
+    .where(inArray(exercisesTable.name, DEFAULT_MAIN_EXERCISE_NAMES))
+    .returning({ id: exercisesTable.id });
+
+  await db
+    .insert(appMetaTable)
+    .values({
+      key: MAIN_EXERCISES_SEED_KEY,
+      value: new Date().toISOString(),
+    })
+    .onConflictDoNothing({ target: appMetaTable.key });
+
+  return { seeded: updated.length };
+}
 
 function round(n: number, digits = 2): number {
   const f = Math.pow(10, digits);
@@ -181,12 +218,8 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
       muscleGroup: exercisesTable.muscleGroup,
     })
     .from(exercisesTable)
-    .where(inArray(exercisesTable.name, MAIN_EXERCISE_NAMES));
-
-  const orderIndex = new Map(MAIN_EXERCISE_NAMES.map((n, i) => [n, i]));
-  mainRows.sort(
-    (a, b) => (orderIndex.get(a.name) ?? 99) - (orderIndex.get(b.name) ?? 99),
-  );
+    .where(eq(exercisesTable.isMain, true))
+    .orderBy(asc(exercisesTable.muscleGroup), asc(exercisesTable.name));
 
   const mainIds = mainRows.map((r) => r.id);
   const maxByExercise = new Map<number, number>();

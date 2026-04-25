@@ -16,12 +16,14 @@ import {
   AddSetBody,
   DeleteSetParams,
   GetWorkoutComparisonParams,
+  GetWorkoutExerciseBreakdownParams,
 } from "@workspace/api-zod";
 import {
   getWorkoutSets,
   totalsFromSets,
   round,
   getAllSetsForFinishedWorkouts,
+  computeExerciseBreakdown,
   type EnrichedSet,
 } from "../lib/stats";
 
@@ -424,18 +426,10 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
     }
   }
 
-  const exerciseBreakdown = [...curByExercise.entries()].map(([id, cur]) => {
-    const exSets = sets.filter((s) => s.exerciseId === id);
-    return {
-      exerciseId: id,
-      exerciseName: cur.name,
-      muscleGroup: cur.muscleGroup,
-      sets: exSets.length,
-      reps: exSets.reduce((a, s) => a + s.reps, 0),
-      volume: round(exSets.reduce((a, s) => a + s.volume, 0)),
-      topSetWeight: cur.maxWeightSet.weight,
-    };
-  });
+  // Use the shared helper for the rich breakdown so the finish report and the
+  // standalone GET /workouts/:id/exercise-breakdown endpoint return identical
+  // shapes for any consumer.
+  const exerciseBreakdown = await computeExerciseBreakdown(workoutId);
 
   const durationMinutes = round(
     (finishedAt.getTime() - w.startedAt.getTime()) / 60000,
@@ -590,6 +584,28 @@ router.get(
       durationDeltaMinutes,
       exercises,
     });
+  },
+);
+
+router.get(
+  "/workouts/:workoutId/exercise-breakdown",
+  async (req, res): Promise<void> => {
+    const parsed = GetWorkoutExerciseBreakdownParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const workoutId = parsed.data.workoutId;
+    const [w] = await db
+      .select()
+      .from(workoutsTable)
+      .where(eq(workoutsTable.id, workoutId));
+    if (!w) {
+      res.status(404).json({ error: "Тренировка не найдена" });
+      return;
+    }
+    const items = await computeExerciseBreakdown(workoutId);
+    res.json({ workoutId, items });
   },
 );
 

@@ -14,6 +14,7 @@ export interface Exercise {
   name: string;
   muscleGroup: string;
   isCustom: boolean;
+  isMain: boolean;
 }
 
 export interface CreateExerciseInput {
@@ -118,7 +119,7 @@ export interface ExerciseRecord {
   weightKg?: number | null;
 }
 
-export type WorkoutReportExerciseBreakdownItem = {
+export interface WorkoutExerciseBreakdownItem {
   exerciseId: number;
   exerciseName: string;
   muscleGroup: string;
@@ -126,14 +127,34 @@ export type WorkoutReportExerciseBreakdownItem = {
   reps: number;
   volume: number;
   topSetWeight: number;
-};
+  topSetReps: number;
+  previousSessionWorkoutId: number | null;
+  previousSessionWorkoutName: string | null;
+  previousSessionDate: string | null;
+  previousVolume: number | null;
+  previousTopSetWeight: number | null;
+  previousTotalReps: number | null;
+  deltaVolume: number | null;
+  deltaTopSetWeight: number | null;
+  deltaReps: number | null;
+  isPersonalRecord: boolean;
+}
 
 export interface WorkoutReport {
   workout: Workout;
   newPersonalRecords: PersonalRecord[];
   newExerciseRecords: ExerciseRecord[];
   durationMinutes: number;
-  exerciseBreakdown: WorkoutReportExerciseBreakdownItem[];
+  exerciseBreakdown: WorkoutExerciseBreakdownItem[];
+}
+
+export interface UpdateExerciseInput {
+  isMain: boolean;
+}
+
+export interface WorkoutExerciseBreakdownResponse {
+  workoutId: number;
+  items: WorkoutExerciseBreakdownItem[];
 }
 
 export type StatsOverviewTopExercisesItem = {

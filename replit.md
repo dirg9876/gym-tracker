@@ -39,9 +39,12 @@ records, progress series for charts, and overall stats overview.
 81 levels (0–80) defined statically in `artifacts/api-server/src/lib/levels.ts`.
 Names go from insulting (Дохляк, Спичка) to respectful (Геркулес, Титан) as
 level rises. Each level (>=1) requires both:
-- 3 different "main" free-weight compound exercises (jim, squat, deadlift,
-  rows, presses, curls — the canonical compound list in `MAIN_EXERCISE_NAMES`)
-  each lifted at >= the level's benchmark weight in any single set, and
+- 3 different **main** exercises (user-selectable via the star toggle on
+  `/exercises`; flag stored in `exercises.is_main`) each lifted at >= the
+  level's benchmark weight in any single set. On first run the original 11
+  canonical compound names are seeded as `is_main=true` (see
+  `seedMainExercisesIfEmpty`). The Levels page shows an amber hint linking
+  to `/exercises` if fewer than 3 are marked, and
 - a minimum total tonnage in the **last 30 days** (rolling window ending now).
   Tonnage is sized as `5 ex × 4 sets × 8 reps × benchmark × 0.7 ×
   6 workouts/month`, rounded to 500 kg.

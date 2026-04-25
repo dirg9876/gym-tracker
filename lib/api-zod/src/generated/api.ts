@@ -22,6 +22,7 @@ export const ListExercisesResponseItem = zod.object({
   name: zod.string(),
   muscleGroup: zod.string(),
   isCustom: zod.boolean(),
+  isMain: zod.boolean(),
 });
 export const ListExercisesResponse = zod.array(ListExercisesResponseItem);
 
@@ -35,6 +36,25 @@ export const createExerciseBodyMuscleGroupMax = 40;
 export const CreateExerciseBody = zod.object({
   name: zod.string().min(1).max(createExerciseBodyNameMax),
   muscleGroup: zod.string().min(1).max(createExerciseBodyMuscleGroupMax),
+});
+
+/**
+ * @summary Update mutable flags on an exercise (e.g. isMain)
+ */
+export const UpdateExerciseParams = zod.object({
+  exerciseId: zod.coerce.number(),
+});
+
+export const UpdateExerciseBody = zod.object({
+  isMain: zod.boolean(),
+});
+
+export const UpdateExerciseResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  muscleGroup: zod.string(),
+  isCustom: zod.boolean(),
+  isMain: zod.boolean(),
 });
 
 /**
@@ -146,6 +166,39 @@ export const GetWorkoutResponse = zod.object({
  */
 export const DeleteWorkoutParams = zod.object({
   workoutId: zod.coerce.number(),
+});
+
+/**
+ * @summary Per-exercise breakdown with deltas vs the previous time this exercise was trained
+ */
+export const GetWorkoutExerciseBreakdownParams = zod.object({
+  workoutId: zod.coerce.number(),
+});
+
+export const GetWorkoutExerciseBreakdownResponse = zod.object({
+  workoutId: zod.number(),
+  items: zod.array(
+    zod.object({
+      exerciseId: zod.number(),
+      exerciseName: zod.string(),
+      muscleGroup: zod.string(),
+      sets: zod.number(),
+      reps: zod.number(),
+      volume: zod.number(),
+      topSetWeight: zod.number(),
+      topSetReps: zod.number(),
+      previousSessionWorkoutId: zod.number().nullable(),
+      previousSessionWorkoutName: zod.string().nullable(),
+      previousSessionDate: zod.coerce.date().nullable(),
+      previousVolume: zod.number().nullable(),
+      previousTopSetWeight: zod.number().nullable(),
+      previousTotalReps: zod.number().nullable(),
+      deltaVolume: zod.number().nullable(),
+      deltaTopSetWeight: zod.number().nullable(),
+      deltaReps: zod.number().nullable(),
+      isPersonalRecord: zod.boolean(),
+    }),
+  ),
 });
 
 /**
@@ -301,6 +354,17 @@ export const FinishWorkoutResponse = zod.object({
       reps: zod.number(),
       volume: zod.number(),
       topSetWeight: zod.number(),
+      topSetReps: zod.number(),
+      previousSessionWorkoutId: zod.number().nullable(),
+      previousSessionWorkoutName: zod.string().nullable(),
+      previousSessionDate: zod.coerce.date().nullable(),
+      previousVolume: zod.number().nullable(),
+      previousTopSetWeight: zod.number().nullable(),
+      previousTotalReps: zod.number().nullable(),
+      deltaVolume: zod.number().nullable(),
+      deltaTopSetWeight: zod.number().nullable(),
+      deltaReps: zod.number().nullable(),
+      isPersonalRecord: zod.boolean(),
     }),
   ),
 });
@@ -387,6 +451,7 @@ export const GetExerciseProgressResponse = zod.object({
     name: zod.string(),
     muscleGroup: zod.string(),
     isCustom: zod.boolean(),
+    isMain: zod.boolean(),
   }),
   points: zod.array(
     zod.object({

@@ -1,8 +1,14 @@
 import { useParams, useLocation } from "wouter";
-import { useGetWorkout, getGetWorkoutQueryKey } from "@workspace/api-client-react";
+import {
+  useGetWorkout,
+  useGetWorkoutExerciseBreakdown,
+  getGetWorkoutQueryKey,
+  getGetWorkoutExerciseBreakdownQueryKey,
+} from "@workspace/api-client-react";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ExerciseProgressCard } from "@/components/ExerciseProgressCard";
 
 export function HistoryDetail() {
   const params = useParams();
@@ -11,6 +17,13 @@ export function HistoryDetail() {
 
   const { data: workout, isLoading } = useGetWorkout(id, {
     query: { enabled: !!id, queryKey: getGetWorkoutQueryKey(id) }
+  });
+
+  const { data: breakdown } = useGetWorkoutExerciseBreakdown(id, {
+    query: {
+      enabled: !!id,
+      queryKey: getGetWorkoutExerciseBreakdownQueryKey(id),
+    },
   });
 
   if (isLoading) return <div className="p-8 text-center">Загрузка...</div>;
@@ -47,6 +60,17 @@ export function HistoryDetail() {
             <div className="font-mono text-2xl font-black">{formatNumber(workout.totalReps)}</div>
           </div>
         </div>
+
+        {breakdown && breakdown.items.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold px-1">Сводка по упражнениям</h2>
+            <div className="space-y-3">
+              {breakdown.items.map((item) => (
+                <ExerciseProgressCard key={item.exerciseId} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="space-y-6">
           {Object.entries(setsByExercise).map(([exerciseIdStr, sets]) => {

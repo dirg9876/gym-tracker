@@ -8,12 +8,12 @@
 import type { ExerciseRecord } from "./exerciseRecord";
 import type { PersonalRecord } from "./personalRecord";
 import type { Workout } from "./workout";
-import type { WorkoutReportExerciseBreakdownItem } from "./workoutReportExerciseBreakdownItem";
+import type { WorkoutExerciseBreakdownItem } from "./workoutExerciseBreakdownItem";
 
 export interface WorkoutReport {
   workout: Workout;
   newPersonalRecords: PersonalRecord[];
   newExerciseRecords: ExerciseRecord[];
   durationMinutes: number;
-  exerciseBreakdown: WorkoutReportExerciseBreakdownItem[];
+  exerciseBreakdown: WorkoutExerciseBreakdownItem[];
 }

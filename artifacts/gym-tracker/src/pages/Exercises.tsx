@@ -1,11 +1,20 @@
 import { useState, useMemo } from "react";
-import { useListExercises, useCreateExercise, useDeleteExercise, getListExercisesQueryKey } from "@workspace/api-client-react";
+import {
+  useListExercises,
+  useCreateExercise,
+  useDeleteExercise,
+  useUpdateExercise,
+  getListExercisesQueryKey,
+  getGetLevelsQueryKey,
+  type Exercise,
+} from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Trash2, ChevronRight } from "lucide-react";
+import { Search, Plus, Trash2, ChevronRight, Star } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 
 export function Exercises() {
   const [, setLocation] = useLocation();
@@ -30,8 +39,45 @@ export function Exercises() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListExercisesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
       }
     }
+  });
+
+  const updateExercise = useUpdateExercise({
+    mutation: {
+      onMutate: async ({ exerciseId, data }) => {
+        const queryKey = getListExercisesQueryKey();
+        await queryClient.cancelQueries({ queryKey });
+        const previous = queryClient.getQueryData<Exercise[]>(queryKey);
+        if (previous) {
+          queryClient.setQueryData<Exercise[]>(
+            queryKey,
+            previous.map((ex) =>
+              ex.id === exerciseId ? { ...ex, isMain: data.isMain } : ex,
+            ),
+          );
+        }
+        return { previous };
+      },
+      onError: (_err, _vars, ctx) => {
+        if (ctx?.previous) {
+          queryClient.setQueryData(getListExercisesQueryKey(), ctx.previous);
+        }
+        toast.error("Не удалось обновить упражнение");
+      },
+      onSuccess: (row) => {
+        toast.success(
+          row.isMain
+            ? `«${row.name}» отмечено как основное`
+            : `«${row.name}» больше не основное`,
+        );
+        queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: getListExercisesQueryKey() });
+      },
+    },
   });
 
   const filtered = useMemo(() => {
@@ -51,10 +97,23 @@ export function Exercises() {
     return groups;
   }, [filtered]);
 
+  const mainCount = exercises?.filter((e) => e.isMain).length ?? 0;
+
   return (
     <AppShell>
       <div className="p-4 space-y-6">
         <h1 className="text-3xl font-black mt-4">Упражнения</h1>
+
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3 flex items-start gap-3 text-sm">
+          <Star className="h-5 w-5 text-primary mt-0.5 shrink-0 fill-primary/20" />
+          <div>
+            <div className="font-semibold">Основные упражнения</div>
+            <div className="text-muted-foreground text-xs mt-0.5">
+              Отметь звёздочкой те упражнения, по которым растёт твой уровень.
+              Сейчас отмечено: <span className="font-mono font-bold text-foreground">{mainCount}</span>.
+            </div>
+          </div>
+        </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
@@ -96,13 +155,37 @@ export function Exercises() {
                       key={ex.id} 
                       className="flex items-center justify-between p-4 hover:bg-accent transition-colors cursor-pointer"
                       onClick={(e) => {
-                        // Prevent navigation if clicking delete
                         if ((e.target as HTMLElement).closest('button')) return;
                         setLocation(`/exercises/${ex.id}`);
                       }}
                     >
-                      <span className="font-medium text-lg">{ex.name}</span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={ex.isMain ? "Убрать из основных" : "Сделать основным"}
+                          aria-pressed={ex.isMain}
+                          className={`h-9 w-9 shrink-0 ${
+                            ex.isMain
+                              ? "text-primary hover:text-primary"
+                              : "text-muted-foreground/40 hover:text-muted-foreground"
+                          }`}
+                          disabled={updateExercise.isPending}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateExercise.mutate({
+                              exerciseId: ex.id,
+                              data: { isMain: !ex.isMain },
+                            });
+                          }}
+                        >
+                          <Star
+                            className={`h-5 w-5 ${ex.isMain ? "fill-primary" : ""}`}
+                          />
+                        </Button>
+                        <span className="font-medium text-lg truncate">{ex.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
                         {ex.isCustom && (
                           <Button 
                             variant="ghost" 

@@ -11,6 +11,8 @@ import {
   CreateExerciseBody,
   DeleteExerciseParams,
   GetExerciseLastSetsParams,
+  UpdateExerciseParams,
+  UpdateExerciseBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -38,6 +40,29 @@ router.post("/exercises", async (req, res): Promise<void> => {
     })
     .returning();
   res.status(201).json(row);
+});
+
+router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
+  const params = UpdateExerciseParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const body = UpdateExerciseBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const [row] = await db
+    .update(exercisesTable)
+    .set({ isMain: body.data.isMain })
+    .where(eq(exercisesTable.id, params.data.exerciseId))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Не найдено" });
+    return;
+  }
+  res.json(row);
 });
 
 router.delete("/exercises/:exerciseId", async (req, res): Promise<void> => {

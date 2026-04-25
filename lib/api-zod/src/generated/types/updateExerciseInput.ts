@@ -6,10 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Exercise {
-  id: number;
-  name: string;
-  muscleGroup: string;
-  isCustom: boolean;
+export interface UpdateExerciseInput {
   isMain: boolean;
 }

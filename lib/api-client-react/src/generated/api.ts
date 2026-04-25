@@ -34,8 +34,10 @@ import type {
   ProgramsListResponse,
   ProgressSeries,
   StatsOverview,
+  UpdateExerciseInput,
   Workout,
   WorkoutComparison,
+  WorkoutExerciseBreakdownResponse,
   WorkoutReport,
   WorkoutSet,
   WorkoutSummary,
@@ -284,6 +286,93 @@ export const useCreateExercise = <
   TContext
 > => {
   return useMutation(getCreateExerciseMutationOptions(options));
+};
+
+/**
+ * @summary Update mutable flags on an exercise (e.g. isMain)
+ */
+export const getUpdateExerciseUrl = (exerciseId: number) => {
+  return `/api/exercises/${exerciseId}`;
+};
+
+export const updateExercise = async (
+  exerciseId: number,
+  updateExerciseInput: UpdateExerciseInput,
+  options?: RequestInit,
+): Promise<Exercise> => {
+  return customFetch<Exercise>(getUpdateExerciseUrl(exerciseId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateExerciseInput),
+  });
+};
+
+export const getUpdateExerciseMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateExercise>>,
+    TError,
+    { exerciseId: number; data: BodyType<UpdateExerciseInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateExercise>>,
+  TError,
+  { exerciseId: number; data: BodyType<UpdateExerciseInput> },
+  TContext
+> => {
+  const mutationKey = ["updateExercise"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateExercise>>,
+    { exerciseId: number; data: BodyType<UpdateExerciseInput> }
+  > = (props) => {
+    const { exerciseId, data } = props ?? {};
+
+    return updateExercise(exerciseId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateExerciseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateExercise>>
+>;
+export type UpdateExerciseMutationBody = BodyType<UpdateExerciseInput>;
+export type UpdateExerciseMutationError = ErrorType<void>;
+
+/**
+ * @summary Update mutable flags on an exercise (e.g. isMain)
+ */
+export const useUpdateExercise = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateExercise>>,
+    TError,
+    { exerciseId: number; data: BodyType<UpdateExerciseInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateExercise>>,
+  TError,
+  { exerciseId: number; data: BodyType<UpdateExerciseInput> },
+  TContext
+> => {
+  return useMutation(getUpdateExerciseMutationOptions(options));
 };
 
 /**
@@ -795,6 +884,101 @@ export const useDeleteWorkout = <
 > => {
   return useMutation(getDeleteWorkoutMutationOptions(options));
 };
+
+/**
+ * @summary Per-exercise breakdown with deltas vs the previous time this exercise was trained
+ */
+export const getGetWorkoutExerciseBreakdownUrl = (workoutId: number) => {
+  return `/api/workouts/${workoutId}/exercise-breakdown`;
+};
+
+export const getWorkoutExerciseBreakdown = async (
+  workoutId: number,
+  options?: RequestInit,
+): Promise<WorkoutExerciseBreakdownResponse> => {
+  return customFetch<WorkoutExerciseBreakdownResponse>(
+    getGetWorkoutExerciseBreakdownUrl(workoutId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetWorkoutExerciseBreakdownQueryKey = (workoutId: number) => {
+  return [`/api/workouts/${workoutId}/exercise-breakdown`] as const;
+};
+
+export const getGetWorkoutExerciseBreakdownQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>,
+  TError = ErrorType<unknown>,
+>(
+  workoutId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetWorkoutExerciseBreakdownQueryKey(workoutId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>
+  > = ({ signal }) =>
+    getWorkoutExerciseBreakdown(workoutId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!workoutId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWorkoutExerciseBreakdownQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>
+>;
+export type GetWorkoutExerciseBreakdownQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Per-exercise breakdown with deltas vs the previous time this exercise was trained
+ */
+
+export function useGetWorkoutExerciseBreakdown<
+  TData = Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>,
+  TError = ErrorType<unknown>,
+>(
+  workoutId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWorkoutExerciseBreakdown>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWorkoutExerciseBreakdownQueryOptions(
+    workoutId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Compare a finished workout against the previous similar workout
