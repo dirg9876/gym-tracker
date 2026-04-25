@@ -48,6 +48,8 @@ export function ExerciseProgressCard({ item }: Props) {
           <div className="font-semibold leading-tight">{item.exerciseName}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {item.muscleGroup}
+            {" · "}
+            <span className="font-mono">{item.sets}</span> подх.
           </div>
         </div>
         {item.isPersonalRecord && (

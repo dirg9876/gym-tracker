@@ -20,6 +20,7 @@ export function Exercises() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [onlyMain, setOnlyMain] = useState(false);
   const [newName, setNewName] = useState("");
   const [newGroup, setNewGroup] = useState("");
 
@@ -82,11 +83,16 @@ export function Exercises() {
 
   const filtered = useMemo(() => {
     if (!exercises) return [];
-    return exercises.filter(e => 
-      e.name.toLowerCase().includes(search.toLowerCase()) || 
-      e.muscleGroup.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [exercises, search]);
+    const q = search.toLowerCase();
+    return exercises.filter((e) => {
+      if (onlyMain && !e.isMain) return false;
+      if (!q) return true;
+      return (
+        e.name.toLowerCase().includes(q) ||
+        e.muscleGroup.toLowerCase().includes(q)
+      );
+    });
+  }, [exercises, search, onlyMain]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, typeof filtered> = {};
@@ -115,14 +121,32 @@ export function Exercises() {
           </div>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-          <Input 
-            placeholder="Поиск..." 
-            className="pl-10 h-12 rounded-2xl bg-card border-border"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Поиск..."
+              className="pl-10 h-12 rounded-2xl bg-card border-border"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setOnlyMain((v) => !v)}
+            aria-pressed={onlyMain}
+            className={`w-full h-10 rounded-2xl border text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors ${
+              onlyMain
+                ? "bg-primary/15 border-primary/40 text-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Star
+              className={`h-4 w-4 ${onlyMain ? "fill-primary" : ""}`}
+            />
+            Только основные
+            <span className="font-mono text-xs opacity-70">({mainCount})</span>
+          </button>
         </div>
 
         {/* Add new */}
