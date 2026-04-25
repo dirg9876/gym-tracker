@@ -434,7 +434,7 @@ function LevelDetailDialog({
 
                   <div className="space-y-2">
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Веса для твоих 3 основных упражнений
+                      Веса для твоих основных упражнений
                     </div>
                     {bodyWeightIsFallback && (
                       <div className="flex items-start gap-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md px-2.5 py-2">
@@ -445,7 +445,7 @@ function LevelDetailDialog({
                         </span>
                       </div>
                     )}
-                    {rows.length === 0 ? (
+                    {rows.length < 3 && (
                       <Link
                         href="/exercises"
                         className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2.5 text-sm hover:bg-amber-500/15"
@@ -453,15 +453,18 @@ function LevelDetailDialog({
                         <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
                         <div className="flex-1">
                           <div className="font-semibold">
-                            Нет основных упражнений
+                            {rows.length === 0
+                              ? "Нет основных упражнений"
+                              : `Отмечено только ${rows.length} из 3`}
                           </div>
                           <div className="text-[11px] text-muted-foreground mt-0.5">
                             Отметь хотя бы 3 на странице «Упражнения», чтобы
-                            увидеть конкретные веса.
+                            прогресс по уровню считался корректно.
                           </div>
                         </div>
                       </Link>
-                    ) : (
+                    )}
+                    {rows.length > 0 && (
                       <div className="space-y-1.5">
                         {rows.map(({ ex, required, belowBar }) => (
                           <div
