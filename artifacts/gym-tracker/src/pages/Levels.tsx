@@ -371,7 +371,7 @@ function LevelDetailDialog({
   const lvl = openLevel != null ? levels[openLevel] : undefined;
   const rows = useMemo(() => {
     if (!lvl) return [];
-    return mainExercises.map((ex) => {
+    return mainExercises.slice(0, 3).map((ex) => {
       const required = requiredKgFor(
         lvl.level,
         bodyWeightKg,
