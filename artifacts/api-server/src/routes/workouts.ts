@@ -222,7 +222,6 @@ router.post("/workouts/:workoutId/sets", async (req, res): Promise<void> => {
         eq(exercisesTable.id, body.data.exerciseId),
         or(
           eq(exercisesTable.isCustom, false),
-          isNull(exercisesTable.userId),
           eq(exercisesTable.userId, req.userId),
         )
       )

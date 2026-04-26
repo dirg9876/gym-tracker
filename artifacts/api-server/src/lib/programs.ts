@@ -1,5 +1,5 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
-import { and, asc, eq, isNotNull, isNull, inArray, or } from "drizzle-orm";
+import { and, asc, eq, isNotNull, inArray, or } from "drizzle-orm";
 import { computeCurrentLevel, LEVELS, MAX_LEVEL, referenceKg, levelFactor } from "./levels";
 import { getMcKgForExercise } from "./sport-norms";
 
@@ -246,7 +246,6 @@ export async function buildProgramPlan(
     .where(
       or(
         eq(exercisesTable.isCustom, false),
-        isNull(exercisesTable.userId),
         eq(exercisesTable.userId, userId),
       ),
     );

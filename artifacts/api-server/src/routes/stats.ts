@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { db, exercisesTable } from "@workspace/db";
 import { GetExerciseProgressParams, GetHeatmapQueryParams } from "@workspace/api-zod";
 import {
@@ -166,7 +166,6 @@ router.get(
           eq(exercisesTable.id, exerciseId),
           or(
             eq(exercisesTable.isCustom, false),
-            isNull(exercisesTable.userId),
             eq(exercisesTable.userId, req.userId),
           ),
         ),

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNotNull, isNull, max, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, max, or } from "drizzle-orm";
 import {
   db,
   exercisesTable,
@@ -37,7 +37,6 @@ router.get("/exercises", async (req, res): Promise<void> => {
       .where(
         or(
           eq(exercisesTable.isCustom, false),
-          isNull(exercisesTable.userId),
           eq(exercisesTable.userId, userId),
         )
       )
@@ -192,7 +191,6 @@ router.get(
           eq(exercisesTable.id, exerciseId),
           or(
             eq(exercisesTable.isCustom, false),
-            isNull(exercisesTable.userId),
             eq(exercisesTable.userId, req.userId),
           ),
         ),

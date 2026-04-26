@@ -1,5 +1,5 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
-import { eq, and, isNotNull, isNull, asc, inArray, or, sql } from "drizzle-orm";
+import { eq, and, isNotNull, asc, inArray, or, sql } from "drizzle-orm";
 import {
   getProfile,
   getConfirmedLevel,
@@ -532,7 +532,6 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
         eq(exercisesTable.isMain, true),
         or(
           eq(exercisesTable.isCustom, false),
-          isNull(exercisesTable.userId),
           eq(exercisesTable.userId, userId),
         ),
       ),
