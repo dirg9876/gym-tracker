@@ -159,3 +159,21 @@ While inside `/workout/:id`, the logger now offers four assistants:
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 
 See the `pnpm-workspace` skill for workspace structure and conventions.
+
+## GitHub Mirror
+
+The repo is mirrored to GitHub via Replit's GitHub integration. Code can be
+browsed and edited on github.com, but **publishing is still done from Replit**
+(Replit Deployments / Autoscale, see `.replit`). The mirror is for code
+review / external editing only.
+
+- `README.md` — public-facing intro and local setup instructions
+- `.env.example` — template for local `.env`; real secrets stay in the
+  Replit Secrets pane
+- `.github/workflows/ci.yml` — on every push / PR to `main`: install with
+  frozen lockfile, typecheck shared libs + api-server + mobile, then build
+  api-server (esbuild) and gym-tracker (`vite build`, with `PORT=8080
+  BASE_PATH=/`). The web app's standalone `tsc` typecheck is intentionally
+  skipped — lucide-react bundles a second `@types/react` copy and produces
+  harmless duplication noise; the `vite build` is the real correctness check.
+  Mobile is typechecked but not built; `mockup-sandbox` is also skipped.

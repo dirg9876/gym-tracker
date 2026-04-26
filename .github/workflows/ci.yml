@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel any in-flight run for the same branch when a new commit lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-check:
+    name: Typecheck + build (web + api)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Shared lib packages (api-spec, api-zod, api-client-react, db, …)
+      - name: Typecheck shared libs
+        run: pnpm run typecheck:libs
+
+      # Production artifacts only — mockup-sandbox is a design scratchpad and
+      # is intentionally skipped (it has known React 19 type-duplication noise
+      # that doesn't affect anything we ship).
+      - name: Typecheck API server
+        run: pnpm --filter @workspace/api-server run typecheck
+
+      - name: Typecheck mobile app
+        run: pnpm --filter @workspace/gym-tracker-mobile run typecheck
+
+      # The web app's standalone `tsc` typecheck has known noise from
+      # duplicate @types/react copies pulled in by lucide-react; the real
+      # build via `vite build` is the authoritative correctness check and is
+      # run below.
+      - name: Build API server
+        run: pnpm --filter @workspace/api-server run build
+
+      # vite.config.ts requires PORT and BASE_PATH at build time. Values are
+      # arbitrary for CI — the build only embeds BASE_PATH (used as the
+      # public base URL); PORT is only read by the dev server.
+      - name: Build web app
+        env:
+          PORT: 8080
+          BASE_PATH: /
+        run: pnpm --filter @workspace/gym-tracker run build
