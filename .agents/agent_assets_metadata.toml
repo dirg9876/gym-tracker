@@ -59,7 +59,7 @@ title = "tier 8 legend"
 id = "H9YGdm4sHSKFP9RHM08JQ"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-9.png"
 type = "image"
-title = "level 9"
+title = "generated_image"
 
 [[generated]]
 id = "kXNCFIkt1u6ttdWsjZ1_q"
@@ -83,7 +83,7 @@ title = "level 3"
 id = "L78H87vx-W9Opv4fSMMUa"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-4.png"
 type = "image"
-title = "level 4"
+title = "generated_image"
 
 [[generated]]
 id = "2-IUk3O3qaZKP9FwGvReW"
@@ -137,7 +137,7 @@ title = "lvl 12"
 id = "w8OfVbNwxutZMKE2VQ_m2"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-13.png"
 type = "image"
-title = "lvl 13"
+title = "generated_image"
 
 [[generated]]
 id = "isZHL9gcuPtxmFRUosFwr"
@@ -167,7 +167,7 @@ title = "lvl 17"
 id = "4t8nZy6-nizvdiN4KcK1T"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-18.png"
 type = "image"
-title = "lvl 18"
+title = "generated_image"
 
 [[generated]]
 id = "2HdEf8BlkFKfRG50v2shF"
@@ -191,7 +191,7 @@ title = "lvl 21"
 id = "I-rX2Z5Oxz-8vUn1Qn0yU"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-22.png"
 type = "image"
-title = "lvl 22"
+title = "generated_image"
 
 [[generated]]
 id = "ZTSbvukNjFEPjAndEuIw3"
@@ -245,7 +245,7 @@ title = "lvl 30"
 id = "dk10xZArksQOvp6f2vc0W"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-31.png"
 type = "image"
-title = "lvl 31"
+title = "generated_image"
 
 [[generated]]
 id = "7ssvkmuYYhNMBuhiWSugQ"
@@ -275,7 +275,7 @@ title = "lvl 35"
 id = "0eRgQGQfTO3b_2MR02Me0"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-36.png"
 type = "image"
-title = "lvl 36"
+title = "generated_image"
 
 [[generated]]
 id = "AVxh6r3lnIgt41w9_ZB9O"
@@ -299,7 +299,7 @@ title = "lvl 39"
 id = "b1RDt7qktoMvquz_KL8mv"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-40.png"
 type = "image"
-title = "lvl 40"
+title = "generated_image"
 
 [[generated]]
 id = "SVLZu1pvd1fRON67lqS4n"
@@ -353,7 +353,7 @@ title = "lvl 48"
 id = "HnyLBq6gvWCsUfsOQRVKa"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-49.png"
 type = "image"
-title = "lvl 49"
+title = "generated_image"
 
 [[generated]]
 id = "EnH5kLaZDGuuoO5NqPsi4"
@@ -407,7 +407,7 @@ title = "lvl 57"
 id = "DZ2V1QGywpRWTqYyVikmZ"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-58.png"
 type = "image"
-title = "lvl 58"
+title = "generated_image"
 
 [[generated]]
 id = "POQTx2AdU1v60stomm655"
@@ -539,7 +539,7 @@ title = "lvl 79"
 id = "9gj5ZqYOXCbubdtEstNBf"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-80.png"
 type = "image"
-title = "lvl 80"
+title = "generated_image"
 
 [[generated]]
 id = "FKHHj6uqQUr-oukZkyy6o"
