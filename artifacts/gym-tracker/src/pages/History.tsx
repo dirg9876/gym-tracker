@@ -3,11 +3,13 @@ import {
   useListWorkouts,
   useDeleteWorkout,
   getListWorkoutsQueryKey,
+  getGetLevelsQueryKey,
+  getGetStatsOverviewQueryKey,
 } from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useLocation } from "wouter";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -31,6 +33,8 @@ export function History() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetStatsOverviewQueryKey() });
         setPendingDeleteId(null);
       },
     },
@@ -66,6 +70,7 @@ export function History() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                      disabled={deleteWorkout.isPending}
                       onClick={(e) => {
                         e.stopPropagation();
                         setPendingDeleteId(workout.id);
@@ -109,16 +114,19 @@ export function History() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteWorkout.isPending}>Отмена</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteWorkout.isPending}
               onClick={() => {
                 if (pendingDeleteId !== null) {
                   deleteWorkout.mutate({ workoutId: pendingDeleteId });
                 }
               }}
             >
-              Удалить
+              {deleteWorkout.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Удаление...</>
+              ) : "Удалить"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

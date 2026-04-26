@@ -7,9 +7,11 @@ import {
   getGetWorkoutQueryKey,
   getGetWorkoutExerciseBreakdownQueryKey,
   getListWorkoutsQueryKey,
+  getGetLevelsQueryKey,
+  getGetStatsOverviewQueryKey,
 } from "@workspace/api-client-react";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExerciseProgressCard } from "@/components/ExerciseProgressCard";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +48,8 @@ export function HistoryDetail() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetStatsOverviewQueryKey() });
         setLocation("/history");
       },
     },
@@ -75,9 +79,12 @@ export function HistoryDetail() {
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            disabled={deleteWorkout.isPending}
             onClick={() => setConfirmDelete(true)}
           >
-            <Trash2 className="h-5 w-5" />
+            {deleteWorkout.isPending
+              ? <Loader2 className="h-5 w-5 animate-spin" />
+              : <Trash2 className="h-5 w-5" />}
           </Button>
         </div>
       </div>
@@ -141,12 +148,15 @@ export function HistoryDetail() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteWorkout.isPending}>Отмена</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteWorkout.isPending}
               onClick={() => deleteWorkout.mutate({ workoutId: id })}
             >
-              Удалить
+              {deleteWorkout.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Удаление...</>
+              ) : "Удалить"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
