@@ -132,7 +132,11 @@ router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Не найдено" });
     return;
   }
-  if (existing.isCustom && existing.userId !== req.userId) {
+  if (!existing.isCustom) {
+    res.status(403).json({ error: "Нельзя редактировать общий каталог упражнений" });
+    return;
+  }
+  if (existing.userId !== req.userId) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -183,7 +187,16 @@ router.get(
     const [exRow] = await db
       .select()
       .from(exercisesTable)
-      .where(eq(exercisesTable.id, exerciseId))
+      .where(
+        and(
+          eq(exercisesTable.id, exerciseId),
+          or(
+            eq(exercisesTable.isCustom, false),
+            isNull(exercisesTable.userId),
+            eq(exercisesTable.userId, req.userId),
+          ),
+        ),
+      )
       .limit(1);
 
     if (!exRow) {

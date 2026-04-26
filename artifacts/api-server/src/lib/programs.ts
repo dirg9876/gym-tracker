@@ -1,5 +1,5 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
-import { and, asc, eq, isNotNull, inArray } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, inArray, or } from "drizzle-orm";
 import { computeCurrentLevel, LEVELS, MAX_LEVEL, referenceKg, levelFactor } from "./levels";
 import { getMcKgForExercise } from "./sport-norms";
 
@@ -242,7 +242,14 @@ export async function buildProgramPlan(
       muscleGroup: exercisesTable.muscleGroup,
       equipment: exercisesTable.equipment,
     })
-    .from(exercisesTable);
+    .from(exercisesTable)
+    .where(
+      or(
+        eq(exercisesTable.isCustom, false),
+        isNull(exercisesTable.userId),
+        eq(exercisesTable.userId, userId),
+      ),
+    );
   const byName = new Map(allExerciseRows.map((r) => [r.name, r]));
 
   const wantedNames = program.exercises.map((e) => e.name);

@@ -1,11 +1,20 @@
 import { Feather } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
-import React from "react";
+import { useAuth } from "@clerk/expo";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { Redirect, Tabs } from "expo-router";
+import React, { useEffect } from "react";
 
 import colors from "@/constants/colors";
 
 export default function TabLayout() {
   const c = colors.dark;
+  const { isSignedIn, getToken } = useAuth();
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+  }, [getToken]);
+
+  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
 
   return (
     <Tabs
