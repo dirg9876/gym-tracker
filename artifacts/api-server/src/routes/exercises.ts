@@ -29,12 +29,13 @@ import {
 const router: IRouter = Router();
 
 router.get("/exercises", async (_req, res): Promise<void> => {
+  const userId = "";
   const [rows, profile] = await Promise.all([
     db
       .select()
       .from(exercisesTable)
       .orderBy(exercisesTable.muscleGroup, exercisesTable.name),
-    getProfile(),
+    getProfile(userId),
   ]);
 
   const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
@@ -48,7 +49,7 @@ router.get("/exercises", async (_req, res): Promise<void> => {
     })
     .from(workoutSetsTable)
     .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
-    .where(isNotNull(workoutsTable.finishedAt))
+    .where(and(isNotNull(workoutsTable.finishedAt), eq(workoutsTable.userId, userId)))
     .groupBy(workoutSetsTable.exerciseId);
 
   const maxByExercise = new Map<number, number>();
@@ -160,7 +161,8 @@ router.get(
       return;
     }
 
-    const profile = await getProfile();
+    const userId = "";
+    const profile = await getProfile(userId);
     const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
     const sex = profile.sex ?? FALLBACK_SEX;
 
@@ -173,7 +175,7 @@ router.get(
       exRow.muscleGroup,
     );
 
-    // Max weight for this exercise across all finished workouts
+    // Max weight for this exercise across finished workouts for this user
     const maxRows = await db
       .select({ maxKg: max(workoutSetsTable.weightKg) })
       .from(workoutSetsTable)
@@ -182,6 +184,7 @@ router.get(
         and(
           eq(workoutSetsTable.exerciseId, exerciseId),
           isNotNull(workoutsTable.finishedAt),
+          eq(workoutsTable.userId, userId),
         ),
       );
 

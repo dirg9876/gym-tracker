@@ -264,7 +264,7 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
   const sets = await getWorkoutSets(workoutId);
 
   // Compute previous PRs from prior finished workouts
-  const previousFinishedSets = await getAllSetsForFinishedWorkouts({
+  const previousFinishedSets = await getAllSetsForFinishedWorkouts("", {
     beforeWorkoutId: workoutId,
   });
   const previousByWorkout = new Map<number, EnrichedSet[]>();

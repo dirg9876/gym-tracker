@@ -708,19 +708,29 @@ function MainExercisesGrid({
         const passed = autoPassed || passedByLift;
         const rowPenalty = e.requiredKgPenaltyMultiplier ?? 1;
         const showPenaltyHint = rowPenalty > 1;
+
+        // Progress bar: 0–100% of required weight
+        const barPct =
+          required != null && required > 0 && !autoPassed
+            ? Math.min(100, (e.maxWeightKg / required) * 100)
+            : null;
+
+        // Next rank hint
+        const nextRank = e.mcKg != null ? nextRankFromStats(e.maxWeightKg, e.mcKg) : null;
+        const currentRankEntry = e.mcKg != null && e.maxWeightKg > 0
+          ? exerciseRankFromStats(e.maxWeightKg, e.mcKg)
+          : null;
+
         return (
           <div
             key={e.exerciseId}
-            className={`flex flex-col gap-1 text-xs px-2.5 py-2 rounded-md border ${
+            className={`flex flex-col gap-1.5 text-xs px-2.5 py-2 rounded-md border ${
               passed
                 ? "border-primary/40 bg-primary/10 text-foreground"
                 : "border-border bg-card/40 text-muted-foreground"
             }`}
           >
-            {/* Two-row layout: name on top with the status icon, numbers
-                wrap underneath on narrow screens. Long Russian names like
-                "Жим штанги на наклонной" no longer collide with the right
-                column. */}
+            {/* Row 1: icon + name + rank badge */}
             <div className="flex items-start gap-2">
               {passed ? (
                 <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
@@ -728,54 +738,64 @@ function MainExercisesGrid({
                 <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0 mt-0.5" />
               )}
               <span className="font-medium break-words flex-1">{e.name}</span>
-              {e.mcKg != null && e.maxWeightKg > 0 && (() => {
-                const r = exerciseRankFromStats(e.maxWeightKg, e.mcKg);
-                if (!r || r.code === "NONE") return null;
-                return (
-                  <span
-                    className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none ${r.cls}`}
-                    title={r.label}
-                  >
-                    {r.shortLabel}
-                  </span>
-                );
-              })()}
+              {currentRankEntry && currentRankEntry.code !== "NONE" && (
+                <span
+                  className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none ${currentRankEntry.cls}`}
+                  title={currentRankEntry.label}
+                >
+                  {currentRankEntry.shortLabel}
+                </span>
+              )}
             </div>
-            <div className="pl-5 flex items-center justify-end">
+
+            {/* Row 2: auto-passed labels OR weight progress */}
+            <div className="pl-5">
               {e.autoPassedReason === "time_based_exercise" ? (
-                <span className="text-[11px] text-primary">
-                  Время — засчитано
-                </span>
+                <span className="text-[11px] text-primary">Время — засчитано</span>
               ) : e.autoPassedReason === "below_bar_weight" ? (
-                <span className="text-[11px] text-primary">
-                  Ниже грифа — засчитано
-                </span>
+                <span className="text-[11px] text-primary">Ниже грифа — засчитано</span>
               ) : required != null && required > 0 ? (
-                <div className="flex items-baseline gap-2 leading-tight">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                    нужно {formatKg(required)}
-                  </span>
-                  <span
-                    className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
-                  >
-                    сейчас {formatNumber(e.maxWeightKg)} кг
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-between gap-2 leading-tight">
+                    <span
+                      className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
+                    >
+                      {formatNumber(e.maxWeightKg)} кг
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/70">
+                      / {formatKg(required)}
+                    </span>
+                  </div>
+                  {barPct !== null && (
+                    <div className="h-1 rounded-full overflow-hidden bg-border/60">
+                      <div
+                        className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
+                        style={{ width: `${barPct}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <span className="font-mono text-[11px] text-foreground/80">
-                  сейчас {formatNumber(e.maxWeightKg)} кг
+                  {formatNumber(e.maxWeightKg)} кг
                 </span>
               )}
             </div>
-            {showPenaltyHint &&
-              !autoPassed &&
-              required != null &&
-              required > 0 &&
-              !passed && (
-                <div className="text-[10px] text-amber-400/80 pl-5">
-                  {formatPenaltyPct(rowPenalty)} из-за прыжка через уровни
-                </div>
-              )}
+
+            {/* Row 3: penalty hint or MC norm */}
+            {showPenaltyHint && !autoPassed && required != null && required > 0 && !passed ? (
+              <div className="text-[10px] text-amber-400/80 pl-5">
+                {formatPenaltyPct(rowPenalty)} из-за прыжка через уровни
+              </div>
+            ) : !autoPassed && e.mcKg != null ? (
+              <div className="text-[10px] text-muted-foreground/60 pl-5">
+                {nextRank
+                  ? `до ${nextRank.label}: ${formatKg(nextRank.kgTarget)}`
+                  : e.maxWeightKg >= e.mcKg
+                    ? "МС достигнут ✓"
+                    : `МС: ${formatKg(e.mcKg)}`}
+              </div>
+            ) : null}
           </div>
         );
       })}

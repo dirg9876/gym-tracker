@@ -4,7 +4,8 @@ import { computeCurrentLevel } from "../lib/levels";
 const router: IRouter = Router();
 
 router.get("/levels", async (_req, res): Promise<void> => {
-  const info = await computeCurrentLevel();
+  const userId = "";
+  const info = await computeCurrentLevel(userId);
   res.json({
     levels: info.levels,
     currentLevel: info.currentLevel,

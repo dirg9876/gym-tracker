@@ -224,11 +224,12 @@ export async function listPrograms(): Promise<
 
 export async function buildProgramPlan(
   programId: string,
+  userId: string = "",
 ): Promise<ProgramPlan | null> {
   const program = PROGRAMS.find((p) => p.id === programId);
   if (!program) return null;
 
-  const levelInfo = await computeCurrentLevel();
+  const levelInfo = await computeCurrentLevel(userId);
   const planningLevel = Math.max(1, Math.min(MAX_LEVEL, levelInfo.currentLevel));
   // Use the user's actual body weight for the benchmark reference so that the
   // level-based fallback weight scales to the real MC anchor, not FALLBACK_BODY_WEIGHT_KG.

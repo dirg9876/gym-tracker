@@ -234,7 +234,7 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
   const sentinel = await db
     .select({ key: appMetaTable.key })
     .from(appMetaTable)
-    .where(eq(appMetaTable.key, MAIN_EXERCISES_SEED_KEY))
+    .where(and(eq(appMetaTable.userId, ""), eq(appMetaTable.key, MAIN_EXERCISES_SEED_KEY)))
     .limit(1);
   if (sentinel.length > 0) return { seeded: 0 };
 
@@ -259,7 +259,7 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
       key: MAIN_EXERCISES_SEED_KEY,
       value: new Date().toISOString(),
     })
-    .onConflictDoNothing({ target: appMetaTable.key });
+    .onConflictDoNothing({ target: [appMetaTable.userId, appMetaTable.key] });
 
   return { seeded: seededCount };
 }
@@ -273,7 +273,7 @@ export async function seedDefaultEquipmentIfEmpty(): Promise<{ seeded: number }>
   const sentinel = await db
     .select({ key: appMetaTable.key })
     .from(appMetaTable)
-    .where(eq(appMetaTable.key, DEFAULT_EQUIPMENT_SEED_KEY))
+    .where(and(eq(appMetaTable.userId, ""), eq(appMetaTable.key, DEFAULT_EQUIPMENT_SEED_KEY)))
     .limit(1);
   if (sentinel.length > 0) return { seeded: 0 };
 
@@ -293,7 +293,7 @@ export async function seedDefaultEquipmentIfEmpty(): Promise<{ seeded: number }>
       key: DEFAULT_EQUIPMENT_SEED_KEY,
       value: new Date().toISOString(),
     })
-    .onConflictDoNothing({ target: appMetaTable.key });
+    .onConflictDoNothing({ target: [appMetaTable.userId, appMetaTable.key] });
 
   return { seeded: seededCount };
 }
@@ -328,7 +328,7 @@ export async function seedDefaultMultipliersIfEmpty(): Promise<{ seeded: number 
       key: DEFAULT_MULTIPLIERS_SEED_KEY,
       value: new Date().toISOString(),
     })
-    .onConflictDoNothing({ target: appMetaTable.key });
+    .onConflictDoNothing({ target: [appMetaTable.userId, appMetaTable.key] });
 
   return { seeded: seededCount };
 }
@@ -511,8 +511,8 @@ export type CurrentLevelInfo = {
   stats: LevelStats;
 };
 
-export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
-  const profile = await getProfile();
+export async function computeCurrentLevel(userId: string): Promise<CurrentLevelInfo> {
+  const profile = await getProfile(userId);
   const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
   const bodyWeightIsFallback = profile.bodyWeightKg == null;
   const sex = profile.sex ?? FALLBACK_SEX;
@@ -555,6 +555,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
       .where(
         and(
           isNotNull(workoutsTable.finishedAt),
+          eq(workoutsTable.userId, userId),
           inArray(workoutSetsTable.exerciseId, mainIds),
         ),
       );
@@ -574,7 +575,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
     })
     .from(workoutSetsTable)
     .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
-    .where(isNotNull(workoutsTable.finishedAt))
+    .where(and(isNotNull(workoutsTable.finishedAt), eq(workoutsTable.userId, userId)))
     .orderBy(asc(workoutSetsTable.createdAt));
 
   const events = allSets.map((s) => ({
@@ -648,10 +649,10 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
   // Bootstrap the confirmed-level sentinel for new installs / pre-existing
   // users. Without this, a user with significant history would suddenly drop
   // to level 0 because the penalty against confirmed=0 makes level 1 unreachable.
-  let confirmedLevel = await getConfirmedLevel();
+  let confirmedLevel = await getConfirmedLevel(userId);
   if (confirmedLevel === null) {
     confirmedLevel = bestLevelEver;
-    await setConfirmedLevel(confirmedLevel);
+    await setConfirmedLevel(userId, confirmedLevel);
   }
 
   // currentLevel — bounded above by confirmed + ladder length, with each step
@@ -668,7 +669,7 @@ export async function computeCurrentLevel(): Promise<CurrentLevelInfo> {
 
   // Persist the new floor when the user has earned a higher level.
   if (currentLevel > confirmedLevel) {
-    await setConfirmedLevel(currentLevel);
+    await setConfirmedLevel(userId, currentLevel);
     confirmedLevel = currentLevel;
   }
 

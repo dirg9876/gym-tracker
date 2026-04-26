@@ -72,10 +72,14 @@ export async function getWorkoutSets(workoutId: number): Promise<EnrichedSet[]> 
   });
 }
 
-export async function getAllSetsForFinishedWorkouts(opts?: {
-  beforeWorkoutId?: number;
-}): Promise<EnrichedSet[]> {
-  const conditions = [isNotNull(workoutsTable.finishedAt)];
+export async function getAllSetsForFinishedWorkouts(
+  userId: string,
+  opts?: { beforeWorkoutId?: number },
+): Promise<EnrichedSet[]> {
+  const conditions = [
+    isNotNull(workoutsTable.finishedAt),
+    eq(workoutsTable.userId, userId),
+  ];
   if (opts?.beforeWorkoutId !== undefined) {
     conditions.push(lt(workoutSetsTable.workoutId, opts.beforeWorkoutId));
   }
@@ -112,13 +116,13 @@ export async function getAllSetsForFinishedWorkouts(opts?: {
   });
 }
 
-export async function listFinishedWorkouts(): Promise<
-  { id: number; startedAt: Date; finishedAt: Date | null; name: string | null }[]
-> {
+export async function listFinishedWorkouts(
+  userId: string,
+): Promise<{ id: number; startedAt: Date; finishedAt: Date | null; name: string | null }[]> {
   return db
     .select()
     .from(workoutsTable)
-    .where(isNotNull(workoutsTable.finishedAt))
+    .where(and(isNotNull(workoutsTable.finishedAt), eq(workoutsTable.userId, userId)))
     .orderBy(desc(workoutsTable.startedAt));
 }
 
@@ -172,7 +176,8 @@ export async function computeExerciseBreakdown(
   const currentSets = await getWorkoutSets(workoutId);
   if (currentSets.length === 0) return [];
 
-  // All sets from finished workouts strictly older than this one (and not this one)
+  // All sets from finished workouts strictly older than this one (and not this one),
+  // scoped to the same user.
   const priorRows = await db
     .select({
       id: workoutSetsTable.id,
@@ -193,6 +198,7 @@ export async function computeExerciseBreakdown(
       and(
         isNotNull(workoutsTable.finishedAt),
         lt(workoutsTable.startedAt, w.startedAt),
+        eq(workoutsTable.userId, w.userId),
       ),
     );
 
@@ -297,8 +303,6 @@ export async function computeExerciseBreakdown(
 
     // PR detection — must match the finish endpoint's `newExerciseRecords`
     // criteria (per-set max weight, per-set max reps, per-set max volume).
-    // If the caller already computed that set, trust it; otherwise recompute
-    // the same condition here.
     let isPR: boolean;
     if (prExerciseIds) {
       isPR = prExerciseIds.has(cur.exerciseId);

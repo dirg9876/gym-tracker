@@ -24,8 +24,9 @@ function groupByWorkout(sets: EnrichedSet[]): Map<number, EnrichedSet[]> {
 }
 
 router.get("/stats/overview", async (_req, res): Promise<void> => {
-  const sets = await getAllSetsForFinishedWorkouts();
-  const workouts = await listFinishedWorkouts();
+  const userId = "";
+  const sets = await getAllSetsForFinishedWorkouts(userId);
+  const workouts = await listFinishedWorkouts(userId);
   const byWorkout = groupByWorkout(sets);
 
   let totalVolume = 0;
@@ -47,7 +48,6 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
     }
   }
 
-  // Top exercises across all workouts
   const exMap = new Map<
     number,
     { name: string; muscleGroup: string; sets: number; volume: number; maxWeightKg: number }
@@ -77,7 +77,6 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
     .sort((a, b) => b.volume - a.volume)
     .slice(0, 8);
 
-  // Muscle group breakdown
   const mg = new Map<string, { volume: number; sets: number }>();
   for (const s of sets) {
     const e = mg.get(s.muscleGroup) ?? { volume: 0, sets: 0 };
@@ -89,7 +88,6 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
     .map(([muscleGroup, v]) => ({ muscleGroup, volume: round(v.volume), sets: v.sets }))
     .sort((a, b) => b.volume - a.volume);
 
-  // Streak: consecutive days with a finished workout up to today
   const dayKeys = new Set<string>();
   for (const w of workouts) {
     const d = w.startedAt;
@@ -101,7 +99,6 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
   }
   let streak = 0;
   const probe = new Date();
-  // start from today; if today not present, allow yesterday
   if (!dayKeys.has(dayKey(probe))) {
     probe.setDate(probe.getDate() - 1);
   }
@@ -110,7 +107,6 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
     probe.setDate(probe.getDate() - 1);
   }
 
-  // Workouts in the last 7 days
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   const weekWorkouts = workouts.filter((w) => w.startedAt >= weekAgo).length;
@@ -131,8 +127,9 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
 });
 
 router.get("/stats/progress", async (_req, res): Promise<void> => {
-  const sets = await getAllSetsForFinishedWorkouts();
-  const workouts = await listFinishedWorkouts();
+  const userId = "";
+  const sets = await getAllSetsForFinishedWorkouts(userId);
+  const workouts = await listFinishedWorkouts(userId);
   const wMap = new Map(workouts.map((w) => [w.id, w]));
   const byWorkout = groupByWorkout(sets);
   const points = [...byWorkout.entries()]
@@ -170,9 +167,10 @@ router.get(
       return;
     }
 
-    const allSets = await getAllSetsForFinishedWorkouts();
+    const userId = "";
+    const allSets = await getAllSetsForFinishedWorkouts(userId);
     const exerciseSets = allSets.filter((s) => s.exerciseId === exerciseId);
-    const workouts = await listFinishedWorkouts();
+    const workouts = await listFinishedWorkouts(userId);
     const wMap = new Map(workouts.map((w) => [w.id, w]));
 
     const byWorkout = groupByWorkout(exerciseSets);
@@ -211,7 +209,8 @@ router.get("/stats/heatmap", async (req, res): Promise<void> => {
     return;
   }
   const days = Math.max(7, Math.min(parsed.data.days ?? 365, 730));
-  const sets = await getAllSetsForFinishedWorkouts();
+  const userId = "";
+  const sets = await getAllSetsForFinishedWorkouts(userId);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -280,11 +279,12 @@ router.get("/stats/heatmap", async (req, res): Promise<void> => {
 });
 
 router.get("/stats/forecast", async (_req, res): Promise<void> => {
-  const info = await computeCurrentLevel();
+  const userId = "";
+  const info = await computeCurrentLevel(userId);
   const cur = info.currentLevel;
   const next = info.nextLevel;
 
-  const sets = await getAllSetsForFinishedWorkouts();
+  const sets = await getAllSetsForFinishedWorkouts(userId);
 
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -297,9 +297,6 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
     if (t >= window14) tonnage14 += s.volume;
     if (t >= window7) tonnage7 += s.volume;
   }
-  // Average daily tonnage is computed over the last 7 days — same window the
-  // tonnage requirement is now expressed in. tonnage14 is used only to assess
-  // pacing confidence (current week vs. previous week trend).
   const avgDaily = tonnage7 / 7;
 
   if (next === null || cur >= info.levels.length - 1) {
@@ -317,8 +314,6 @@ router.get("/stats/forecast", async (_req, res): Promise<void> => {
   }
 
   const nextDef = info.levels[next]!;
-  // Use the effective (penalty-applied, server-rounded) target so the forecast
-  // agrees with computeCurrentLevel's pass check exactly.
   const effectiveTarget =
     info.nextLevelTonnage7dKgRequired ?? nextDef.tonnage7dKgRequired;
   const tonnageNeeded = Math.max(

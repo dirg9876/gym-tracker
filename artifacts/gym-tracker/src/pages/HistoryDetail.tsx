@@ -1,19 +1,35 @@
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   useGetWorkout,
+  useDeleteWorkout,
   useGetWorkoutExerciseBreakdown,
   getGetWorkoutQueryKey,
   getGetWorkoutExerciseBreakdownQueryKey,
+  getListWorkoutsQueryKey,
 } from "@workspace/api-client-react";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExerciseProgressCard } from "@/components/ExerciseProgressCard";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function HistoryDetail() {
   const params = useParams();
   const id = parseInt(params.id || "0", 10);
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: workout, isLoading } = useGetWorkout(id, {
     query: { enabled: !!id, queryKey: getGetWorkoutQueryKey(id) }
@@ -23,6 +39,15 @@ export function HistoryDetail() {
     query: {
       enabled: !!id,
       queryKey: getGetWorkoutExerciseBreakdownQueryKey(id),
+    },
+  });
+
+  const deleteWorkout = useDeleteWorkout({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        setLocation("/history");
+      },
     },
   });
 
@@ -42,10 +67,18 @@ export function HistoryDetail() {
           <Button variant="ghost" size="icon" onClick={() => setLocation('/history')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="font-bold text-lg">{workout.name || "Тренировка"}</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-bold text-lg truncate">{workout.name || "Тренировка"}</h1>
             <div className="text-xs text-muted-foreground">{formatDate(workout.startedAt)}</div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
@@ -76,7 +109,7 @@ export function HistoryDetail() {
           {Object.entries(setsByExercise).map(([exerciseIdStr, sets]) => {
             const exName = sets[0].exerciseName;
             const exVolume = sets.reduce((sum, s) => sum + s.volume, 0);
-            
+
             return (
               <div key={exerciseIdStr} className="bg-card rounded-2xl border border-border overflow-hidden">
                 <div className="bg-muted/50 p-4 border-b border-border flex justify-between items-center">
@@ -98,6 +131,26 @@ export function HistoryDetail() {
           })}
         </div>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить тренировку?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Тренировка и все её подходы будут удалены безвозвратно.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteWorkout.mutate({ workoutId: id })}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
