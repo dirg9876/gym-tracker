@@ -5,7 +5,6 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Link } from "wouter";
 
 import { Home } from "@/pages/Home";
 import { ActiveWorkout } from "@/pages/ActiveWorkout";
@@ -107,8 +106,8 @@ function ClerkQueryClientCacheInvalidator() {
   const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    const unsubscribe = addListener(({ user }) => {
-      const userId = user?.id ?? null;
+    const unsubscribe = addListener((resources) => {
+      const userId = resources.user?.id ?? null;
       if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) {
         qc.clear();
       }
@@ -146,42 +145,12 @@ function SignUpPage() {
   );
 }
 
-function Landing() {
-  return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-6 text-center">
-      <img
-        src={`${basePath}/logo.svg`}
-        alt="Тренировки"
-        className="h-16 w-16 mb-6"
-      />
-      <h1 className="text-3xl font-bold tracking-tight mb-2">Тренировки</h1>
-      <p className="text-muted-foreground text-sm mb-10 max-w-xs">
-        Трекер тренировок для спортсменов. Отслеживай подходы, прогресс и уровень силы.
-      </p>
-      <div className="flex flex-col gap-3 w-full max-w-xs">
-        <Link
-          href="/sign-in"
-          className="w-full inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground font-semibold py-3 px-6 hover:bg-primary/90 transition-colors"
-        >
-          Войти
-        </Link>
-        <Link
-          href="/sign-up"
-          className="w-full inline-flex items-center justify-center rounded-xl border border-border bg-card text-foreground font-semibold py-3 px-6 hover:bg-accent/40 transition-colors"
-        >
-          Зарегистрироваться
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 function Protected({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Show when="signed-in">{children}</Show>
       <Show when="signed-out">
-        <Redirect to="/" />
+        <Redirect to="/sign-in" />
       </Show>
     </>
   );
@@ -194,7 +163,7 @@ function HomeRoute() {
         <Home />
       </Show>
       <Show when="signed-out">
-        <Landing />
+        <Redirect to="/sign-in" />
       </Show>
     </>
   );
