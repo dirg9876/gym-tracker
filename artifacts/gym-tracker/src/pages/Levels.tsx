@@ -613,7 +613,7 @@ function LevelDetailDialog({
                               }
                               return (
                                 <div className="text-[10px] text-muted-foreground/70">
-                                  МС: {formatKg(ex.mcKg)}
+                                  до МС: {formatKg(ex.mcKg)}
                                 </div>
                               );
                             })()}
@@ -622,8 +622,8 @@ function LevelDetailDialog({
                       </div>
                     )}
                     <div className="text-[11px] text-muted-foreground/80 pt-1">
-                      Норматив на уровне = МС-норматив × (уровень / 80). Без
-                      учёта штрафа за прыжок через уровни.
+                      Норматив = твой вес × коэфф. упражнения × (уровень / 80).
+                      Без учёта штрафа за прыжок через уровни.
                     </div>
                   </div>
                 </>

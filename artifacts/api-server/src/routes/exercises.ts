@@ -207,20 +207,25 @@ router.get(
 
     const rankNorms = getRankNormsForExercise(mcResult.kg);
 
-    let currentRank = rankNorms[0]!.rank;
-    if (userMaxWeightKg != null && userMaxWeightKg > 0) {
-      currentRank = rankForMcPercent(userMaxWeightKg / mcResult.kg);
-    }
+    // currentRank is null when the user has no recorded sets (no-data semantics).
+    // Once they have a result we compute the actual rank (may be NONE = below III р.).
+    const currentRank =
+      userMaxWeightKg != null && userMaxWeightKg > 0
+        ? rankForMcPercent(userMaxWeightKg / mcResult.kg)
+        : null;
 
-    const currentIdx = rankNorms.findIndex(
-      (r) => r.rank.code === currentRank.code,
-    );
-    const nextEntry = rankNorms[currentIdx + 1] ?? null;
+    const currentIdx =
+      currentRank != null
+        ? rankNorms.findIndex((r) => r.rank.code === currentRank.code)
+        : -1;
+    const nextEntry = rankNorms[currentIdx + 1] ?? rankNorms[0] ?? null;
     const nextRank = nextEntry?.rank ?? null;
     const kgToNextRank =
       nextEntry != null && userMaxWeightKg != null
         ? Math.max(0, nextEntry.kgTarget - userMaxWeightKg)
-        : null;
+        : nextEntry != null
+          ? nextEntry.kgTarget
+          : null;
 
     res.json({
       mcKg: mcResult.kg,
