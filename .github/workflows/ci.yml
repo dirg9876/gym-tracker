@@ -21,10 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm 9 matches the lockfile (lockfileVersion: 9.0). pnpm 10 reads it
+      # backward-compatibly but we pin to 9 to avoid any drift.
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 9
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
@@ -35,23 +37,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Shared lib packages (api-spec, api-zod, api-client-react, db, …)
-      - name: Typecheck shared libs
-        run: pnpm run typecheck:libs
+      # Workspace-wide typecheck: shared libs (api-spec, api-zod,
+      # api-client-react, db, …) followed by every artifact / scripts package
+      # that defines a `typecheck` script (api-server, gym-tracker,
+      # gym-tracker-mobile, mockup-sandbox, scripts).
+      - name: Typecheck workspace
+        run: pnpm run typecheck
 
-      # Production artifacts only — mockup-sandbox is a design scratchpad and
-      # is intentionally skipped (it has known React 19 type-duplication noise
-      # that doesn't affect anything we ship).
-      - name: Typecheck API server
-        run: pnpm --filter @workspace/api-server run typecheck
-
-      - name: Typecheck mobile app
-        run: pnpm --filter @workspace/gym-tracker-mobile run typecheck
-
-      # The web app's standalone `tsc` typecheck has known noise from
-      # duplicate @types/react copies pulled in by lucide-react; the real
-      # build via `vite build` is the authoritative correctness check and is
-      # run below.
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
 

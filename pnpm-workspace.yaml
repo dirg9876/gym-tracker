@@ -157,3 +157,12 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # Force a single copy of the React 19 type definitions across the entire
+  # workspace. Without this, the mobile package pins ~19.1.10 (resolves to
+  # 19.1.17) while the web/sandbox catalog uses ^19.2.0 (resolves to
+  # 19.2.x). Two copies in node_modules make tsc see two unrelated `Ref`
+  # types, breaking typecheck on shadcn components like spinner.tsx and
+  # calendar.tsx that route refs through lucide-react / react-day-picker.
+  # 19.2.x types are forward-compatible with the React 19.1 runtime.
+  "@types/react": "^19.2.0"
+  "@types/react-dom": "^19.2.0"

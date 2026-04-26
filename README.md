@@ -85,16 +85,14 @@ On Replit the four services run as workflows automatically:
 
 `.github/workflows/ci.yml` runs on every push and PR against `main`:
 
-1. `pnpm install --frozen-lockfile`
-2. Typecheck shared libs + API server + mobile app
-3. Build API server (`esbuild`) and web app (`vite build`)
+1. `pnpm install --frozen-lockfile` (pnpm 9, Node 24)
+2. `pnpm run typecheck` — shared libs + every artifact (api-server,
+   gym-tracker, gym-tracker-mobile, mockup-sandbox, scripts)
+3. Build API server (`esbuild`) and web app (`vite build`,
+   `PORT=8080 BASE_PATH=/`)
 
-The web app's standalone `tsc` typecheck is skipped because `lucide-react`
-pulls in a second copy of `@types/react`, producing harmless duplication
-errors; the `vite build` step is the authoritative correctness check for
-the web app. The Expo mobile app is typechecked but not built in CI (Expo
-build needs additional credentials). The `mockup-sandbox` design scratchpad
-is also skipped.
+The Expo mobile app is typechecked but not built in CI (the Expo native
+build needs additional credentials).
 
 ## Deployment
 

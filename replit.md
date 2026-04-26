@@ -171,9 +171,14 @@ review / external editing only.
 - `.env.example` — template for local `.env`; real secrets stay in the
   Replit Secrets pane
 - `.github/workflows/ci.yml` — on every push / PR to `main`: install with
-  frozen lockfile, typecheck shared libs + api-server + mobile, then build
-  api-server (esbuild) and gym-tracker (`vite build`, with `PORT=8080
-  BASE_PATH=/`). The web app's standalone `tsc` typecheck is intentionally
-  skipped — lucide-react bundles a second `@types/react` copy and produces
-  harmless duplication noise; the `vite build` is the real correctness check.
-  Mobile is typechecked but not built; `mockup-sandbox` is also skipped.
+  frozen lockfile (pnpm 9, Node 24), run `pnpm run typecheck` workspace-wide
+  (shared libs + every artifact), then build api-server (esbuild) and
+  gym-tracker (`vite build`, with `PORT=8080 BASE_PATH=/`). Mobile is
+  typechecked but not built (Expo native build needs credentials).
+- `pnpm-workspace.yaml` overrides — pin `@types/react` and
+  `@types/react-dom` to `^19.2.0` workspace-wide so tsc sees a single copy.
+  Without this, the mobile package's `~19.1.10` pin and the web/sandbox
+  catalog's `^19.2.0` produce two different `@types/react` copies and tsc
+  fails on shadcn refs (spinner / calendar) with `Two different types with
+  this name exist, but they are unrelated`. The 19.2.x types are
+  forward-compatible with React 19.1.0 at runtime.
