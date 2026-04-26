@@ -21,12 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # pnpm 9 matches the lockfile (lockfileVersion: 9.0). pnpm 10 reads it
-      # backward-compatibly but we pin to 9 to avoid any drift.
+      # Keep CI on the same pnpm major used to refresh the lockfile.
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.33.2
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
