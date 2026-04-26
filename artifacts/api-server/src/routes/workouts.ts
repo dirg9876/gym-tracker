@@ -236,6 +236,7 @@ router.post("/workouts/:workoutId/sets", async (req, res): Promise<void> => {
     .values({
       workoutId: params.data.workoutId,
       exerciseId: body.data.exerciseId,
+      userId: req.userId,
       weightKg: String(body.data.weightKg),
       reps: body.data.reps,
     })

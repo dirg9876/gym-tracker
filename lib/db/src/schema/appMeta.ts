@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, primaryKey } from "drizzle-orm/pg-core";
 
 export const appMetaTable = pgTable("app_meta", {
-  userId: text("user_id").notNull().default(""),
+  userId: text("user_id").notNull(),
   key: text("key").notNull(),
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

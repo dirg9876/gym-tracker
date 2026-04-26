@@ -1,6 +1,8 @@
-import { useSignIn } from "@clerk/expo";
+import { useAuth, useSSO, useSignIn } from "@clerk/expo";
+import * as AuthSession from "expo-auth-session";
 import { Link, useRouter } from "expo-router";
-import React from "react";
+import * as WebBrowser from "expo-web-browser";
+import React, { useCallback, useEffect } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,15 +17,48 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import colors from "@/constants/colors";
 
+WebBrowser.maybeCompleteAuthSession();
+
 const c = colors.dark;
 
+function useWarmUpBrowser() {
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    void WebBrowser.warmUpAsync();
+    return () => { void WebBrowser.coolDownAsync(); };
+  }, []);
+}
+
 export default function SignInPage() {
+  useWarmUpBrowser();
+
   const { signIn, errors, fetchStatus } = useSignIn();
+  const { startSSOFlow } = useSSO();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [code, setCode] = React.useState("");
+
+  const handleGoogleSignIn = useCallback(async () => {
+    try {
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: "oauth_google",
+        redirectUrl: AuthSession.makeRedirectUri(),
+      });
+      if (createdSessionId && setActive) {
+        await setActive({
+          session: createdSessionId,
+          navigate: ({ session, decorateUrl }) => {
+            if (session?.currentTask) return;
+            router.replace(decorateUrl("/") as "/");
+          },
+        });
+      }
+    } catch (err) {
+      console.error(JSON.stringify(err, null, 2));
+    }
+  }, [startSSOFlow, router]);
 
   const handleSubmit = async () => {
     const { error } = await signIn.password({ emailAddress, password });
@@ -33,8 +68,7 @@ export default function SignInPage() {
       await signIn.finalize({
         navigate: ({ session, decorateUrl }) => {
           if (session?.currentTask) return;
-          const url = decorateUrl("/");
-          router.replace(url.startsWith("http") ? "/" : (url as "/"));
+          router.replace(decorateUrl("/") as "/");
         },
       });
     } else if (signIn.status === "needs_client_trust") {
@@ -48,8 +82,7 @@ export default function SignInPage() {
       await signIn.finalize({
         navigate: ({ session, decorateUrl }) => {
           if (session?.currentTask) return;
-          const url = decorateUrl("/");
-          router.replace(url.startsWith("http") ? "/" : (url as "/"));
+          router.replace(decorateUrl("/") as "/");
         },
       });
     }
@@ -100,6 +133,19 @@ export default function SignInPage() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>С возвращением</Text>
           <Text style={styles.subtitle}>Войди, чтобы продолжить тренировки</Text>
+
+          <Pressable
+            style={({ pressed }) => [styles.oauthButton, pressed && styles.buttonPressed]}
+            onPress={handleGoogleSignIn}
+          >
+            <Text style={styles.oauthButtonText}>Войти через Google</Text>
+          </Pressable>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>или</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -154,7 +200,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: c.background },
   container: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingVertical: 40 },
   title: { fontSize: 28, fontFamily: "Inter_700Bold", color: c.foreground, marginBottom: 6 },
-  subtitle: { fontSize: 15, fontFamily: "Inter_400Regular", color: c.mutedForeground, marginBottom: 32 },
+  subtitle: { fontSize: 15, fontFamily: "Inter_400Regular", color: c.mutedForeground, marginBottom: 24 },
   label: { fontSize: 13, fontFamily: "Inter_500Medium", color: c.foreground, marginBottom: 6 },
   input: {
     backgroundColor: c.input,
@@ -169,6 +215,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   error: { fontSize: 12, fontFamily: "Inter_400Regular", color: c.destructive, marginBottom: 8, marginTop: -4 },
+  oauthButton: {
+    backgroundColor: c.secondary,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  oauthButtonText: { color: c.foreground, fontSize: 15, fontFamily: "Inter_500Medium" },
+  dividerRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: c.border },
+  dividerText: { fontSize: 13, fontFamily: "Inter_400Regular", color: c.mutedForeground, marginHorizontal: 10 },
   button: {
     backgroundColor: c.primary,
     borderRadius: 14,
