@@ -121,9 +121,9 @@ router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
     return;
   }
   // Fetch first to enforce ownership on custom exercises.
-  // Global (isCustom=false) exercises are shared catalog entries; any user can
-  // update isMain/equipment preferences on them (by design for single-catalog
-  // multi-user operation). Custom exercises are private to their creator.
+  // Global (isCustom=false) exercises are shared catalog entries; any authenticated
+  // user can update isMain/equipment preferences on them (single shared catalog).
+  // Custom exercises are private to their creator — only the owner may edit them.
   const [existing] = await db
     .select({ id: exercisesTable.id, isCustom: exercisesTable.isCustom, userId: exercisesTable.userId })
     .from(exercisesTable)
@@ -132,11 +132,7 @@ router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Не найдено" });
     return;
   }
-  if (!existing.isCustom) {
-    res.status(403).json({ error: "Нельзя редактировать общий каталог упражнений" });
-    return;
-  }
-  if (existing.userId !== req.userId) {
+  if (existing.isCustom && existing.userId !== req.userId) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
