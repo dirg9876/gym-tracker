@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, numeric, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, numeric, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const EQUIPMENT_VALUES = [
   "barbell",
@@ -23,7 +23,10 @@ export const exercisesTable = pgTable("exercises", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  index("exercises_user_custom_idx").on(table.userId, table.isCustom),
+  index("exercises_muscle_name_idx").on(table.muscleGroup, table.name),
+]);
 
 export type Exercise = typeof exercisesTable.$inferSelect;
 export type InsertExercise = typeof exercisesTable.$inferInsert;

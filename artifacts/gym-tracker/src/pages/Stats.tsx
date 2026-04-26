@@ -28,26 +28,26 @@ export function Stats() {
           <div className="bg-card p-4 rounded-2xl border border-border col-span-2">
             <div className="flex items-center gap-2 text-muted-foreground mb-2">
               <TrendingUp className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Максимальный тоннаж</span>
+              <span className="text-xs font-semibold uppercase tracking-normal">Максимальный тоннаж</span>
             </div>
-            <div className="text-3xl font-black text-primary">{formatKg(stats.bestTonnage)}</div>
+            <div className="break-words text-3xl font-black leading-tight text-primary">{formatKg(stats.bestTonnage)}</div>
           </div>
           
           <div className="bg-card p-4 rounded-2xl border border-border">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Рекорд повторов</div>
-            <div className="text-xl font-black">{formatNumber(stats.bestReps)}</div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-1">Рекорд повторов</div>
+            <div className="break-words text-xl font-black leading-tight">{formatNumber(stats.bestReps)}</div>
           </div>
           <div className="bg-card p-4 rounded-2xl border border-border">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Макс. вес</div>
-            <div className="text-xl font-black">{formatKg(stats.bestMaxWeight)}</div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-1">Макс. вес</div>
+            <div className="break-words text-xl font-black leading-tight">{formatKg(stats.bestMaxWeight)}</div>
           </div>
           <div className="bg-card p-4 rounded-2xl border border-border">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Всего трен.</div>
-            <div className="text-xl font-black">{stats.totalWorkouts}</div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-1">Всего трен.</div>
+            <div className="break-words text-xl font-black leading-tight">{stats.totalWorkouts}</div>
           </div>
           <div className="bg-card p-4 rounded-2xl border border-border">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Серия (дней)</div>
-            <div className="text-xl font-black">{stats.currentStreakDays}</div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-1">Серия (дней)</div>
+            <div className="break-words text-xl font-black leading-tight">{stats.currentStreakDays}</div>
           </div>
         </div>
 
@@ -99,12 +99,12 @@ export function Stats() {
                   onClick={() => setLocation(`/exercises/${ex.exerciseId}`)}
                 >
                   <div className="w-8 font-black text-muted-foreground text-xl">{i+1}</div>
-                  <div className="flex-1">
-                    <div className="font-bold">{ex.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="break-words font-bold leading-tight">{ex.name}</div>
                     <div className="text-sm text-muted-foreground">{ex.muscleGroup}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-mono font-bold text-primary">{formatKg(ex.volume)}</div>
+                  <div className="max-w-[7rem] shrink-0 text-right">
+                    <div className="break-words font-mono font-bold leading-tight text-primary">{formatKg(ex.volume)}</div>
                     <div className="text-xs text-muted-foreground uppercase">{ex.sets} подх.</div>
                   </div>
                 </div>

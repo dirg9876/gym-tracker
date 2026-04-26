@@ -150,7 +150,7 @@ export function Exercises() {
             type="button"
             onClick={() => setOnlyMain((v) => !v)}
             aria-pressed={onlyMain}
-            className={`w-full h-10 rounded-2xl border text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors ${
+            className={`w-full min-h-10 rounded-2xl border px-3 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors ${
               onlyMain
                 ? "bg-primary/15 border-primary/40 text-primary"
                 : "bg-card border-border text-muted-foreground hover:text-foreground"
@@ -166,10 +166,10 @@ export function Exercises() {
 
         {/* Add new */}
         <div className="bg-card p-4 rounded-3xl border border-border space-y-3">
-          <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Новое упражнение</h3>
-          <div className="flex gap-2">
+          <h3 className="font-bold text-sm uppercase tracking-normal text-muted-foreground">Новое упражнение</h3>
+          <div className="grid grid-cols-1 gap-2">
             <Input placeholder="Название" value={newName} onChange={e => setNewName(e.target.value)} className="bg-background rounded-xl" />
-            <Input placeholder="Группа" value={newGroup} onChange={e => setNewGroup(e.target.value)} className="bg-background rounded-xl w-1/3" />
+            <Input placeholder="Группа" value={newGroup} onChange={e => setNewGroup(e.target.value)} className="bg-background rounded-xl" />
           </div>
           <div className="flex flex-wrap gap-1.5">
             {EQUIPMENT_OPTIONS.map((opt) => (
@@ -212,7 +212,7 @@ export function Exercises() {
           <div className="space-y-6">
             {Object.entries(grouped).map(([group, list]) => (
               <div key={group} className="space-y-3">
-                <h2 className="font-bold text-primary pl-2 uppercase tracking-wider text-sm">{group}</h2>
+                <h2 className="break-words font-bold text-primary pl-2 uppercase tracking-normal text-sm">{group}</h2>
                 <div className="bg-card rounded-3xl border border-border overflow-hidden divide-y divide-border">
                   {list.map(ex => (
                     <div 
@@ -249,7 +249,7 @@ export function Exercises() {
                         </Button>
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-lg leading-tight">{ex.name}</span>
+                            <span className="min-w-0 break-words font-medium text-lg leading-tight">{ex.name}</span>
                             {ex.isMain && ex.mcKg != null && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 shrink-0">
                                 МС: {Math.round(ex.mcKg)} кг
@@ -266,7 +266,7 @@ export function Exercises() {
                                 });
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className="mt-0.5 self-start text-[11px] uppercase tracking-wider text-muted-foreground bg-transparent border-none p-0 cursor-pointer hover:text-foreground focus:outline-none focus:text-foreground"
+                              className="mt-0.5 self-start text-[11px] uppercase tracking-normal text-muted-foreground bg-transparent border-none p-0 cursor-pointer hover:text-foreground focus:outline-none focus:text-foreground"
                               aria-label="Тип оборудования"
                               disabled={updateExercise.isPending}
                             >
@@ -277,7 +277,7 @@ export function Exercises() {
                               ))}
                             </select>
                           ) : (
-                            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                            <span className="text-[11px] uppercase tracking-normal text-muted-foreground">
                               {equipmentLabel(ex.equipment)}
                             </span>
                           )}

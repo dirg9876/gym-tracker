@@ -193,9 +193,9 @@ export function ProfileCard() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setEditing(true)}
-          className="w-full text-left bg-card border border-border rounded-2xl p-3.5 flex items-center gap-3 hover:bg-card/80 transition-colors"
+          className="w-full text-left bg-card border border-border rounded-2xl p-3.5 flex flex-wrap items-center gap-2 hover:bg-card/80 transition-colors"
         >
-          <div className="flex items-center gap-1.5 text-sm">
+          <div className="flex shrink-0 items-center gap-1.5 text-sm">
             <Scale className="h-4 w-4 text-primary" />
             <span className="font-bold tabular-nums">
               {formatNumber(data.bodyWeightKg ?? 0)}
@@ -204,7 +204,7 @@ export function ProfileCard() {
           </div>
 
           {hasHeight && (
-            <div className="flex items-center gap-1.5 text-sm">
+            <div className="flex shrink-0 items-center gap-1.5 text-sm">
               <Ruler className="h-4 w-4 text-primary" />
               <span className="font-bold tabular-nums">
                 {formatNumber(data.heightCm ?? 0)}
@@ -213,26 +213,26 @@ export function ProfileCard() {
             </div>
           )}
 
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
             <User className="h-3.5 w-3.5" />
-            <span>{SEX_LABEL[(data.sex as Sex) ?? "male"]}</span>
+            <span className="truncate">{SEX_LABEL[(data.sex as Sex) ?? "male"]}</span>
           </div>
 
           {data.bmi !== null && data.bmiCategory && (
             <div
-              className={`ml-auto text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${BMI_BADGE[data.bmiCategory]}`}
+              className={`text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${BMI_BADGE[data.bmiCategory]}`}
             >
               BMI {data.bmi} · {BMI_LABEL[data.bmiCategory]}
             </div>
           )}
 
           {!hasHeight && (
-            <span className="ml-auto text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               + рост для BMI
             </span>
           )}
 
-          <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+          <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-auto" />
         </motion.button>
       )}
     </AnimatePresence>

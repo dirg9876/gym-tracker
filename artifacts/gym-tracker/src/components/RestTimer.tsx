@@ -90,10 +90,10 @@ export function RestTimer({ defaultSeconds = 90 }: RestTimerProps) {
 
   return (
     <div className="bg-card p-4 rounded-3xl border border-border shadow-sm space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase tracking-wider">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 text-muted-foreground text-xs font-bold uppercase tracking-normal">
           <Bell className="h-3.5 w-3.5" />
-          Отдых между подходами
+          <span className="min-w-0 break-words">Отдых между подходами</span>
         </div>
         {running && (
           <button
@@ -183,7 +183,7 @@ export function RestTimer({ defaultSeconds = 90 }: RestTimerProps) {
                 key={p}
                 variant="secondary"
                 onClick={() => start(p)}
-                className="rounded-xl h-12 font-bold"
+                className="rounded-xl min-h-12 h-auto py-2 font-bold"
               >
                 {p < 60
                   ? `${p}с`

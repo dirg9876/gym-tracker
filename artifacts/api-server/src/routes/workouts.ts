@@ -95,6 +95,25 @@ router.post("/workouts", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [active] = await db
+    .select()
+    .from(workoutsTable)
+    .where(and(isNull(workoutsTable.finishedAt), eq(workoutsTable.userId, req.userId)))
+    .orderBy(desc(workoutsTable.startedAt))
+    .limit(1);
+  if (active) {
+    const sets = await getWorkoutSets(active.id);
+    const totals = totalsFromSets(sets);
+    res.status(200).json({
+      id: active.id,
+      name: active.name,
+      startedAt: active.startedAt.toISOString(),
+      finishedAt: null,
+      sets,
+      ...totals,
+    });
+    return;
+  }
   const [w] = await db
     .insert(workoutsTable)
     .values({ name: parsed.data.name ?? null, userId: req.userId })
@@ -214,6 +233,10 @@ router.post("/workouts/:workoutId/sets", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Тренировка не найдена" });
     return;
   }
+  if (w.finishedAt !== null) {
+    res.status(409).json({ error: "Тренировка уже завершена" });
+    return;
+  }
   const [ex] = await db
     .select()
     .from(exercisesTable)
@@ -325,12 +348,13 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
   const totals = totalsFromSets(sets);
   const currentMaxWeight = sets.reduce((m, s) => Math.max(m, s.weightKg), 0);
 
-  // Mark workout finished
-  const finishedAt = new Date();
-  await db
-    .update(workoutsTable)
-    .set({ finishedAt })
-    .where(eq(workoutsTable.id, workoutId));
+  const finishedAt = w.finishedAt ?? new Date();
+  if (w.finishedAt === null) {
+    await db
+      .update(workoutsTable)
+      .set({ finishedAt })
+      .where(and(eq(workoutsTable.id, workoutId), eq(workoutsTable.userId, userId)));
+  }
 
   const newPersonalRecords: Array<{
     kind: "tonnage" | "reps" | "max_weight";

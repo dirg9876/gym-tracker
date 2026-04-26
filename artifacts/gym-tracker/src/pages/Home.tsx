@@ -53,7 +53,7 @@ export function Home() {
         <section className="mt-8">
           <h1 className="text-3xl font-black mb-6 tracking-tight">Готов к работе?</h1>
           <Button 
-            className="w-full h-20 text-xl font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+            className="w-full min-h-20 h-auto py-4 text-lg font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
             onClick={handleStartWorkout}
             disabled={createWorkout.isPending}
           >
@@ -119,14 +119,14 @@ export function Home() {
             <div className="bg-card p-4 rounded-2xl border border-border">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Flame className="h-4 w-4 text-orange-500" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Серия</span>
+                <span className="text-xs font-semibold uppercase tracking-normal">Серия</span>
               </div>
               <div className="text-2xl font-black">{stats.currentStreakDays} <span className="text-sm font-medium text-muted-foreground">дней</span></div>
             </div>
             <div className="bg-card p-4 rounded-2xl border border-border">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Activity className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Тоннаж</span>
+                <span className="text-xs font-semibold uppercase tracking-normal">Тоннаж</span>
               </div>
               <div className="text-2xl font-black">{formatKg(stats.totalVolume)}</div>
             </div>

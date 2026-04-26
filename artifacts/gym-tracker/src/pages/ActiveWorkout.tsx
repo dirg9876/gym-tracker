@@ -239,19 +239,19 @@ export function ActiveWorkout() {
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3 shadow-sm">
         <div className="max-w-md mx-auto flex justify-between items-center text-sm">
           <motion.div key={`vol-${workout.totalVolume}`} initial={{ scale: 1.1, color: "hsl(var(--primary))" }} animate={{ scale: 1, color: "inherit" }} className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Тоннаж</span>
+            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Тоннаж</span>
             <span className="font-mono font-bold">{formatKg(workout.totalVolume)}</span>
           </motion.div>
           <motion.div key={`reps-${workout.totalReps}`} initial={{ scale: 1.1, color: "hsl(var(--primary))" }} animate={{ scale: 1, color: "inherit" }} className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Повторы</span>
+            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Повторы</span>
             <span className="font-mono font-bold">{formatNumber(workout.totalReps)}</span>
           </motion.div>
           <motion.div key={`sets-${workout.totalSets}`} initial={{ scale: 1.1, color: "hsl(var(--primary))" }} animate={{ scale: 1, color: "inherit" }} className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Подходы</span>
+            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Подходы</span>
             <span className="font-mono font-bold">{workout.totalSets}</span>
           </motion.div>
           <div className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Упражнения</span>
+            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Упражнения</span>
             <span className="font-mono font-bold">{uniqueExercises}</span>
           </div>
         </div>
@@ -305,7 +305,7 @@ export function ActiveWorkout() {
           />
 
           <Button
-            className="w-full h-16 text-lg font-bold rounded-2xl"
+            className="w-full min-h-16 h-auto py-3 text-lg font-bold rounded-2xl"
             onClick={handleAddSet}
             disabled={!selectedExerciseId || addSet.isPending}
           >
@@ -358,7 +358,7 @@ export function ActiveWorkout() {
         <div className="max-w-md mx-auto">
           <Button
             variant="default"
-            className="w-full h-16 text-xl font-black rounded-2xl shadow-xl shadow-primary/20"
+            className="w-full min-h-16 h-auto py-3 text-lg font-black rounded-2xl shadow-xl shadow-primary/20"
             onClick={handleFinish}
             disabled={finishWorkout.isPending || workout.sets.length === 0}
           >

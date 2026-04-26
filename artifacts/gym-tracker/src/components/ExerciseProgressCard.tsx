@@ -27,9 +27,9 @@ function DeltaTag({
   const color = positive ? "text-emerald-500" : "text-rose-500";
   const sign = value > 0 ? "+" : "";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${color}`}>
+    <span className={`inline-flex min-w-0 items-center gap-0.5 text-xs font-semibold leading-tight ${color}`}>
       <Icon className="h-3 w-3" />
-      <span>{sign}{format(value)}</span>
+      <span className="break-words">{sign}{format(value)}</span>
     </span>
   );
 }
@@ -53,7 +53,7 @@ export function ExerciseProgressCard({ item }: Props) {
           </div>
         </div>
         {item.isPersonalRecord && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-full px-2 py-1 shrink-0">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-normal bg-primary text-primary-foreground rounded-full px-2 py-1 shrink-0">
             <Trophy className="h-3 w-3" />
             <span>PR</span>
           </span>
@@ -114,12 +114,12 @@ function Cell({
   delta: React.ReactNode;
 }) {
   return (
-    <div className="p-3 flex flex-col items-center text-center gap-1">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+    <div className="min-w-0 p-3 flex flex-col items-center text-center gap-1">
+      <div className="text-[10px] uppercase tracking-normal text-muted-foreground">
         {label}
       </div>
-      <div className="font-mono font-bold text-sm">{value}</div>
-      <div>{delta}</div>
+      <div className="break-words font-mono font-bold text-xs leading-tight">{value}</div>
+      <div className="min-w-0">{delta}</div>
     </div>
   );
 }

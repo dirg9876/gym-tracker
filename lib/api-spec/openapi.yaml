@@ -136,6 +136,12 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateWorkoutInput"
       responses:
+        "200":
+          description: Existing active workout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
         "201":
           description: New workout
           content:

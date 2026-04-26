@@ -35,16 +35,16 @@ export function HomeStrengthCard() {
       className="bg-card p-4 rounded-3xl border border-border space-y-3 active:bg-accent transition-colors cursor-pointer"
       onClick={() => setLocation(`/exercises/${top.exerciseId}`)}
     >
-      <div className="flex items-baseline justify-between gap-2">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-normal text-muted-foreground">
             <TrendingUp className="h-3 w-3 text-primary" />
-            Прогресс силы · {top.muscleGroup}
+            <span className="min-w-0 break-words">Прогресс силы · {top.muscleGroup}</span>
           </div>
-          <div className="font-bold truncate">{top.name}</div>
+          <div className="break-words font-bold leading-tight">{top.name}</div>
         </div>
-        <div className="text-right shrink-0">
-          <div className="font-mono text-2xl font-black text-primary tabular-nums">
+        <div className="max-w-[7rem] shrink-0 text-right">
+          <div className="break-words font-mono text-xl font-black leading-tight text-primary tabular-nums">
             {formatKg(currentMax)}
           </div>
           {delta !== 0 && (

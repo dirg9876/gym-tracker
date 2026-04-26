@@ -17,6 +17,7 @@ import { ExerciseProgress } from "@/pages/ExerciseProgress";
 import { Levels } from "@/pages/Levels";
 import { Programs } from "@/pages/Programs";
 import { ProgramDetail } from "@/pages/ProgramDetail";
+import { Profile } from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -198,6 +199,9 @@ function AppRouter() {
       </Route>
       <Route path="/levels">
         {() => <Protected><Levels /></Protected>}
+      </Route>
+      <Route path="/profile">
+        {() => <Protected><Profile /></Protected>}
       </Route>
       <Route path="/programs">
         {() => <Protected><Programs /></Protected>}

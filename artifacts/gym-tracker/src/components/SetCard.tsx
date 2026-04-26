@@ -42,12 +42,12 @@ export function SetCard({ set, index, onDelete }: SetCardProps) {
   }
 
   return (
-    <div className="flex items-center justify-between bg-card p-3 rounded-xl border border-border/50">
-      <div className="flex items-center gap-4">
+    <div className="flex items-center justify-between gap-2 bg-card p-3 rounded-xl border border-border/50">
+      <div className="flex min-w-0 items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
           {index}
         </div>
-        <div className="font-mono text-lg font-bold tracking-tight">
+        <div className="min-w-0 break-words font-mono text-base font-bold leading-tight tracking-normal">
           {formatKg(set.weightKg)} <span className="text-muted-foreground text-sm font-sans mx-1">×</span> {set.reps}
         </div>
       </div>

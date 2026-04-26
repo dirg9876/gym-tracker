@@ -29,7 +29,7 @@ export function Stepper({
 
   return (
     <div className="space-y-4 w-full">
-      <div className="text-center font-medium text-muted-foreground uppercase tracking-wider text-xs">{label}</div>
+      <div className="text-center font-medium text-muted-foreground uppercase tracking-normal text-xs">{label}</div>
       <div className="flex items-center justify-between bg-card rounded-2xl border border-border p-2 shadow-sm">
         <Button
           variant="ghost"
@@ -39,7 +39,7 @@ export function Stepper({
         >
           <Minus className="h-8 w-8" />
         </Button>
-        <div className="flex-1 text-center select-none font-bold text-4xl tracking-tighter">
+        <div className="min-w-0 flex-1 break-words text-center select-none font-bold text-3xl leading-tight tracking-normal">
           {formatValue(value)}
           {unit && <span className="text-lg text-muted-foreground ml-1 font-normal tracking-normal">{unit}</span>}
         </div>

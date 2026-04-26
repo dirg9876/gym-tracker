@@ -52,7 +52,12 @@ export function Stepper({
           <Feather name="minus" size={22} color={colors.foreground} />
         </Pressable>
         <View style={styles.valueWrap}>
-          <Text style={[styles.value, { color: colors.foreground }]}>
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+            numberOfLines={1}
+            style={[styles.value, { color: colors.foreground }]}
+          >
             {Number.isInteger(value) ? value : value.toFixed(1)}
           </Text>
           {unit ? (
@@ -130,6 +135,7 @@ const styles = StyleSheet.create({
   },
   valueWrap: {
     flex: 1,
+    minWidth: 0,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",

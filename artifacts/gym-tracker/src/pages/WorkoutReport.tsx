@@ -72,20 +72,20 @@ export function WorkoutReport() {
             className="grid grid-cols-2 gap-4 mt-8"
           >
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Тоннаж</div>
-              <div className="text-2xl font-black">{formatKg(w.totalVolume)}</div>
+              <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Тоннаж</div>
+              <div className="break-words text-2xl font-black leading-tight">{formatKg(w.totalVolume)}</div>
             </div>
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Время</div>
-              <div className="text-2xl font-black">{report ? formatDuration(report.durationMinutes) : "-"}</div>
+              <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Время</div>
+              <div className="break-words text-2xl font-black leading-tight">{report ? formatDuration(report.durationMinutes) : "-"}</div>
             </div>
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Повторы</div>
-              <div className="text-2xl font-black">{formatNumber(w.totalReps)}</div>
+              <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Повторы</div>
+              <div className="break-words text-2xl font-black leading-tight">{formatNumber(w.totalReps)}</div>
             </div>
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Подходы</div>
-              <div className="text-2xl font-black">{w.totalSets}</div>
+              <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Подходы</div>
+              <div className="break-words text-2xl font-black leading-tight">{w.totalSets}</div>
             </div>
           </motion.div>
         </div>
@@ -149,7 +149,7 @@ export function WorkoutReport() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pb-8">
         <div className="max-w-md mx-auto">
           <Button 
-            className="w-full h-16 text-lg font-bold rounded-2xl"
+            className="w-full min-h-16 h-auto py-3 text-lg font-bold rounded-2xl"
             onClick={() => setLocation('/')}
           >
             На главную <ArrowRight className="ml-2" />

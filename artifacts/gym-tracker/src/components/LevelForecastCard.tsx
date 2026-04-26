@@ -53,13 +53,13 @@ export function LevelForecastCard() {
       animate={{ opacity: 1, y: 0 }}
       className="bg-card p-4 rounded-2xl border border-border space-y-3"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-normal text-muted-foreground">
           <Hourglass className="h-3.5 w-3.5 text-primary" />
-          Прогноз до «{data.nextLevelName}»
+          <span className="min-w-0 break-words">Прогноз до «{data.nextLevelName}»</span>
         </div>
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider ${CONFIDENCE_COLOR[data.confidence]}`}
+          className={`text-[10px] font-bold uppercase tracking-normal ${CONFIDENCE_COLOR[data.confidence]}`}
         >
           {CONFIDENCE_LABEL[data.confidence]}
         </span>
@@ -72,19 +72,19 @@ export function LevelForecastCard() {
       </div>
 
       <div className="space-y-1 text-xs text-muted-foreground">
-        <div className="flex justify-between">
-          <span className="flex items-center gap-1">
+        <div className="flex justify-between gap-3">
+          <span className="flex min-w-0 items-center gap-1">
             <TrendingUp className="h-3 w-3" /> Темп (7 дн., в среднем за день)
           </span>
-          <span className="font-mono">{formatNumber(data.avgDailyTonnageKg)} кг</span>
+          <span className="shrink-0 font-mono">{formatNumber(data.avgDailyTonnageKg)} кг</span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-3">
           <span>За последние 7 дней</span>
-          <span className="font-mono">{formatNumber(data.tonnage7dKg)} кг</span>
+          <span className="shrink-0 font-mono">{formatNumber(data.tonnage7dKg)} кг</span>
         </div>
-        <div className="flex justify-between">
-          <span>Осталось набрать за окно 7 дн.</span>
-          <span className="font-mono">{formatNumber(data.tonnageNeededKg)} кг</span>
+        <div className="flex justify-between gap-3">
+          <span className="min-w-0">Осталось набрать за окно 7 дн.</span>
+          <span className="shrink-0 font-mono">{formatNumber(data.tonnageNeededKg)} кг</span>
         </div>
       </div>
 

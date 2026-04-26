@@ -42,12 +42,12 @@ export function PreviousSets({ exerciseId, onRepeatLast }: PreviousSetsProps) {
       className="bg-card/60 p-4 rounded-2xl border border-border/60 space-y-3"
     >
       <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-wider">
+        <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-normal">
           <History className="h-3.5 w-3.5" />
           Прошлая тренировка
         </div>
         {data.workoutDate && (
-          <span className="text-muted-foreground/70">
+          <span className="shrink-0 text-muted-foreground/70">
             {formatRelativeDate(data.workoutDate)}
           </span>
         )}
@@ -75,7 +75,7 @@ export function PreviousSets({ exerciseId, onRepeatLast }: PreviousSetsProps) {
         <button
           type="button"
           onClick={() => onRepeatLast(lastSet.weightKg, lastSet.reps)}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold text-sm hover:bg-primary/20 transition-colors active:scale-95"
+          className="w-full flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/30 px-3 py-2 text-center text-primary font-bold text-sm leading-tight hover:bg-primary/20 transition-colors active:scale-95"
         >
           <Repeat className="h-3.5 w-3.5" />
           Повторить: {formatKg(lastSet.weightKg)} × {lastSet.reps}

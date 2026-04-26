@@ -111,11 +111,16 @@ export function Button({
           {icon ? <View style={{ marginRight: title || children ? 8 : 0 }}>{icon}</View> : null}
           {title ? (
             <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              numberOfLines={2}
               style={[
                 {
                   color: variantFg,
                   fontSize: sizeStyles.fontSize,
                   fontFamily: "Inter_700Bold",
+                  flexShrink: 1,
+                  textAlign: "center",
                 },
                 textStyle,
               ]}
@@ -140,5 +145,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    minWidth: 0,
+    flexShrink: 1,
   },
 });

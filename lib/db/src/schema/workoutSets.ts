@@ -2,6 +2,7 @@ import {
   pgTable,
   serial,
   integer,
+  index,
   numeric,
   text,
   timestamp,
@@ -23,7 +24,11 @@ export const workoutSetsTable = pgTable("workout_sets", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  index("workout_sets_workout_created_idx").on(table.workoutId, table.createdAt),
+  index("workout_sets_exercise_created_idx").on(table.exerciseId, table.createdAt),
+  index("workout_sets_user_exercise_idx").on(table.userId, table.exerciseId),
+]);
 
 export type WorkoutSet = typeof workoutSetsTable.$inferSelect;
 export type InsertWorkoutSet = typeof workoutSetsTable.$inferInsert;

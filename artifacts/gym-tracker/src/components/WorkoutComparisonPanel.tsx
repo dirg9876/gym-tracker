@@ -36,7 +36,7 @@ function DeltaPill({
   const prefix = sign === "up" ? "+" : "";
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-bold tabular-nums ${color}`}
+      className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-md border px-1.5 py-0.5 text-center text-[11px] font-bold tabular-nums leading-tight ${color}`}
     >
       <Icon className="h-3 w-3" />
       {prefix}
@@ -70,12 +70,12 @@ export function WorkoutComparisonPanel({ workoutId }: Props) {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4"
     >
-      <div className="flex items-baseline justify-between px-2">
+      <div className="flex flex-col gap-1 px-2 sm:flex-row sm:items-baseline sm:justify-between">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-primary" />
           Сравнение
         </h2>
-        <span className="text-xs text-muted-foreground">
+        <span className="break-words text-xs text-muted-foreground">
           с {prevDate ?? "пред. трен."}
           {data.previousWorkoutName ? ` · ${data.previousWorkoutName}` : ""}
         </span>
@@ -83,19 +83,19 @@ export function WorkoutComparisonPanel({ workoutId }: Props) {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-card rounded-2xl border border-border p-3">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1">
             Тоннаж
           </div>
           <DeltaPill delta={data.deltaVolume} formatFn={formatKg} />
         </div>
         <div className="bg-card rounded-2xl border border-border p-3">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1">
             Повторы
           </div>
           <DeltaPill delta={data.deltaReps} formatFn={formatNumber} />
         </div>
         <div className="bg-card rounded-2xl border border-border p-3">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1">
             Подходы
           </div>
           <DeltaPill delta={data.deltaSets} formatFn={(n) => `${n}`} />
@@ -107,11 +107,11 @@ export function WorkoutComparisonPanel({ workoutId }: Props) {
           {data.exercises.slice(0, 8).map((ex) => (
             <div key={ex.exerciseId} className="p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-sm truncate">{ex.name}</span>
+                <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight">{ex.name}</span>
                 <DeltaPill delta={ex.deltaVolume} formatFn={formatKg} />
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
-                <span>
+                <span className="min-w-0 flex-1 break-words">
                   Макс: {formatKg(ex.currentMaxWeight)}
                   {ex.previousMaxWeight > 0 ? ` / было ${formatKg(ex.previousMaxWeight)}` : ""}
                 </span>

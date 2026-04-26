@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { index, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 export const workoutsTable = pgTable("workouts", {
   id: serial("id").primaryKey(),
@@ -8,7 +8,10 @@ export const workoutsTable = pgTable("workouts", {
     .notNull()
     .defaultNow(),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
-});
+}, (table) => [
+  index("workouts_user_started_idx").on(table.userId, table.startedAt),
+  index("workouts_user_finished_idx").on(table.userId, table.finishedAt),
+]);
 
 export type Workout = typeof workoutsTable.$inferSelect;
 export type InsertWorkout = typeof workoutsTable.$inferInsert;

@@ -135,18 +135,18 @@ export function ProgramDetail() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-3 gap-2 mt-3 min-w-0">
                   <div>
-                    <div className="text-[10px] uppercase text-muted-foreground tracking-wider">Подходы</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-normal">Подходы</div>
                     <div className="text-xl font-black">{ex.sets}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase text-muted-foreground tracking-wider">Повторы</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-normal">Повторы</div>
                     <div className="text-xl font-black">{reps}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase text-muted-foreground tracking-wider">Вес</div>
-                    <div className="text-xl font-black">{weight}</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-normal">Вес</div>
+                    <div className="break-words text-xl font-black leading-tight">{weight}</div>
                   </div>
                 </div>
 
@@ -161,7 +161,7 @@ export function ProgramDetail() {
         <div className="fixed bottom-16 left-0 right-0 px-4 pb-3 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
           <div className="max-w-md mx-auto">
             <Button
-              className="w-full h-14 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+              className="w-full min-h-14 h-auto px-3 py-3 text-sm font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
               onClick={handleStart}
               disabled={createWorkout.isPending}
             >

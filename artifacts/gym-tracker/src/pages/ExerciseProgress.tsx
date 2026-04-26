@@ -41,14 +41,14 @@ function RankLadder({
   return (
     <div className="space-y-3">
       {/* Current rank hero + delta to next */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {currentRank ? (
           <RankBadge rank={currentRank} variant="hero" />
         ) : (
           <span className="text-sm text-muted-foreground">Нет разряда</span>
         )}
         {nextRank && kgToNextRank != null && (
-          <span className="text-xs text-muted-foreground">
+          <span className="break-words text-xs text-muted-foreground">
             до {nextRank.shortLabel}: +{formatKg(kgToNextRank)}
           </span>
         )}
@@ -127,13 +127,13 @@ export function ExerciseProgress() {
   return (
     <div className="min-h-[100dvh] bg-background pb-20">
       <div className="sticky top-0 z-10 bg-background/90 backdrop-blur border-b border-border p-4">
-        <div className="max-w-md mx-auto flex items-center gap-4">
+        <div className="max-w-md mx-auto flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="font-bold text-lg">{exercise.name}</h1>
-            <div className="text-xs text-primary font-bold uppercase tracking-wider">
+          <div className="min-w-0">
+            <h1 className="break-words font-bold text-lg leading-tight">{exercise.name}</h1>
+            <div className="break-words text-xs text-primary font-bold uppercase tracking-normal">
               {exercise.muscleGroup}
             </div>
           </div>
@@ -145,15 +145,15 @@ export function ExerciseProgress() {
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-card p-3 rounded-2xl border border-border text-center">
             <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Макс. Вес</div>
-            <div className="font-mono text-xl font-black text-primary">{formatKg(maxWeight)}</div>
+            <div className="break-words font-mono text-base font-black leading-tight text-primary">{formatKg(maxWeight)}</div>
           </div>
           <div className="bg-card p-3 rounded-2xl border border-border text-center">
             <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Рекорд Объема</div>
-            <div className="font-mono text-xl font-black">{formatKg(maxVolume)}</div>
+            <div className="break-words font-mono text-base font-black leading-tight">{formatKg(maxVolume)}</div>
           </div>
           <div className="bg-card p-3 rounded-2xl border border-border text-center">
             <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Макс. Повторов</div>
-            <div className="font-mono text-xl font-black">{formatNumber(maxReps)}</div>
+            <div className="break-words font-mono text-base font-black leading-tight">{formatNumber(maxReps)}</div>
           </div>
         </div>
 
@@ -201,13 +201,13 @@ export function ExerciseProgress() {
                 {[...points].reverse().map((point) => (
                   <div
                     key={point.workoutId}
-                    className="p-4 flex justify-between items-center hover:bg-accent cursor-pointer"
+                    className="p-4 flex justify-between items-center gap-3 hover:bg-accent cursor-pointer"
                     onClick={() => setLocation(`/history/${point.workoutId}`)}
                   >
-                    <div className="text-sm text-muted-foreground">
+                    <div className="shrink-0 text-sm text-muted-foreground">
                       {new Date(point.date).toLocaleDateString("ru-RU")}
                     </div>
-                    <div className="font-mono font-bold text-lg">
+                    <div className="min-w-0 break-words text-right font-mono font-bold text-base leading-tight">
                       {formatKg(point.topSet.weightKg)}{" "}
                       <span className="text-muted-foreground mx-1 font-sans text-sm">×</span>{" "}
                       {point.topSet.reps}

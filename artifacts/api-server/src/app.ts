@@ -37,13 +37,26 @@ const allowedOrigin =
   (process.env.REPLIT_DEV_DOMAIN
     ? `https://${process.env.REPLIT_DEV_DOMAIN}`
     : undefined);
+const corsOrigin = allowedOrigin
+  ? allowedOrigin
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : false;
 
-app.use(cors({ credentials: true, origin: allowedOrigin ?? false }));
+app.use(cors({ credentials: true, origin: corsOrigin }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(clerkMiddleware());
 
-app.use("/api", router);
+app.use(
+  "/api",
+  (_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  },
+  router,
+);
 
 export default app;

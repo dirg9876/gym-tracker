@@ -48,11 +48,11 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Ex
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full h-16 justify-start text-left font-bold text-lg rounded-2xl border-2">
+        <Button variant="outline" className="w-full min-h-16 h-auto justify-start text-left font-bold text-base rounded-2xl border-2 py-3">
           {selectedExercise ? (
-            <div className="flex flex-col items-start w-full">
-              <span>{selectedExercise.name}</span>
-              <span className="text-xs font-normal text-muted-foreground">{selectedExercise.muscleGroup}</span>
+            <div className="flex min-w-0 flex-col items-start w-full leading-tight">
+              <span className="min-w-0 break-words">{selectedExercise.name}</span>
+              <span className="text-xs font-normal text-muted-foreground break-words">{selectedExercise.muscleGroup}</span>
             </div>
           ) : (
             <span className="text-muted-foreground">Выберите упражнение...</span>
@@ -76,19 +76,19 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Ex
           <div className="space-y-6 pb-20">
             {Object.entries(grouped).map(([group, list]) => (
               <div key={group} className="space-y-2">
-                <h4 className="font-semibold text-primary text-sm uppercase tracking-wider pl-2">{group}</h4>
+                <h4 className="break-words font-semibold text-primary text-sm uppercase tracking-normal pl-2">{group}</h4>
                 <div className="grid grid-cols-1 gap-2">
                   {list.map(ex => (
                     <Button
                       key={ex.id}
                       variant="ghost"
-                      className={`justify-between h-14 rounded-xl text-left px-4 ${selectedId === ex.id ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-card hover:bg-accent'}`}
+                      className={`min-h-14 h-auto justify-between rounded-xl text-left px-4 py-2 ${selectedId === ex.id ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-card hover:bg-accent'}`}
                       onClick={() => {
                         onSelect(ex.id);
                         setIsOpen(false);
                       }}
                     >
-                      <span className="font-medium">{ex.name}</span>
+                      <span className="min-w-0 flex-1 break-words font-medium leading-tight">{ex.name}</span>
                       {selectedId === ex.id && <Check className="h-5 w-5" />}
                     </Button>
                   ))}
