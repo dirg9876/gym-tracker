@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, isNull, isNotNull } from "drizzle-orm";
+import { and, desc, eq, isNull, isNotNull, or } from "drizzle-orm";
 import {
   db,
   workoutsTable,
@@ -217,7 +217,16 @@ router.post("/workouts/:workoutId/sets", async (req, res): Promise<void> => {
   const [ex] = await db
     .select()
     .from(exercisesTable)
-    .where(eq(exercisesTable.id, body.data.exerciseId));
+    .where(
+      and(
+        eq(exercisesTable.id, body.data.exerciseId),
+        or(
+          eq(exercisesTable.isCustom, false),
+          isNull(exercisesTable.userId),
+          eq(exercisesTable.userId, req.userId),
+        )
+      )
+    );
   if (!ex) {
     res.status(404).json({ error: "Упражнение не найдено" });
     return;

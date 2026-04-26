@@ -263,6 +263,7 @@ export async function buildProgramPlan(
       .where(
         and(
           isNotNull(workoutsTable.finishedAt),
+          eq(workoutsTable.userId, userId),
           inArray(workoutSetsTable.exerciseId, wantedIds),
         ),
       )

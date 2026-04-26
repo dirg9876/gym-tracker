@@ -10,7 +10,7 @@ router.get("/programs", async (_req, res): Promise<void> => {
 
 router.get("/programs/:programId", async (req, res): Promise<void> => {
   const programId = String(req.params.programId);
-  const plan = await buildProgramPlan(programId);
+  const plan = await buildProgramPlan(programId, req.userId);
   if (!plan) {
     res.status(404).json({ error: "Программа не найдена" });
     return;
