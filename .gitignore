@@ -48,7 +48,8 @@ Thumbs.db
 .cache/
 .local/
 
-# Local environment files (use .env.example as the template)
-.env
-.env.local
-.env.*.local
+# Local environment files (use .env.example as the template).
+# Ignore every .env* variant (.env, .env.local, .env.development,
+# .env.production, …) and only allow the committed template through.
+.env*
+!.env.example

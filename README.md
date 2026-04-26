@@ -60,6 +60,13 @@ pnpm --filter @workspace/gym-tracker run dev
 pnpm --filter @workspace/api-spec run codegen
 ```
 
+> **Local API ↔ web connectivity.** The web app talks to the API at the URL
+> baked in via `BASE_PATH` and Vite's `BASE_URL`. Running both on
+> `localhost`, the simplest setup is `BASE_PATH=/` for the web app and
+> `ALLOWED_ORIGIN=http://localhost:5173` for the API server (matches Vite's
+> default dev port). On Replit both services share an origin via the
+> built-in proxy, so this is only relevant outside Replit.
+
 On Replit the four services run as workflows automatically:
 
 - `artifacts/api-server: API Server`
