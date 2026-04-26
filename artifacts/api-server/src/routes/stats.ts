@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db, exercisesTable } from "@workspace/db";
 import { GetExerciseProgressParams, GetHeatmapQueryParams } from "@workspace/api-zod";
 import {
@@ -161,7 +161,16 @@ router.get(
     const [exercise] = await db
       .select()
       .from(exercisesTable)
-      .where(eq(exercisesTable.id, exerciseId));
+      .where(
+        and(
+          eq(exercisesTable.id, exerciseId),
+          or(
+            eq(exercisesTable.isCustom, false),
+            isNull(exercisesTable.userId),
+            eq(exercisesTable.userId, req.userId),
+          ),
+        ),
+      );
     if (!exercise) {
       res.status(404).json({ error: "Упражнение не найдено" });
       return;

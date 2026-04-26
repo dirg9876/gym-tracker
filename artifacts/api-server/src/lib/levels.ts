@@ -1,5 +1,5 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
-import { eq, and, isNotNull, asc, inArray, sql } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, asc, inArray, or, sql } from "drizzle-orm";
 import {
   getProfile,
   getConfirmedLevel,
@@ -527,7 +527,16 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
       equipment: exercisesTable.equipment,
     })
     .from(exercisesTable)
-    .where(eq(exercisesTable.isMain, true))
+    .where(
+      and(
+        eq(exercisesTable.isMain, true),
+        or(
+          eq(exercisesTable.isCustom, false),
+          isNull(exercisesTable.userId),
+          eq(exercisesTable.userId, userId),
+        ),
+      ),
+    )
     .orderBy(asc(exercisesTable.muscleGroup), asc(exercisesTable.name));
 
   // Pre-compute MC-based effective multipliers for each main exercise.
