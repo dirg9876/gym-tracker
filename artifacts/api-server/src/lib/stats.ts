@@ -4,7 +4,7 @@ import {
   workoutsTable,
   workoutSetsTable,
 } from "@workspace/db";
-import { eq, and, isNotNull, lt, desc, asc } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, lt, desc, asc } from "drizzle-orm";
 
 export type EnrichedSet = {
   id: number;
@@ -198,7 +198,9 @@ export async function computeExerciseBreakdown(
       and(
         isNotNull(workoutsTable.finishedAt),
         lt(workoutsTable.startedAt, w.startedAt),
-        eq(workoutsTable.userId, w.userId),
+        w.userId != null
+          ? eq(workoutsTable.userId, w.userId)
+          : isNull(workoutsTable.userId),
       ),
     );
 

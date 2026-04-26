@@ -207,16 +207,16 @@ function AppRouter() {
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route path="/workout/:id">
-        {(p) => <Protected><ActiveWorkout {...p} /></Protected>}
+        {() => <Protected><ActiveWorkout /></Protected>}
       </Route>
       <Route path="/workout/:id/report">
-        {(p) => <Protected><WorkoutReport {...p} /></Protected>}
+        {() => <Protected><WorkoutReport /></Protected>}
       </Route>
       <Route path="/history">
         {() => <Protected><History /></Protected>}
       </Route>
       <Route path="/history/:id">
-        {(p) => <Protected><HistoryDetail {...p} /></Protected>}
+        {() => <Protected><HistoryDetail /></Protected>}
       </Route>
       <Route path="/stats">
         {() => <Protected><Stats /></Protected>}
@@ -225,7 +225,7 @@ function AppRouter() {
         {() => <Protected><Exercises /></Protected>}
       </Route>
       <Route path="/exercises/:id">
-        {(p) => <Protected><ExerciseProgress {...p} /></Protected>}
+        {() => <Protected><ExerciseProgress /></Protected>}
       </Route>
       <Route path="/levels">
         {() => <Protected><Levels /></Protected>}
@@ -234,7 +234,7 @@ function AppRouter() {
         {() => <Protected><Programs /></Protected>}
       </Route>
       <Route path="/programs/:id">
-        {(p) => <Protected><ProgramDetail {...p} /></Protected>}
+        {() => <Protected><ProgramDetail /></Protected>}
       </Route>
       <Route component={NotFound} />
     </Switch>

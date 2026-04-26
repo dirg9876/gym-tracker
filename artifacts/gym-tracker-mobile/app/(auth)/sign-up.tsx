@@ -1,6 +1,6 @@
 import { useAuth, useSSO, useSignUp } from "@clerk/expo";
 import * as AuthSession from "expo-auth-session";
-import { Link, useRouter } from "expo-router";
+import { type Href, Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useCallback, useEffect } from "react";
 import {
@@ -179,7 +179,7 @@ export default function SignUpPage() {
 
           <View style={styles.linkRow}>
             <Text style={styles.linkText}>Уже есть аккаунт? </Text>
-            <Link href="/(auth)/sign-in">
+            <Link href={"/(auth)/sign-in" as Href}>
               <Text style={styles.link}>Войти</Text>
             </Link>
           </View>
