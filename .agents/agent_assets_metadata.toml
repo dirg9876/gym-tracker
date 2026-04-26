@@ -546,3 +546,177 @@ id = "FKHHj6uqQUr-oukZkyy6o"
 uri = "file://artifacts/gym-tracker-mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "-p0OwbufT1NEBko0QyzN2"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-0-f.png"
+type = "image"
+title = "tier 0 female fairy"
+
+[[generated]]
+id = "fE4KKxMF5E0V3g2DbJr4x"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-1-f.png"
+type = "image"
+title = "tier 1 female beginner"
+
+[[generated]]
+id = "8SN4HE56zdKKryYfCqTcY"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-2-f.png"
+type = "image"
+title = "tier 2 female starter"
+
+[[generated]]
+id = "eCCs9tABQSeiUFkI098_3"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-3-f.png"
+type = "image"
+title = "tier 3 female athletic"
+
+[[generated]]
+id = "b15UcvoHjc4LgRnAO8Fdj"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-4-f.png"
+type = "image"
+title = "tier 4 female action heroine"
+
+[[generated]]
+id = "rIidB_yzLSZCE6QVrhicz"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-5-f.png"
+type = "image"
+title = "tier 5 female warrior"
+
+[[generated]]
+id = "yeNzpi8W2wU_1Vqf5kZE0"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-6-f.png"
+type = "image"
+title = "tier 6 female bogatyr"
+
+[[generated]]
+id = "V29DGqQpVMGowv26q-QB_"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-7-f.png"
+type = "image"
+title = "tier 7 female valkyrie champion"
+
+[[generated]]
+id = "q_AbX-ogjUp1yUiH20sKP"
+uri = "file://artifacts/gym-tracker/src/assets/levels/tier-8-f.png"
+type = "image"
+title = "tier 8 female legend goddess"
+
+[[generated]]
+id = "P8TMVqoVDzoWDjlaM6hyQ"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-0-f.png"
+type = "image"
+title = "level 0 fairy feechka"
+
+[[generated]]
+id = "YWOUYXWcmqq3wc8a2WX8m"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-1-f.png"
+type = "image"
+title = "level 1 thumbelina"
+
+[[generated]]
+id = "Pnj8OT3aUYRPIG59xUf1x"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-2-f.png"
+type = "image"
+title = "level 2 malvina"
+
+[[generated]]
+id = "a7_z7zq06NiKFbvtcYbs4"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-18-f.png"
+type = "image"
+title = "level 18 pippi"
+
+[[generated]]
+id = "8-Si4GTUjAKlFw4VsinC0"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-38-f.png"
+type = "image"
+title = "level 38 katniss"
+
+[[generated]]
+id = "ETTbW8u6DBtTsMpVs-wi0"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-46-f.png"
+type = "image"
+title = "level 46 black widow"
+
+[[generated]]
+id = "SA7ri02yLJObQIp-o3UPe"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-54-f.png"
+type = "image"
+title = "level 54 polyanitsa"
+
+[[generated]]
+id = "T5aMCCE5uDCxxpuaFg9vq"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-60-f.png"
+type = "image"
+title = "level 60 xena warrior queen"
+
+[[generated]]
+id = "Gb2cTzdNKwYQGac2Iwulm"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-59-f.png"
+type = "image"
+title = "level 59 joan of arc"
+
+[[generated]]
+id = "FNUYJ5QhlIGbAabVR-VhD"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-63-f.png"
+type = "image"
+title = "level 63 valkyrie"
+
+[[generated]]
+id = "IbHjKiI4Um--Ns3dwDHOS"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-65-f.png"
+type = "image"
+title = "level 65 wonder woman diana"
+
+[[generated]]
+id = "PUpO148wYNaXAVAYqlHyn"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-77-f.png"
+type = "image"
+title = "level 77 artemis goddess"
+
+[[generated]]
+id = "b9IxmMfztb_PNu8dljh1j"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-80-f.png"
+type = "image"
+title = "level 80 female legend"
+
+[[generated]]
+id = "XCAjnHb0zh5k4DRZe4Ovj"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-10-f.png"
+type = "image"
+title = "level 10 snegurochka"
+
+[[generated]]
+id = "rt95iDEaPEmttKJV0lp6d"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-11-f.png"
+type = "image"
+title = "level 11 gerda snow queen"
+
+[[generated]]
+id = "hcPdXHBzUqw5ULmnAk1ek"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-19-f.png"
+type = "image"
+title = "level 19 mary poppins"
+
+[[generated]]
+id = "5BAAbvVcIp9KhvvEMgtgl"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-45-f.png"
+type = "image"
+title = "level 45 rey desert warrior"
+
+[[generated]]
+id = "_Wk6e6XMlttYt8IhGxKej"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-3-f.png"
+type = "image"
+title = "level 3 humble young girl barbell"
+
+[[generated]]
+id = "On9pX_CE5XpITJ_JXt056"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-31-f.png"
+type = "image"
+title = "level 31 red hair archer warrior"
+
+[[generated]]
+id = "C50j-olleA-RMO0miWwKu"
+uri = "file://artifacts/gym-tracker/src/assets/levels/level-32-f.png"
+type = "image"
+title = "level 32 asian female warrior sword"

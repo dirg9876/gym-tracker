@@ -85,7 +85,7 @@ export function Home() {
               className="w-full bg-card p-4 rounded-2xl border border-border active:bg-accent transition-colors text-left flex items-center gap-3"
             >
               <img
-                src={levelImage(cur.level, cur.tier)}
+                src={levelImage(cur.level, cur.tier, levelsData.sex)}
                 alt=""
                 className="h-14 w-14 object-contain shrink-0 drop-shadow-[0_0_12px_rgba(255,80,40,0.25)]"
                 style={{ imageRendering: "pixelated" }}

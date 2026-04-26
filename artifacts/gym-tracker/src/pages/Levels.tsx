@@ -102,6 +102,7 @@ export function Levels() {
     currentRank,
     weightClassKg,
     confirmedLevelMigrationNeeded,
+    sex,
   } = data;
   const current: Level = levels[currentLevel];
   const next: Level | undefined = levels[currentLevel + 1];
@@ -167,7 +168,7 @@ export function Levels() {
             >
               <div className="relative">
                 <img
-                  src={levelImage(current.level, current.tier)}
+                  src={levelImage(current.level, current.tier, sex)}
                   alt={current.name}
                   className="h-40 w-40 object-contain drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
                   style={{ imageRendering: "pixelated" }}
@@ -344,7 +345,7 @@ export function Levels() {
                   }`}
                 >
                   <img
-                    src={levelImage(lvl.level, lvl.tier)}
+                    src={levelImage(lvl.level, lvl.tier, sex)}
                     alt=""
                     className={`h-12 w-12 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
                     style={{ imageRendering: "pixelated" }}
@@ -404,6 +405,7 @@ export function Levels() {
         barWeightKg={barWeightKg}
         levelFactorAnchor={levelFactorAnchor}
         weightClassKg={weightClassKg}
+        sex={sex}
       />
       </div>
     </AppShell>
@@ -446,6 +448,7 @@ function LevelDetailDialog({
   barWeightKg,
   levelFactorAnchor,
   weightClassKg,
+  sex,
 }: {
   openLevel: number | null;
   onOpenChange: (open: boolean) => void;
@@ -456,6 +459,7 @@ function LevelDetailDialog({
   barWeightKg: number;
   levelFactorAnchor: number;
   weightClassKg: number;
+  sex: "male" | "female";
 }) {
   const lvl = openLevel != null ? levels[openLevel] : undefined;
   const rows = useMemo(() => {
@@ -479,7 +483,7 @@ function LevelDetailDialog({
             <DialogHeader>
               <div className="flex items-center gap-3">
                 <img
-                  src={levelImage(lvl.level, lvl.tier)}
+                  src={levelImage(lvl.level, lvl.tier, sex)}
                   alt=""
                   className="h-16 w-16 object-contain shrink-0"
                   style={{ imageRendering: "pixelated" }}
