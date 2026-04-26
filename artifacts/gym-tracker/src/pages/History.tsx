@@ -1,11 +1,40 @@
-import { useListWorkouts } from "@workspace/api-client-react";
+import { useState } from "react";
+import {
+  useListWorkouts,
+  useDeleteWorkout,
+  getListWorkoutsQueryKey,
+} from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useLocation } from "wouter";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function History() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { data: workouts, isLoading } = useListWorkouts({ limit: 50 });
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+
+  const deleteWorkout = useDeleteWorkout({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        setPendingDeleteId(null);
+      },
+    },
+  });
 
   if (isLoading) return <AppShell><div className="p-8 text-center">Загрузка...</div></AppShell>;
 
@@ -22,18 +51,31 @@ export function History() {
         ) : (
           <div className="space-y-4">
             {workouts.map((workout) => (
-              <div 
-                key={workout.id} 
+              <div
+                key={workout.id}
                 className="bg-card p-5 rounded-2xl border border-border cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => setLocation(`/history/${workout.id}`)}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-bold text-lg">{workout.name || "Тренировка"}</h3>
-                  <span className="text-sm font-medium text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                    {formatDate(workout.startedAt)}
-                  </span>
+                <div className="flex justify-between items-start mb-4 gap-2">
+                  <h3 className="font-bold text-lg flex-1 truncate">{workout.name || "Тренировка"}</h3>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-medium text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                      {formatDate(workout.startedAt)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPendingDeleteId(workout.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="bg-background rounded-lg p-2 text-center">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Тоннаж</div>
@@ -57,6 +99,30 @@ export function History() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={pendingDeleteId !== null} onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить тренировку?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Тренировка и все её подходы будут удалены безвозвратно.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDeleteId !== null) {
+                  deleteWorkout.mutate({ workoutId: pendingDeleteId });
+                }
+              }}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
