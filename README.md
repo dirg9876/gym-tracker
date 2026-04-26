@@ -39,8 +39,9 @@ See the workspace conventions in `pnpm-workspace.yaml` and the per-package
 
 ## Run it locally
 
-Requires Node.js 24 and pnpm 10 (the lockfile is `lockfileVersion: 9.0`,
-which is compatible with both pnpm 9 and 10).
+Requires Node.js 24 and pnpm 9 or 10 (the lockfile is `lockfileVersion: 9.0`;
+CI pins pnpm 9 to match — pnpm 10 reads the lockfile backward-compatibly
+but pnpm 9 is the safe default).
 
 ```bash
 # 1. Install deps
