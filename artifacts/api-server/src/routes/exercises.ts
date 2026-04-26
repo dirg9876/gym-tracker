@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNotNull, max, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, max, or, sql } from "drizzle-orm";
 import {
   db,
   exercisesTable,
+  userExercisePrefsTable,
   workoutsTable,
   workoutSetsTable,
 } from "@workspace/db";
@@ -25,6 +26,7 @@ import {
   rankForMcPercent,
   type SportRank,
 } from "../lib/sport-norms";
+import type { Equipment } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -32,13 +34,34 @@ router.get("/exercises", async (req, res): Promise<void> => {
   const userId = req.userId;
   const [rows, profile] = await Promise.all([
     db
-      .select()
+      .select({
+        id: exercisesTable.id,
+        userId: exercisesTable.userId,
+        name: exercisesTable.name,
+        muscleGroup: exercisesTable.muscleGroup,
+        isCustom: exercisesTable.isCustom,
+        bodyweightMultiplier: exercisesTable.bodyweightMultiplier,
+        createdAt: exercisesTable.createdAt,
+        // Global fallback values
+        baseIsMain: exercisesTable.isMain,
+        baseEquipment: exercisesTable.equipment,
+        // Per-user overrides (null when no pref row exists)
+        prefIsMain: userExercisePrefsTable.isMain,
+        prefEquipment: userExercisePrefsTable.equipment,
+      })
       .from(exercisesTable)
+      .leftJoin(
+        userExercisePrefsTable,
+        and(
+          eq(userExercisePrefsTable.exerciseId, exercisesTable.id),
+          eq(userExercisePrefsTable.userId, userId),
+        ),
+      )
       .where(
         or(
           eq(exercisesTable.isCustom, false),
           eq(exercisesTable.userId, userId),
-        )
+        ),
       )
       .orderBy(exercisesTable.muscleGroup, exercisesTable.name),
     getProfile(userId),
@@ -63,18 +86,37 @@ router.get("/exercises", async (req, res): Promise<void> => {
     if (r.maxKg != null) maxByExercise.set(r.exerciseId, Number(r.maxKg));
   }
 
-  const enriched = rows.map((ex) => {
-    const fallbackMul = Number(ex.bodyweightMultiplier ?? 1);
-    const result = getMcKgForExercise(ex.name, bodyWeightKg, sex, fallbackMul, ex.muscleGroup);
-    const mcKg = ex.isMain ? result.kg : null;
+  const enriched = rows.map((row) => {
+    // Per-user pref takes priority over the global column. prefIsMain is null
+    // (not false) when no pref row exists — so we distinguish "user set false"
+    // from "no pref".
+    const isMain = row.prefIsMain !== null ? row.prefIsMain : row.baseIsMain;
+    const equipment: Equipment = (row.prefEquipment ?? row.baseEquipment) as Equipment;
 
-    const userMaxKg = maxByExercise.get(ex.id) ?? null;
+    const fallbackMul = Number(row.bodyweightMultiplier ?? 1);
+    const result = getMcKgForExercise(row.name, bodyWeightKg, sex, fallbackMul, row.muscleGroup);
+    const mcKg = isMain ? result.kg : null;
+
+    const userMaxKg = maxByExercise.get(row.id) ?? null;
     let userRank: SportRank | null = null;
     if (result.kg != null && userMaxKg != null && userMaxKg > 0) {
       userRank = rankForMcPercent(userMaxKg / result.kg);
     }
 
-    return { ...ex, mcKg, userMaxKg, userRank };
+    return {
+      id: row.id,
+      userId: row.userId,
+      name: row.name,
+      muscleGroup: row.muscleGroup,
+      isCustom: row.isCustom,
+      bodyweightMultiplier: row.bodyweightMultiplier,
+      createdAt: row.createdAt,
+      isMain,
+      equipment,
+      mcKg,
+      userMaxKg,
+      userRank,
+    };
   });
 
   res.json(ListExercisesResponse.parse(enriched));
@@ -112,43 +154,100 @@ router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
     res.status(400).json({ error: body.error.message });
     return;
   }
-  const updates: Partial<typeof exercisesTable.$inferInsert> = {};
-  if (body.data.isMain !== undefined) updates.isMain = body.data.isMain;
-  if (body.data.equipment !== undefined) updates.equipment = body.data.equipment;
-  if (Object.keys(updates).length === 0) {
+  if (body.data.isMain === undefined && body.data.equipment === undefined) {
     res.status(400).json({ error: "Не передано ни одного поля для обновления" });
     return;
   }
-  // Fetch first to enforce ownership.
-  // Global catalog exercises (isCustom=false) are shared across all users;
-  // mutating them would affect every user's data/level calculation. Only
-  // the owner of a custom exercise may edit it.
+
+  const userId = req.userId;
+
+  // Fetch the exercise to check visibility. The user may update isMain/equipment
+  // for any exercise visible to them (global catalog or their own custom).
+  // For custom exercises owned by another user, access is denied.
   const [existing] = await db
-    .select({ id: exercisesTable.id, isCustom: exercisesTable.isCustom, userId: exercisesTable.userId })
+    .select({
+      id: exercisesTable.id,
+      name: exercisesTable.name,
+      muscleGroup: exercisesTable.muscleGroup,
+      isCustom: exercisesTable.isCustom,
+      isMain: exercisesTable.isMain,
+      equipment: exercisesTable.equipment,
+      userId: exercisesTable.userId,
+      bodyweightMultiplier: exercisesTable.bodyweightMultiplier,
+      createdAt: exercisesTable.createdAt,
+    })
     .from(exercisesTable)
     .where(eq(exercisesTable.id, params.data.exerciseId));
+
   if (!existing) {
     res.status(404).json({ error: "Не найдено" });
     return;
   }
-  if (!existing.isCustom) {
-    res.status(403).json({ error: "Нельзя редактировать общий каталог упражнений" });
-    return;
-  }
-  if (existing.userId !== req.userId) {
+  // Custom exercises belonging to another user are not accessible.
+  if (existing.isCustom && existing.userId !== userId) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
-  const [row] = await db
-    .update(exercisesTable)
-    .set(updates)
-    .where(eq(exercisesTable.id, params.data.exerciseId))
+
+  // Read the user's existing pref row (if any) so partial updates don't
+  // clobber unspecified fields. e.g. PATCH {equipment} only must not reset
+  // isMain to false.
+  const [existingPref] = await db
+    .select()
+    .from(userExercisePrefsTable)
+    .where(
+      and(
+        eq(userExercisePrefsTable.userId, userId),
+        eq(userExercisePrefsTable.exerciseId, existing.id),
+      ),
+    )
+    .limit(1);
+
+  // Merge: body overrides existing pref; existing pref overrides global default.
+  const effectiveIsMain =
+    body.data.isMain !== undefined
+      ? body.data.isMain
+      : (existingPref?.isMain ?? existing.isMain);
+  const effectiveEquipment: Equipment =
+    body.data.equipment !== undefined
+      ? (body.data.equipment as Equipment)
+      : ((existingPref?.equipment ?? existing.equipment) as Equipment);
+
+  // Upsert the per-user pref row. This keeps the global exercises table
+  // unchanged, so no other user sees a difference.
+  const [upsertedPref] = await db
+    .insert(userExercisePrefsTable)
+    .values({
+      userId,
+      exerciseId: existing.id,
+      isMain: effectiveIsMain,
+      equipment: effectiveEquipment,
+    })
+    .onConflictDoUpdate({
+      target: [userExercisePrefsTable.userId, userExercisePrefsTable.exerciseId],
+      set: {
+        isMain: effectiveIsMain,
+        equipment: effectiveEquipment,
+        updatedAt: sql`now()`,
+      },
+    })
     .returning();
-  if (!row) {
-    res.status(404).json({ error: "Не найдено" });
-    return;
-  }
-  res.json(row);
+
+  // Build the response by merging exercise data with the pref.
+  const isMain = upsertedPref!.isMain;
+  const equipment: Equipment = (upsertedPref!.equipment ?? existing.equipment) as Equipment;
+
+  res.json({
+    id: existing.id,
+    userId: existing.userId,
+    name: existing.name,
+    muscleGroup: existing.muscleGroup,
+    isCustom: existing.isCustom,
+    isMain,
+    equipment,
+    bodyweightMultiplier: existing.bodyweightMultiplier,
+    createdAt: existing.createdAt,
+  });
 });
 
 router.delete("/exercises/:exerciseId", async (req, res): Promise<void> => {

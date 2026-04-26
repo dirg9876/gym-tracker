@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, numeric, integer, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const EQUIPMENT_VALUES = [
   "barbell",
@@ -27,3 +27,27 @@ export const exercisesTable = pgTable("exercises", {
 
 export type Exercise = typeof exercisesTable.$inferSelect;
 export type InsertExercise = typeof exercisesTable.$inferInsert;
+
+/**
+ * Per-user exercise preferences. Stores each user's personal isMain flag and
+ * equipment choice for any exercise (global catalog or their own custom ones).
+ * When a row exists here for (userId, exerciseId), these values take priority
+ * over the global columns on exercisesTable.
+ */
+export const userExercisePrefsTable = pgTable("user_exercise_prefs", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  exerciseId: integer("exercise_id")
+    .notNull()
+    .references(() => exercisesTable.id, { onDelete: "cascade" }),
+  isMain: boolean("is_main").notNull().default(false),
+  equipment: text("equipment").$type<Equipment>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => [
+  uniqueIndex("user_exercise_prefs_user_exercise_idx").on(table.userId, table.exerciseId),
+]);
+
+export type UserExercisePref = typeof userExercisePrefsTable.$inferSelect;
+export type InsertUserExercisePref = typeof userExercisePrefsTable.$inferInsert;

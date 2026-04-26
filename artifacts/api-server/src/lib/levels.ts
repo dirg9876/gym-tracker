@@ -1,4 +1,4 @@
-import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
+import { db, exercisesTable, userExercisePrefsTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
 import { eq, and, isNotNull, isNull, asc, inArray, or, sql } from "drizzle-orm";
 import {
   getProfile,
@@ -518,21 +518,42 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
   const sex = profile.sex ?? FALLBACK_SEX;
   const levels = buildLevels(bodyWeightKg);
 
+  // Fetch exercises that are "main" for this specific user.
+  // An exercise is main for a user when:
+  //   (a) the user has a pref row with isMain = true, OR
+  //   (b) the exercise has global isMain = true AND the user has no pref row at all
+  //       (i.e. they haven't explicitly opted in/out yet).
   const mainRows = await db
     .select({
       id: exercisesTable.id,
       name: exercisesTable.name,
       muscleGroup: exercisesTable.muscleGroup,
       bodyweightMultiplier: exercisesTable.bodyweightMultiplier,
-      equipment: exercisesTable.equipment,
+      baseEquipment: exercisesTable.equipment,
+      prefEquipment: userExercisePrefsTable.equipment,
     })
     .from(exercisesTable)
+    .leftJoin(
+      userExercisePrefsTable,
+      and(
+        eq(userExercisePrefsTable.exerciseId, exercisesTable.id),
+        eq(userExercisePrefsTable.userId, userId),
+      ),
+    )
     .where(
       and(
-        eq(exercisesTable.isMain, true),
         or(
           eq(exercisesTable.isCustom, false),
           eq(exercisesTable.userId, userId),
+        ),
+        or(
+          // User explicitly marked as main
+          eq(userExercisePrefsTable.isMain, true),
+          // Global default: exercise is main and user has no pref yet
+          and(
+            eq(exercisesTable.isMain, true),
+            isNull(userExercisePrefsTable.exerciseId),
+          ),
         ),
       ),
     )
@@ -628,7 +649,7 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
       const req = requiredKgForExercise(lvl.level, bodyWeightKg, mc.effectiveMul, penaltyMul);
       // Barbell exercises can't physically be loaded below the empty bar, so a
       // sub-bar requirement is auto-passed (counts toward the threshold).
-      if (req > 0 && r.equipment === "barbell" && req < BAR_WEIGHT_KG) {
+      if (req > 0 && (r.prefEquipment ?? r.baseEquipment) === "barbell" && req < BAR_WEIGHT_KG) {
         passedExercises += 1;
         continue;
       }
@@ -716,16 +737,17 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
     } else if (
       required != null &&
       required > 0 &&
-      r.equipment === "barbell" &&
+      (r.prefEquipment ?? r.baseEquipment) === "barbell" &&
       required < BAR_WEIGHT_KG
     ) {
       autoPassedReason = "below_bar_weight";
     }
+    const equipment = (r.prefEquipment ?? r.baseEquipment) as Equipment;
     return {
       exerciseId: r.id,
       name: r.name,
       muscleGroup: r.muscleGroup,
-      equipment: r.equipment as Equipment,
+      equipment,
       maxWeightKg: round(maxByExercise.get(r.id) ?? 0),
       multiplier: round(mc.effectiveMul),
       requiredKgForNextLevel: required,
