@@ -29,7 +29,16 @@ app.use(
 );
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-app.use(cors({ credentials: true, origin: true }));
+// Restrict CORS to the configured frontend origin.
+// REPLIT_DEV_DOMAIN is injected by the Replit runtime; ALLOWED_ORIGIN can
+// override it in production deployment settings.
+const allowedOrigin =
+  process.env.ALLOWED_ORIGIN ??
+  (process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : undefined);
+
+app.use(cors({ credentials: true, origin: allowedOrigin ?? false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

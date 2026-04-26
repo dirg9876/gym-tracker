@@ -1,5 +1,5 @@
 import { db, exercisesTable, workoutSetsTable, workoutsTable, appMetaTable } from "@workspace/db";
-import { eq, and, isNotNull, asc, inArray, or, sql } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, asc, inArray, or, sql } from "drizzle-orm";
 import {
   getProfile,
   getConfirmedLevel,
@@ -234,7 +234,7 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
   const sentinel = await db
     .select({ key: appMetaTable.key })
     .from(appMetaTable)
-    .where(and(eq(appMetaTable.userId, ""), eq(appMetaTable.key, MAIN_EXERCISES_SEED_KEY)))
+    .where(and(isNull(appMetaTable.userId), eq(appMetaTable.key, MAIN_EXERCISES_SEED_KEY)))
     .limit(1);
   if (sentinel.length > 0) return { seeded: 0 };
 
@@ -259,7 +259,7 @@ export async function seedMainExercisesIfEmpty(): Promise<{ seeded: number }> {
       key: MAIN_EXERCISES_SEED_KEY,
       value: new Date().toISOString(),
     })
-    .onConflictDoNothing({ target: [appMetaTable.userId, appMetaTable.key] });
+    .onConflictDoNothing();
 
   return { seeded: seededCount };
 }
@@ -273,7 +273,7 @@ export async function seedDefaultEquipmentIfEmpty(): Promise<{ seeded: number }>
   const sentinel = await db
     .select({ key: appMetaTable.key })
     .from(appMetaTable)
-    .where(and(eq(appMetaTable.userId, ""), eq(appMetaTable.key, DEFAULT_EQUIPMENT_SEED_KEY)))
+    .where(and(isNull(appMetaTable.userId), eq(appMetaTable.key, DEFAULT_EQUIPMENT_SEED_KEY)))
     .limit(1);
   if (sentinel.length > 0) return { seeded: 0 };
 
@@ -293,7 +293,7 @@ export async function seedDefaultEquipmentIfEmpty(): Promise<{ seeded: number }>
       key: DEFAULT_EQUIPMENT_SEED_KEY,
       value: new Date().toISOString(),
     })
-    .onConflictDoNothing({ target: [appMetaTable.userId, appMetaTable.key] });
+    .onConflictDoNothing();
 
   return { seeded: seededCount };
 }
@@ -328,7 +328,7 @@ export async function seedDefaultMultipliersIfEmpty(): Promise<{ seeded: number 
       key: DEFAULT_MULTIPLIERS_SEED_KEY,
       value: new Date().toISOString(),
     })
-    .onConflictDoNothing({ target: [appMetaTable.userId, appMetaTable.key] });
+    .onConflictDoNothing();
 
   return { seeded: seededCount };
 }

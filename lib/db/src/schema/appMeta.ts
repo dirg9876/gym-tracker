@@ -1,18 +1,19 @@
-import { pgTable, text, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, serial, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const appMetaTable = pgTable("app_meta", {
-  // userId is part of the composite PK — PostgreSQL requires PK columns to be NOT NULL.
-  // The empty string "" is used as a sentinel for global/system-level records (seed flags,
-  // shared defaults) that belong to no particular user.  Per-user records store the Clerk
-  // userId. This is intentionally notNull().default("") rather than nullable.
-  userId: text("user_id").notNull().default(""),
+  id: serial("id").primaryKey(),
+  // NULL means a global/system-level record (seed flags, shared defaults).
+  // A non-null string is the Clerk userId for per-user records.
+  userId: text("user_id"),
   key: text("key").notNull(),
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 }, (table) => [
-  primaryKey({ columns: [table.userId, table.key] }),
+  // Enforce one record per (userId, key) pair for non-null userId values.
+  // Global records (userId IS NULL) are deduplicated via sentinel guards in code.
+  uniqueIndex("app_meta_user_key_idx").on(table.userId, table.key),
 ]);
 
 export type AppMeta = typeof appMetaTable.$inferSelect;
