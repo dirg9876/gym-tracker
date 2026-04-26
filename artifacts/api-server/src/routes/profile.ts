@@ -4,8 +4,8 @@ import { getProfile, updateProfile } from "../lib/profile";
 
 const router: IRouter = Router();
 
-router.get("/profile", async (_req, res): Promise<void> => {
-  const userId = "";
+router.get("/profile", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const profile = await getProfile(userId);
   res.json(profile);
 });
@@ -16,7 +16,7 @@ router.put("/profile", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const userId = "";
+  const userId = req.userId;
   const profile = await updateProfile(userId, parsed.data);
   res.json(profile);
 });

@@ -23,8 +23,8 @@ function groupByWorkout(sets: EnrichedSet[]): Map<number, EnrichedSet[]> {
   return m;
 }
 
-router.get("/stats/overview", async (_req, res): Promise<void> => {
-  const userId = "";
+router.get("/stats/overview", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const sets = await getAllSetsForFinishedWorkouts(userId);
   const workouts = await listFinishedWorkouts(userId);
   const byWorkout = groupByWorkout(sets);
@@ -126,8 +126,8 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
   });
 });
 
-router.get("/stats/progress", async (_req, res): Promise<void> => {
-  const userId = "";
+router.get("/stats/progress", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const sets = await getAllSetsForFinishedWorkouts(userId);
   const workouts = await listFinishedWorkouts(userId);
   const wMap = new Map(workouts.map((w) => [w.id, w]));
@@ -167,7 +167,7 @@ router.get(
       return;
     }
 
-    const userId = "";
+    const userId = req.userId;
     const allSets = await getAllSetsForFinishedWorkouts(userId);
     const exerciseSets = allSets.filter((s) => s.exerciseId === exerciseId);
     const workouts = await listFinishedWorkouts(userId);
@@ -209,7 +209,7 @@ router.get("/stats/heatmap", async (req, res): Promise<void> => {
     return;
   }
   const days = Math.max(7, Math.min(parsed.data.days ?? 365, 730));
-  const userId = "";
+  const userId = req.userId;
   const sets = await getAllSetsForFinishedWorkouts(userId);
 
   const today = new Date();
@@ -278,8 +278,8 @@ router.get("/stats/heatmap", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/stats/forecast", async (_req, res): Promise<void> => {
-  const userId = "";
+router.get("/stats/forecast", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const info = await computeCurrentLevel(userId);
   const cur = info.currentLevel;
   const next = info.nextLevel;

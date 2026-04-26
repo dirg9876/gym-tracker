@@ -55,10 +55,12 @@ router.get("/workouts", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const userId = req.userId;
   const limit = parsed.data.limit ?? 50;
   const workouts = await db
     .select()
     .from(workoutsTable)
+    .where(eq(workoutsTable.userId, userId))
     .orderBy(desc(workoutsTable.startedAt))
     .limit(limit);
 
@@ -95,7 +97,7 @@ router.post("/workouts", async (req, res): Promise<void> => {
   }
   const [w] = await db
     .insert(workoutsTable)
-    .values({ name: parsed.data.name ?? null })
+    .values({ name: parsed.data.name ?? null, userId: req.userId })
     .returning();
   res.status(201).json({
     id: w.id,
@@ -109,11 +111,12 @@ router.post("/workouts", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/workouts/active", async (_req, res): Promise<void> => {
+router.get("/workouts/active", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const [w] = await db
     .select()
     .from(workoutsTable)
-    .where(isNull(workoutsTable.finishedAt))
+    .where(and(isNull(workoutsTable.finishedAt), eq(workoutsTable.userId, userId)))
     .orderBy(desc(workoutsTable.startedAt))
     .limit(1);
   if (!w) {
@@ -143,7 +146,12 @@ router.get("/workouts/:workoutId", async (req, res): Promise<void> => {
   const [w] = await db
     .select()
     .from(workoutsTable)
-    .where(eq(workoutsTable.id, parsed.data.workoutId));
+    .where(
+      and(
+        eq(workoutsTable.id, parsed.data.workoutId),
+        eq(workoutsTable.userId, req.userId),
+      )
+    );
   if (!w) {
     res.status(404).json({ error: "Тренировка не найдена" });
     return;
@@ -168,7 +176,12 @@ router.delete("/workouts/:workoutId", async (req, res): Promise<void> => {
   }
   const [row] = await db
     .delete(workoutsTable)
-    .where(eq(workoutsTable.id, parsed.data.workoutId))
+    .where(
+      and(
+        eq(workoutsTable.id, parsed.data.workoutId),
+        eq(workoutsTable.userId, req.userId),
+      )
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Тренировка не найдена" });
@@ -191,7 +204,12 @@ router.post("/workouts/:workoutId/sets", async (req, res): Promise<void> => {
   const [w] = await db
     .select()
     .from(workoutsTable)
-    .where(eq(workoutsTable.id, params.data.workoutId));
+    .where(
+      and(
+        eq(workoutsTable.id, params.data.workoutId),
+        eq(workoutsTable.userId, req.userId),
+      )
+    );
   if (!w) {
     res.status(404).json({ error: "Тренировка не найдена" });
     return;
@@ -233,14 +251,22 @@ router.delete("/sets/:setId", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [row] = await db
-    .delete(workoutSetsTable)
-    .where(eq(workoutSetsTable.id, params.data.setId))
-    .returning();
-  if (!row) {
+  const [setWithWorkout] = await db
+    .select({ id: workoutSetsTable.id, workoutUserId: workoutsTable.userId })
+    .from(workoutSetsTable)
+    .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
+    .where(eq(workoutSetsTable.id, params.data.setId));
+  if (!setWithWorkout) {
     res.status(404).json({ error: "Подход не найден" });
     return;
   }
+  if (setWithWorkout.workoutUserId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  await db
+    .delete(workoutSetsTable)
+    .where(eq(workoutSetsTable.id, params.data.setId));
   res.sendStatus(204);
 });
 
@@ -251,11 +277,12 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
     return;
   }
   const workoutId = parsed.data.workoutId;
+  const userId = req.userId;
 
   const [w] = await db
     .select()
     .from(workoutsTable)
-    .where(eq(workoutsTable.id, workoutId));
+    .where(and(eq(workoutsTable.id, workoutId), eq(workoutsTable.userId, userId)));
   if (!w) {
     res.status(404).json({ error: "Тренировка не найдена" });
     return;
@@ -264,7 +291,7 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
   const sets = await getWorkoutSets(workoutId);
 
   // Compute previous PRs from prior finished workouts
-  const previousFinishedSets = await getAllSetsForFinishedWorkouts("", {
+  const previousFinishedSets = await getAllSetsForFinishedWorkouts(userId, {
     beforeWorkoutId: workoutId,
   });
   const previousByWorkout = new Map<number, EnrichedSet[]>();
@@ -426,10 +453,6 @@ router.post("/workouts/:workoutId/finish", async (req, res): Promise<void> => {
     }
   }
 
-  // Use the shared helper for the rich breakdown so the finish report and the
-  // standalone GET /workouts/:id/exercise-breakdown endpoint return identical
-  // shapes for any consumer. Pass the PR exercise-id set so the breakdown's
-  // `isPersonalRecord` flag stays in lock-step with `newExerciseRecords`.
   const prExerciseIds = new Set(newExerciseRecords.map((r) => r.exerciseId));
   const exerciseBreakdown = await computeExerciseBreakdown(
     workoutId,
@@ -466,10 +489,11 @@ router.get(
       return;
     }
     const workoutId = parsed.data.workoutId;
+    const userId = req.userId;
     const [w] = await db
       .select()
       .from(workoutsTable)
-      .where(eq(workoutsTable.id, workoutId));
+      .where(and(eq(workoutsTable.id, workoutId), eq(workoutsTable.userId, userId)));
     if (!w) {
       res.status(404).json({ error: "Тренировка не найдена" });
       return;
@@ -481,7 +505,12 @@ router.get(
     const previousCandidates = await db
       .select()
       .from(workoutsTable)
-      .where(isNotNull(workoutsTable.finishedAt))
+      .where(
+        and(
+          isNotNull(workoutsTable.finishedAt),
+          eq(workoutsTable.userId, userId),
+        )
+      )
       .orderBy(desc(workoutsTable.startedAt));
 
     let previous:
@@ -604,7 +633,12 @@ router.get(
     const [w] = await db
       .select()
       .from(workoutsTable)
-      .where(eq(workoutsTable.id, workoutId));
+      .where(
+        and(
+          eq(workoutsTable.id, workoutId),
+          eq(workoutsTable.userId, req.userId),
+        )
+      );
     if (!w) {
       res.status(404).json({ error: "Тренировка не найдена" });
       return;

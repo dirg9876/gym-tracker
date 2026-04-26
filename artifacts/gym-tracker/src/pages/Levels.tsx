@@ -460,7 +460,7 @@ function LevelDetailDialog({
   const lvl = openLevel != null ? levels[openLevel] : undefined;
   const rows = useMemo(() => {
     if (!lvl) return [];
-    return mainExercises.slice(0, 3).map((ex) => {
+    return mainExercises.map((ex) => {
       const isTimeBased = ex.autoPassedReason === "time_based_exercise";
       const required = !isTimeBased
         ? requiredKgFor(lvl.level, bodyWeightKg, ex.multiplier, levelFactorAnchor)

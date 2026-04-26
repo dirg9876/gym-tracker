@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNotNull, max } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, max, or } from "drizzle-orm";
 import {
   db,
   exercisesTable,
@@ -28,12 +28,19 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/exercises", async (_req, res): Promise<void> => {
-  const userId = "";
+router.get("/exercises", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const [rows, profile] = await Promise.all([
     db
       .select()
       .from(exercisesTable)
+      .where(
+        or(
+          eq(exercisesTable.isCustom, false),
+          isNull(exercisesTable.userId),
+          eq(exercisesTable.userId, userId),
+        )
+      )
       .orderBy(exercisesTable.muscleGroup, exercisesTable.name),
     getProfile(userId),
   ]);
@@ -86,6 +93,7 @@ router.post("/exercises", async (req, res): Promise<void> => {
       name: parsed.data.name.trim(),
       muscleGroup: parsed.data.muscleGroup.trim(),
       isCustom: true,
+      userId: req.userId,
       ...(parsed.data.equipment !== undefined
         ? { equipment: parsed.data.equipment }
         : {}),
@@ -112,6 +120,22 @@ router.patch("/exercises/:exerciseId", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Не передано ни одного поля для обновления" });
     return;
   }
+  // Fetch first to enforce ownership on custom exercises.
+  // Global (isCustom=false) exercises are shared catalog entries; any user can
+  // update isMain/equipment preferences on them (by design for single-catalog
+  // multi-user operation). Custom exercises are private to their creator.
+  const [existing] = await db
+    .select({ id: exercisesTable.id, isCustom: exercisesTable.isCustom, userId: exercisesTable.userId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.exerciseId));
+  if (!existing) {
+    res.status(404).json({ error: "Не найдено" });
+    return;
+  }
+  if (existing.isCustom && existing.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const [row] = await db
     .update(exercisesTable)
     .set(updates)
@@ -132,7 +156,13 @@ router.delete("/exercises/:exerciseId", async (req, res): Promise<void> => {
   }
   const [row] = await db
     .delete(exercisesTable)
-    .where(eq(exercisesTable.id, params.data.exerciseId))
+    .where(
+      and(
+        eq(exercisesTable.id, params.data.exerciseId),
+        eq(exercisesTable.isCustom, true),
+        eq(exercisesTable.userId, req.userId),
+      )
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Не найдено" });
@@ -161,7 +191,7 @@ router.get(
       return;
     }
 
-    const userId = "";
+    const userId = req.userId;
     const profile = await getProfile(userId);
     const bodyWeightKg = profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
     const sex = profile.sex ?? FALLBACK_SEX;
@@ -184,7 +214,7 @@ router.get(
         and(
           eq(workoutSetsTable.exerciseId, exerciseId),
           isNotNull(workoutsTable.finishedAt),
-          eq(workoutsTable.userId, userId),
+          eq(workoutsTable.userId, req.userId),
         ),
       );
 
@@ -268,6 +298,7 @@ router.get(
         and(
           eq(workoutSetsTable.exerciseId, exerciseId),
           isNotNull(workoutsTable.finishedAt),
+          eq(workoutsTable.userId, req.userId),
         ),
       )
       .orderBy(desc(workoutsTable.startedAt), asc(workoutSetsTable.createdAt));

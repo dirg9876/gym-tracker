@@ -11,6 +11,7 @@ export type Equipment = (typeof EQUIPMENT_VALUES)[number];
 
 export const exercisesTable = pgTable("exercises", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   name: text("name").notNull(),
   muscleGroup: text("muscle_group").notNull(),
   isCustom: boolean("is_custom").notNull().default(false),
