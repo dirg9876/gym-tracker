@@ -375,7 +375,11 @@ export function Levels() {
                     <div className="text-xs text-muted-foreground line-clamp-2">
                       {lvl.description}
                     </div>
-                    {lvl.level > 0 && (
+                    {lvl.level === 0 ? (
+                      <div className="text-[10px] text-muted-foreground/50 mt-1">
+                        Без требований
+                      </div>
+                    ) : (
                       <div className="mt-1 space-y-0.5">
                         {stats.mainExercises.length < 3 ? (
                           <div className="text-[10px] text-amber-400/80">
