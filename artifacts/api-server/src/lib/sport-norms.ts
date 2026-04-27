@@ -1,23 +1,23 @@
 /**
  * Sport standards and rank definitions for the gym tracker level system.
  *
- * MS (Мастер спорта) standards:
- *   Big-3 (squat/bench/deadlift) — ФПР (Федерация Пауэрлифтинга России),
- *   ЕВСК 2024, классический пауэрлифтинг raw (без экипировки).
- *   Источник: https://fprussia.ru/informaciya/normativy/
+ * МСМК (Мастер спорта международного класса) standards:
+ *   Big-3 (squat/bench/deadlift) — WRPF (World Raw Powerlifting Federation),
+ *   классический пауэрлифтинг raw (с допинг-контролем).
+ *   Источник: https://frs24.ru (WRPF нормативы)
  *
- * All other exercises: empirical coefficients relative to the bench press MS
- *   target, based on Strength Level Elite-tier ratios (≈ MS equivalent).
+ * All other exercises: empirical coefficients relative to the bench press МСМК
+ *   target, based on Strength Level Elite-tier ratios (≈ МСМК equivalent).
  *   These are NOT official norms — they are coaching-table approximations.
  */
 
 export type Sex = "male" | "female";
 
 // ---------------------------------------------------------------------------
-// MS standards by weight class
+// МСМК standards by weight class (WRPF, с допинг-контролем)
 // ---------------------------------------------------------------------------
 
-interface MsRow {
+interface MsmcRow {
   weightClassKg: number;
   squat: number;
   bench: number;
@@ -25,29 +25,36 @@ interface MsRow {
 }
 
 /**
- * Classic raw powerlifting MS standards (men, women).
+ * Classic raw powerlifting МСМК standards (men, women) — WRPF.
  * The last entry in each array represents the "over" (open) weight class;
  * its weightClassKg is a practical anchor for interpolation purposes only.
  */
-const MS_STANDARDS: Record<Sex, MsRow[]> = {
+const MS_STANDARDS: Record<Sex, MsmcRow[]> = {
   male: [
-    { weightClassKg: 59,  squat: 167.5, bench: 115,   deadlift: 197.5 },
-    { weightClassKg: 66,  squat: 187.5, bench: 130,   deadlift: 217.5 },
-    { weightClassKg: 74,  squat: 207.5, bench: 147.5, deadlift: 237.5 },
-    { weightClassKg: 83,  squat: 227.5, bench: 165,   deadlift: 257.5 },
-    { weightClassKg: 93,  squat: 247.5, bench: 180,   deadlift: 280   },
-    { weightClassKg: 105, squat: 265,   bench: 195,   deadlift: 300   },
-    { weightClassKg: 120, squat: 285,   bench: 215,   deadlift: 320   },
-    { weightClassKg: 150, squat: 302.5, bench: 227.5, deadlift: 340   }, // 120+ class
+    { weightClassKg: 52,  squat: 162.5, bench: 110,   deadlift: 177.5 },
+    { weightClassKg: 56,  squat: 175,   bench: 120,   deadlift: 190   },
+    { weightClassKg: 60,  squat: 187.5, bench: 127.5, deadlift: 202.5 },
+    { weightClassKg: 67.5,squat: 207.5, bench: 142.5, deadlift: 222.5 },
+    { weightClassKg: 75,  squat: 222.5, bench: 155,   deadlift: 237.5 },
+    { weightClassKg: 82.5,squat: 235,   bench: 167.5, deadlift: 250   },
+    { weightClassKg: 90,  squat: 247.5, bench: 175,   deadlift: 262.5 },
+    { weightClassKg: 100, squat: 260,   bench: 185,   deadlift: 275   },
+    { weightClassKg: 110, squat: 267.5, bench: 195,   deadlift: 282.5 },
+    { weightClassKg: 125, squat: 280,   bench: 202.5, deadlift: 295   },
+    { weightClassKg: 140, squat: 287.5, bench: 210,   deadlift: 302.5 },
+    { weightClassKg: 150, squat: 295,   bench: 215,   deadlift: 310   }, // 140+ class
   ],
   female: [
-    { weightClassKg: 47,  squat: 100,   bench: 62.5,  deadlift: 120   },
-    { weightClassKg: 52,  squat: 115,   bench: 67.5,  deadlift: 137.5 },
-    { weightClassKg: 57,  squat: 125,   bench: 72.5,  deadlift: 150   },
-    { weightClassKg: 63,  squat: 140,   bench: 82.5,  deadlift: 167.5 },
-    { weightClassKg: 72,  squat: 155,   bench: 92.5,  deadlift: 185   },
-    { weightClassKg: 84,  squat: 170,   bench: 102.5, deadlift: 200   },
-    { weightClassKg: 120, squat: 182.5, bench: 112.5, deadlift: 215   }, // 84+ class
+    { weightClassKg: 44,  squat: 95,    bench: 55,    deadlift: 115   },
+    { weightClassKg: 48,  squat: 107.5, bench: 60,    deadlift: 127.5 },
+    { weightClassKg: 52,  squat: 115,   bench: 67.5,  deadlift: 135   },
+    { weightClassKg: 56,  squat: 125,   bench: 72.5,  deadlift: 145   },
+    { weightClassKg: 60,  squat: 130,   bench: 77.5,  deadlift: 150   },
+    { weightClassKg: 67.5,squat: 140,   bench: 85,    deadlift: 160   },
+    { weightClassKg: 75,  squat: 150,   bench: 92.5,  deadlift: 170   },
+    { weightClassKg: 82.5,squat: 155,   bench: 97.5,  deadlift: 175   },
+    { weightClassKg: 90,  squat: 162.5, bench: 102.5, deadlift: 182.5 },
+    { weightClassKg: 110, squat: 167.5, bench: 107.5, deadlift: 187.5 }, // 90+ class
   ],
 };
 
@@ -65,7 +72,7 @@ export function getWeightClassKg(bodyWeightKg: number, sex: Sex): number {
 }
 
 /**
- * Returns interpolated MS kg values for the three classic lifts.
+ * Returns interpolated МСМК kg values for the three classic lifts.
  * Athletes between weight classes get linearly interpolated targets so the
  * formula is continuous, not step-wise.
  */
@@ -115,18 +122,18 @@ type NormConfig =
 
 /**
  * Norm config for each known exercise.
- * "classic" — uses the official MS table directly.
- * "coefficient" — ratio of an anchor classic lift's MS value.
+ * "classic" — uses the official МСМК table directly.
+ * "coefficient" — ratio of an anchor classic lift's МСМК value.
  * "bodyweight_ratio" — ratio of the athlete's bodyweight (e.g. weighted pull-ups).
  * "time_based" — time-based target, no kg norm.
  */
 const EXERCISE_NORMS: Record<string, NormConfig> = {
-  // Big 3 — official MS standards
+  // Big 3 — official МСМК standards
   "Приседания со штангой":          { kind: "classic",      lift: "squat" },
   "Жим штанги лёжа":                { kind: "classic",      lift: "bench" },
   "Становая тяга":                  { kind: "classic",      lift: "deadlift" },
 
-  // Barbell accessories — coefficient of bench/deadlift MS
+  // Barbell accessories — coefficient of bench/deadlift МСМК
   "Жим штанги на наклонной скамье": { kind: "coefficient",  anchor: "bench",    ratio: 0.85 },
   "Тяга штанги в наклоне":          { kind: "coefficient",  anchor: "bench",    ratio: 0.85 },
   "Жим штанги стоя":                { kind: "coefficient",  anchor: "bench",    ratio: 0.65 },
@@ -134,7 +141,7 @@ const EXERCISE_NORMS: Record<string, NormConfig> = {
   "Румынская тяга":                 { kind: "coefficient",  anchor: "deadlift", ratio: 0.75 },
   "Французский жим":                { kind: "coefficient",  anchor: "bench",    ratio: 0.55 },
 
-  // Dumbbell — per-dumbbell target, coefficient of bench/squat MS
+  // Dumbbell — per-dumbbell target, coefficient of bench/squat МСМК
   "Жим гантелей лёжа":              { kind: "coefficient",  anchor: "bench",    ratio: 0.40 },
   "Жим гантелей сидя":              { kind: "coefficient",  anchor: "bench",    ratio: 0.30 },
   "Тяга гантели одной рукой":       { kind: "coefficient",  anchor: "bench",    ratio: 0.45 },
@@ -145,7 +152,7 @@ const EXERCISE_NORMS: Record<string, NormConfig> = {
   "Молотки с гантелями":            { kind: "coefficient",  anchor: "bench",    ratio: 0.28 },
   "Выпады с гантелями":             { kind: "coefficient",  anchor: "squat",    ratio: 0.25 },
 
-  // Machine / cable — coefficient of bench or squat MS
+  // Machine / cable — coefficient of bench or squat МСМК
   "Тяга верхнего блока":            { kind: "coefficient",  anchor: "bench",    ratio: 0.75 },
   "Тяга горизонтального блока":     { kind: "coefficient",  anchor: "bench",    ratio: 0.75 },
   "Разгибания на блоке":            { kind: "coefficient",  anchor: "bench",    ratio: 0.40 },
@@ -154,7 +161,7 @@ const EXERCISE_NORMS: Record<string, NormConfig> = {
   "Разгибания ног сидя":            { kind: "coefficient",  anchor: "squat",    ratio: 0.45 },
   "Подъёмы на носки":               { kind: "coefficient",  anchor: "squat",    ratio: 0.60 },
 
-  // Bodyweight — total weight (bodyweight + extra load) ratio at MS
+  // Bodyweight — total weight (bodyweight + extra load) ratio at МСМК
   "Подтягивания":                   { kind: "bodyweight_ratio", ratio: 1.65 },
   "Отжимания узким хватом":         { kind: "bodyweight_ratio", ratio: 1.00 },
   "Отжимания на брусьях":           { kind: "bodyweight_ratio", ratio: 1.30 },
@@ -212,14 +219,14 @@ export type McSource =
   | "muscle_group_anchor";
 
 export type McResult = {
-  /** MS-equivalent kg for this exercise. null for time-based exercises. */
+  /** МСМК-equivalent kg for this exercise. null for time-based exercises. */
   kg: number | null;
   source: McSource;
 };
 
 /**
- * Returns the Master-of-Sport (МС) equivalent kg target for an exercise,
- * given the athlete's bodyweight and sex.
+ * Returns the МСМК (Мастер спорта международного класса) equivalent kg target
+ * for an exercise, given the athlete's bodyweight and sex.
  *
  * Lookup order:
  *  1. EXERCISE_NORMS exact name match.
@@ -273,7 +280,7 @@ export function getMcKgForExercise(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the full 9-step rank threshold array for an exercise given its mcKg.
+ * Returns the full 10-step rank threshold array for an exercise given its mcKg.
  * Each entry gives the minimum kg lift needed to reach that rank.
  * Thresholds mirror rankForMcPercent boundaries; kgTarget rounded to 2.5 kg.
  */
@@ -285,11 +292,12 @@ export function getRankNormsForExercise(
     { pct: 0.10, rankIdx: 1 }, // Юн III
     { pct: 0.22, rankIdx: 2 }, // Юн II
     { pct: 0.35, rankIdx: 3 }, // Юн I
-    { pct: 0.47, rankIdx: 4 }, // III разряд
-    { pct: 0.60, rankIdx: 5 }, // II разряд
-    { pct: 0.72, rankIdx: 6 }, // I разряд
-    { pct: 0.84, rankIdx: 7 }, // КМС
-    { pct: 0.95, rankIdx: 8 }, // МС
+    { pct: 0.52, rankIdx: 4 }, // III разряд
+    { pct: 0.59, rankIdx: 5 }, // II разряд
+    { pct: 0.67, rankIdx: 6 }, // I разряд
+    { pct: 0.75, rankIdx: 7 }, // КМС
+    { pct: 0.87, rankIdx: 8 }, // МС
+    { pct: 0.95, rankIdx: 9 }, // МСМК
   ];
 
   return THRESHOLDS.map(({ pct, rankIdx }) => ({
@@ -311,15 +319,16 @@ export type SportRankCode =
   | "II_RAZRYAD"
   | "I_RAZRYAD"
   | "KMS"
-  | "MS";
+  | "MS"
+  | "MSMC";
 
 export interface SportRank {
   code: SportRankCode;
-  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС" */
+  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС", "МСМК" */
   label: string;
-  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС" */
+  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС", "МСМК" */
   shortLabel: string;
-  /** 0 (lowest) to 8 (highest) — for ordering and colour mapping */
+  /** 0 (lowest) to 9 (highest) — for ordering and colour mapping */
   tier: number;
   /** Minimum level to display this rank on the ladder */
   minLevel: number;
@@ -336,6 +345,7 @@ const RANK_LADDER: SportRank[] = [
   { code: "I_RAZRYAD",   label: "I разряд",        shortLabel: "I р.",   tier: 6, minLevel: 58 },
   { code: "KMS",         label: "КМС",             shortLabel: "КМС",    tier: 7, minLevel: 67 },
   { code: "MS",          label: "МС",              shortLabel: "МС",     tier: 8, minLevel: 76 },
+  { code: "MSMC",        label: "МСМК",            shortLabel: "МСМК",   tier: 9, minLevel: 78 },
 ];
 
 /** Returns the sport rank that corresponds to a given level (0–80). */
@@ -349,14 +359,15 @@ export function rankForLevel(level: number): SportRank {
 
 /**
  * Returns the sport rank corresponding to a performance ratio relative to the
- * MC standard (0.0 = nothing, 1.0 = full MS).
+ * МСМК standard (0.0 = nothing, 1.0 = full МСМК).
  */
 export function rankForMcPercent(pct: number): SportRank {
-  if (pct >= 0.95) return RANK_LADDER[8]!; // МС
-  if (pct >= 0.84) return RANK_LADDER[7]!; // КМС
-  if (pct >= 0.72) return RANK_LADDER[6]!; // I разряд
-  if (pct >= 0.60) return RANK_LADDER[5]!; // II разряд
-  if (pct >= 0.47) return RANK_LADDER[4]!; // III разряд
+  if (pct >= 0.95) return RANK_LADDER[9]!; // МСМК
+  if (pct >= 0.87) return RANK_LADDER[8]!; // МС
+  if (pct >= 0.75) return RANK_LADDER[7]!; // КМС
+  if (pct >= 0.67) return RANK_LADDER[6]!; // I разряд
+  if (pct >= 0.59) return RANK_LADDER[5]!; // II разряд
+  if (pct >= 0.52) return RANK_LADDER[4]!; // III разряд
   if (pct >= 0.35) return RANK_LADDER[3]!; // Юн I
   if (pct >= 0.22) return RANK_LADDER[2]!; // Юн II
   if (pct >= 0.10) return RANK_LADDER[1]!; // Юн III

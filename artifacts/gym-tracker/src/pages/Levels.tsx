@@ -33,11 +33,12 @@ const RANK_THRESHOLDS_DESC: Array<{
   tier: number;
   cls: string;
 }> = [
-  { pct: 0.95, code: "MS",    shortLabel: "МС",     label: "Мастер спорта",          tier: 8, cls: "bg-yellow-800/70 text-yellow-200 border-yellow-400/70" },
-  { pct: 0.84, code: "KMS",   shortLabel: "КМС",    label: "Кандидат в мастера",      tier: 7, cls: "bg-yellow-900/60 text-yellow-300 border-yellow-500/60" },
-  { pct: 0.72, code: "I",     shortLabel: "I р.",   label: "I разряд",                tier: 6, cls: "bg-gray-600/60 text-gray-100 border-gray-300/50" },
-  { pct: 0.60, code: "II",    shortLabel: "II р.",  label: "II разряд",               tier: 5, cls: "bg-gray-700/60 text-gray-200 border-gray-400/50" },
-  { pct: 0.47, code: "III",   shortLabel: "III р.", label: "III разряд",              tier: 4, cls: "bg-orange-950/70 text-orange-300 border-orange-600/50" },
+  { pct: 0.95, code: "MSMC",  shortLabel: "МСМК",   label: "МСМК",                   tier: 9, cls: "bg-amber-400/20 text-amber-200 border-amber-300/80" },
+  { pct: 0.87, code: "MS",    shortLabel: "МС",     label: "Мастер спорта",           tier: 8, cls: "bg-yellow-800/70 text-yellow-200 border-yellow-400/70" },
+  { pct: 0.75, code: "KMS",   shortLabel: "КМС",    label: "Кандидат в мастера",      tier: 7, cls: "bg-yellow-900/60 text-yellow-300 border-yellow-500/60" },
+  { pct: 0.67, code: "I",     shortLabel: "I р.",   label: "I разряд",                tier: 6, cls: "bg-gray-600/60 text-gray-100 border-gray-300/50" },
+  { pct: 0.59, code: "II",    shortLabel: "II р.",  label: "II разряд",               tier: 5, cls: "bg-gray-700/60 text-gray-200 border-gray-400/50" },
+  { pct: 0.52, code: "III",   shortLabel: "III р.", label: "III разряд",              tier: 4, cls: "bg-orange-950/70 text-orange-300 border-orange-600/50" },
   { pct: 0.35, code: "YUN1",  shortLabel: "Юн I",  label: "Юношеский I разряд",      tier: 3, cls: "bg-stone-700/60 text-stone-200 border-stone-500/50" },
   { pct: 0.22, code: "YUN2",  shortLabel: "Юн II", label: "Юношеский II разряд",     tier: 2, cls: "bg-slate-700/60 text-slate-300 border-slate-500/50" },
   { pct: 0.10, code: "YUN3",  shortLabel: "Юн III",label: "Юношеский III разряд",    tier: 1, cls: "bg-slate-700/60 text-slate-300 border-slate-500/50" },
@@ -53,7 +54,7 @@ function exerciseRankFromStats(maxWeightKg: number, mcKg: number | null): typeof
 function nextRankFromStats(maxWeightKg: number, mcKg: number | null): { label: string; kgTarget: number } | null {
   if (mcKg == null || mcKg <= 0) return null;
   const cur = exerciseRankFromStats(maxWeightKg, mcKg);
-  if (!cur || cur.code === "MS") return null;
+  if (!cur || cur.code === "MSMC") return null;
   const curIdx = RANK_THRESHOLDS_DESC.findIndex((r) => r.code === cur.code);
   const nextEntry = RANK_THRESHOLDS_DESC[curIdx - 1]; // one step higher
   if (!nextEntry) return null;
@@ -666,13 +667,13 @@ function LevelDetailDialog({
                               if (ex.maxWeightKg >= ex.mcKg) {
                                 return (
                                   <div className="text-[10px] text-primary/70">
-                                    МС достигнут ✓
+                                    МСМК достигнут ✓
                                   </div>
                                 );
                               }
                               return (
                                 <div className="text-[10px] text-muted-foreground/70">
-                                  до МС: {formatKg(ex.mcKg)}
+                                  до МСМК: {formatKg(ex.mcKg)}
                                 </div>
                               );
                             })()}

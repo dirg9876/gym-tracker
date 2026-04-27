@@ -39,9 +39,10 @@ const EXERCISES_PER_WORKOUT = 5;
 const SETS_PER_EXERCISE = 5;
 const REPS_PER_SET = 9;
 
-// Anchor: at level 80 (МС — Мастер спорта) the level factor is 1.0,
-// meaning the per-exercise MC target equals the full MS kg norm for the user's
-// weight class. All lower levels scale linearly: required_kg = mc_kg × level/80.
+// Anchor: at level 80 (МСМК — Мастер спорта международного класса) the level
+// factor is 1.0, meaning the per-exercise МСМК target equals the full МСМК kg
+// norm for the user's weight class. All lower levels scale linearly:
+// required_kg = mc_kg × level/80.
 export const LEVEL_FACTOR_ANCHOR = 80;
 
 // Standard Olympic bar weight. Barbell exercises whose required kg falls below

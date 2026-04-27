@@ -252,7 +252,7 @@ export function Exercises() {
                             <span className="min-w-0 break-words font-medium text-lg leading-tight">{ex.name}</span>
                             {ex.isMain && ex.mcKg != null && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 shrink-0">
-                                МС: {Math.round(ex.mcKg)} кг
+                                МСМК: {Math.round(ex.mcKg)} кг
                               </span>
                             )}
                           </div>

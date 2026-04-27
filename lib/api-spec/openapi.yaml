@@ -988,10 +988,10 @@ components:
 
     SportRankCode:
       type: string
-      enum: [NONE, YOUTH_III, YOUTH_II, YOUTH_I, III_RAZRYAD, II_RAZRYAD, I_RAZRYAD, KMS, MS]
+      enum: [NONE, YOUTH_III, YOUTH_II, YOUTH_I, III_RAZRYAD, II_RAZRYAD, I_RAZRYAD, KMS, MS, MSMC]
       description: >-
         Sport rank classification code. Ordered from NONE (beginner, LVL 0) to
-        MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
+        MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.
 
     SportRank:
       type: object
@@ -1000,13 +1000,13 @@ components:
           $ref: "#/components/schemas/SportRankCode"
         label:
           type: string
-          description: Full Russian label, e.g. "III юн. разряд", "КМС", "МС".
+          description: Full Russian label, e.g. "III юн. разряд", "КМС", "МС", "МСМК".
         shortLabel:
           type: string
-          description: Short label for compact UI, e.g. "Юн III", "I р.", "КМС".
+          description: Short label for compact UI, e.g. "Юн III", "I р.", "КМС", "МСМК".
         tier:
           type: integer
-          description: 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.
+          description: 0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.
         minLevel:
           type: integer
           description: Minimum level to display this rank on the ladder.

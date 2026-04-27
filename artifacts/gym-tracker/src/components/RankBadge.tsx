@@ -12,6 +12,7 @@ const TIER_STYLES: Record<number, { bg: string; text: string; border: string }> 
   6: { bg: "bg-gray-600/60",   text: "text-gray-100",   border: "border-gray-300/50"   }, // I разряд
   7: { bg: "bg-yellow-900/60", text: "text-yellow-300", border: "border-yellow-500/60" }, // КМС
   8: { bg: "bg-yellow-800/70", text: "text-yellow-200", border: "border-yellow-400/70" }, // МС
+  9: { bg: "bg-amber-400/20",  text: "text-amber-200",  border: "border-amber-300/80"  }, // МСМК
 };
 
 /** Dot separator shown between rank thresholds in the ladder. */
@@ -27,7 +28,7 @@ export function RankDivider({ label }: { label: string }) {
   );
 }
 
-/** Inline badge showing the rank shortLabel (e.g. "Юн III", "КМС", "МС"). */
+/** Inline badge showing the rank shortLabel (e.g. "Юн III", "КМС", "МС", "МСМК"). */
 export function RankBadge({
   rank,
   variant = "default",

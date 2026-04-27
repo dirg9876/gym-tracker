@@ -52,8 +52,8 @@ function RankLadder({
             до {nextRank.shortLabel}: +{formatKg(kgToNextRank)}
           </span>
         )}
-        {!nextRank && currentRank?.code === "MS" && (
-          <span className="text-xs text-primary font-medium">Норматив МС выполнен!</span>
+        {!nextRank && currentRank?.code === "MSMC" && (
+          <span className="text-xs text-primary font-medium">Норматив МСМК выполнен!</span>
         )}
       </div>
 
@@ -97,7 +97,7 @@ function RankLadder({
       </div>
 
       <div className="text-[10px] text-muted-foreground/60 text-center">
-        Норматив МС: {formatKg(mcKg)}
+        Норматив МСМК: {formatKg(mcKg)}
       </div>
     </div>
   );

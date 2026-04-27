@@ -56,30 +56,36 @@ an hourglass hint showing how many days until the earliest qualifying set expire
 
 ### Sport Rank System
 
-Level 80 = МС (Мастер спорта) anchor. Per-exercise required weight is:
-`mcKg × (level / 80)` where `mcKg` is the Master-of-Sport target for the
-athlete's weight class and sex (official ФПР/ЕВСК 2024 raw powerlifting norms
-for the Big 3; coaching-table coefficients for accessories).
+Level 80 = МСМК (Мастер спорта международного класса) anchor. Per-exercise
+required weight is: `mcKg × (level / 80)` where `mcKg` is the МСМК target for
+the athlete's weight class and sex (official WRPF raw powerlifting norms for the
+Big 3 with doping control; coaching-table coefficients for accessories).
 
 Norm derivation is in `artifacts/api-server/src/lib/sport-norms.ts`:
-- `MS_STANDARDS` — official raw PL norms by weight class (male/female)
-- `EXERCISE_NORMS` — "classic" (official), "coefficient" (ratio of Big-3 MS), 
+- `MS_STANDARDS` — WRPF МСМК raw PL norms by weight class (male/female).
+  Men: 12 classes (52–140+ kg). Women: 10 classes (44–90+ kg).
+- `EXERCISE_NORMS` — "classic" (official), "coefficient" (ratio of Big-3 МСМК),
   "bodyweight_ratio", or "time_based" (e.g. Планка = auto-pass)
 - `getMcKgForExercise()` — returns mcKg + mcSource for any exercise
-- `rankForLevel()` — maps level → SportRank (9 tiers: NONE → MS)
+- `rankForLevel()` — maps level → SportRank (10 tiers: NONE → MSMC)
+- `rankForMcPercent()` — maps lift % of МСМК → SportRank
 
-Rank thresholds: lvl 0–9 = Без разряда, 10 = Юн III, 20 = Юн II, 30 = Юн I,
-40 = III р., 50 = II р., 60 = I р., 70 = КМС, 76–80 = МС.
+Rank thresholds (% of МСМК): МСМК ≥ 95%, МС ≥ 87%, КМС ≥ 75%, I р. ≥ 67%,
+II р. ≥ 59%, III р. ≥ 52%, Юн I ≥ 35%, Юн II ≥ 22%, Юн III ≥ 10%.
+
+Level ladder: lvl 0–7 = Б/Р, 8 = Юн III, 18 = Юн II, 28 = Юн I,
+38 = III р., 48 = II р., 58 = I р., 67 = КМС, 76 = МС, 78–80 = МСМК.
 
 `profile.sex` (male/female, default male) is stored in `app_meta` and used to
-select the correct MS standards table for weight-class lookup.
+select the correct МСМК standards table for weight-class lookup.
 
 The frontend displays:
 - `RankBadge` (compact/hero/default) and `RankDivider` in
-  `artifacts/gym-tracker/src/components/RankBadge.tsx`
+  `artifacts/gym-tracker/src/components/RankBadge.tsx` — tier 9 (МСМК) uses
+  amber gold styling distinct from tier 8 (МС)
 - Hero card shows current rank badge + weight class
 - Level ladder shows compact rank badge per row + RankDivider at rank transitions
-- Level detail dialog shows rank badge in header + "Норматив МС: X кг" per exercise
+- Level detail dialog shows rank badge in header + "Норматив МСМК: X кг" per exercise
 
 Sprites: 9 tier sprites at `artifacts/gym-tracker/src/assets/levels/tier-N.png`
 plus per-level images `level-0.png` … `level-80.png` (all 81 generated). The

@@ -23,7 +23,7 @@ export const Equipment = {
 } as const;
 
 /**
- * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
+ * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.
  */
 export type SportRankCode = (typeof SportRankCode)[keyof typeof SportRankCode];
 
@@ -37,15 +37,16 @@ export const SportRankCode = {
   I_RAZRYAD: "I_RAZRYAD",
   KMS: "KMS",
   MS: "MS",
+  MSMC: "MSMC",
 } as const;
 
 export interface SportRank {
   code: SportRankCode;
-  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС". */
+  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС", "МСМК". */
   label: string;
-  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС". */
+  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС", "МСМК". */
   shortLabel: string;
-  /** 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping. */
+  /** 0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping. */
   tier: number;
   /** Minimum level to display this rank on the ladder. */
   minLevel: number;
