@@ -55,3 +55,4 @@ externalPort = 3000
 [userenv.shared]
 VITE_CLERK_PUBLISHABLE_KEY = "pk_test_bG92ZWQtbWFudGlzLTkzLmNsZXJrLmFjY291bnRzLmRldiQ"
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_bG92ZWQtbWFudGlzLTkzLmNsZXJrLmFjY291bnRzLmRldiQ"
+ADMIN_USER_ID = "user_3CtGEBE9BbJHCtWlcUi1jo0WuXK"
