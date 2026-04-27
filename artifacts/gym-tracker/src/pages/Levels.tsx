@@ -387,7 +387,7 @@ export function Levels() {
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                            {stats.mainExercises.map((e) => {
+                            {stats.mainExercises.slice(0, 3).map((e) => {
                               const isTimeBased = e.autoPassedReason === "time_based_exercise";
                               const req = isTimeBased
                                 ? 0
@@ -471,16 +471,20 @@ function requiredKgFor(
   return Math.max(MIN_REQUIRED_KG, roundTo(raw, ROUND_STEP_KG));
 }
 
-// Drop common filler words that don't add meaning in a short label,
-// then take the first two content words (max 14 chars total with ellipsis).
-const FILLER_WORDS = new Set([
-  "штанги", "гантелей", "гантели", "штангой",
-  "со", "в", "на", "по", "с",
-]);
+// Produce a compact label for an exercise name.
+// Barbell is the default → remove "штанги"/"штангой" (no info added).
+// Dumbbell is distinctive → replace "гантелей"/"гантели" with "ганд.".
+// Prepositions/service words → remove.
+// Positional words (лёжа, стоя, сидя …) → keep, they differentiate variants.
+const ABBREV_REMOVE = new Set(["штанги", "штангой", "со", "в", "на", "по", "с", "одной"]);
+const ABBREV_REPLACE: Record<string, string> = { гантелей: "ганд.", гантели: "ганд." };
 function abbreviateExercise(name: string): string {
-  const words = name
-    .split(/\s+/)
-    .filter((w) => !FILLER_WORDS.has(w.toLowerCase()));
+  const words = name.split(/\s+/).flatMap((w) => {
+    const lower = w.toLowerCase();
+    if (ABBREV_REMOVE.has(lower)) return [];
+    if (ABBREV_REPLACE[lower]) return [ABBREV_REPLACE[lower]!];
+    return [w];
+  });
   const short = words.slice(0, 2).join(" ");
   return short.length > 14 ? short.slice(0, 13) + "…" : short;
 }
