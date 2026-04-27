@@ -180,6 +180,31 @@ export function Levels() {
                   {current.level}
                 </div>
               </div>
+
+              {/* Per-exercise sport rank badges */}
+              {(() => {
+                const exerciseRanks = stats.mainExercises
+                  .filter((e) => (e.mcKg ?? 0) > 0)
+                  .map((e) => ({ name: abbreviateExercise(e.name), rank: exerciseRankFromStats(e.maxWeightKg, e.mcKg) }))
+                  .filter((e): e is { name: string; rank: NonNullable<ReturnType<typeof exerciseRankFromStats>> } => e.rank != null);
+                if (exerciseRanks.length === 0) return null;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15, duration: 0.3 }}
+                    className="flex flex-wrap justify-center gap-2"
+                  >
+                    {exerciseRanks.map(({ name, rank }) => (
+                      <div key={name} className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground/60 font-medium">{name}</span>
+                        <RankBadge rank={rank as unknown as SportRank} variant="compact" />
+                      </div>
+                    ))}
+                  </motion.div>
+                );
+              })()}
+
               <div className="text-2xl font-bold">{current.name}</div>
               <RankBadge rank={currentRank} variant="hero" />
               {currentRank.code !== "NONE" && (
