@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Тренировки (Android)",
-    "slug": "gym-tracker-mobile",
-    "version": "1.0.0",
+    "name": "Gym-Beam",
+    "slug": "gym-beam",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gym-tracker-mobile",
+    "scheme": "gymbeam",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -18,7 +18,14 @@
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#0a0a0a"
+      "package": "com.dirg9876.gymbeam",
+      "versionCode": 2,
+      "backgroundColor": "#0a0a0a",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -36,6 +43,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "dabd3128-415f-4a2f-8c73-3b0a52585149"
+      }
+    },
+    "owner": "dirg9508"
   }
 }
