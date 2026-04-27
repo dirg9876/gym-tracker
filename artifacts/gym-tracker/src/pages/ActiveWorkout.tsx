@@ -60,9 +60,14 @@ export function ActiveWorkout() {
   const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
   const isBwSelected = isBodyweight(selectedExercise?.equipment);
 
-  // Fetch rank norms for selected exercise (skip for bodyweight exercises — no rank norms apply).
+  // Fetch rank norms for selected exercise (skip for bodyweight and time-based exercises).
+  // `selectedExercise?.mcKg != null` is null/undefined for time-based exercises, avoiding
+  // unnecessary network calls for exercises that will never have rank norms.
   const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
-    query: { enabled: !!selectedExerciseId && !isBwSelected, staleTime: 5 * 60 * 1000 },
+    query: {
+      enabled: !!selectedExerciseId && !isBwSelected && selectedExercise?.mcKg != null,
+      staleTime: 5 * 60 * 1000,
+    },
   });
 
   // Derive the rank achieved by the current weight and the next-rank hint (if ≤ 15 kg away).
