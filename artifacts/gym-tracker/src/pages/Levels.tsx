@@ -376,12 +376,40 @@ export function Levels() {
                       {lvl.description}
                     </div>
                     {lvl.level > 0 && (
-                      <div className="text-[11px] text-muted-foreground/80 mt-1">
-                        {bodyWeightIsFallback
-                          ? `3 упр. по нормативу (укажи вес — сейчас расчёт по ${formatNumber(bodyWeightKg)} кг)`
-                          : `3 упр. по нормативу для ${formatNumber(bodyWeightKg)} кг`}
-                        {" · Тоннаж "}
-                        {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                      <div className="mt-1 space-y-0.5">
+                        {stats.mainExercises.length < 3 ? (
+                          <div className="text-[10px] text-amber-400/80">
+                            Выбери ≥ 3 основных упражнения на странице «Упражнения»
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                            {stats.mainExercises.map((e) => {
+                              const isTimeBased = e.autoPassedReason === "time_based_exercise";
+                              const req = !isTimeBased
+                                ? requiredKgFor(lvl.level, bodyWeightKg, e.multiplier, levelFactorAnchor)
+                                : 0;
+                              const autoPassed = e.autoPassedReason != null;
+                              const passed = autoPassed || (req > 0 && e.maxWeightKg >= req);
+                              const short = abbreviateExercise(e.name);
+                              return (
+                                <span
+                                  key={e.exerciseId}
+                                  className={`text-[10px] leading-tight ${passed ? "text-primary" : "text-muted-foreground/60"}`}
+                                >
+                                  {passed && "✓ "}
+                                  {short}
+                                  {!autoPassed && req > 0 && `: ${formatNumber(req)} кг`}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-muted-foreground/60">
+                          {bodyWeightIsFallback && (
+                            <span className="text-amber-400/70">расчёт по {formatNumber(bodyWeightKg)} кг · </span>
+                          )}
+                          Тоннаж: {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                        </div>
                       </div>
                     )}
                   </div>
@@ -436,6 +464,20 @@ function requiredKgFor(
   if (multiplier <= 0 || level <= 0) return 0;
   const raw = bodyWeightKg * levelFactorFor(level, anchor) * multiplier;
   return Math.max(MIN_REQUIRED_KG, roundTo(raw, ROUND_STEP_KG));
+}
+
+// Drop common filler words that don't add meaning in a short label,
+// then take the first two content words (max 14 chars total with ellipsis).
+const FILLER_WORDS = new Set([
+  "штанги", "гантелей", "гантели", "штангой",
+  "со", "в", "на", "по", "с",
+]);
+function abbreviateExercise(name: string): string {
+  const words = name
+    .split(/\s+/)
+    .filter((w) => !FILLER_WORDS.has(w.toLowerCase()));
+  const short = words.slice(0, 2).join(" ");
+  return short.length > 14 ? short.slice(0, 13) + "…" : short;
 }
 
 function LevelDetailDialog({
