@@ -21,9 +21,23 @@ import { ToastProvider } from "@/components/Toast";
 import colors from "@/constants/colors";
 import { queryClient } from "@/lib/queryClient";
 
-const domain = process.env.EXPO_PUBLIC_DOMAIN;
-if (domain) {
-  setBaseUrl(`https://${domain}`);
+function normalizeApiOrigin(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  return withProtocol.replace(/\/+$/, "");
+}
+
+const apiOrigin =
+  normalizeApiOrigin(process.env.EXPO_PUBLIC_API_ORIGIN) ??
+  normalizeApiOrigin(process.env.EXPO_PUBLIC_DOMAIN);
+
+if (apiOrigin) {
+  setBaseUrl(apiOrigin);
 }
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
