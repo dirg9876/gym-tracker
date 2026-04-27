@@ -12,9 +12,9 @@ interface PRBadgeProps {
 
 const labels: Record<string, string> = {
   tonnage: "Новый рекорд тоннажа",
-  reps: "Рекорд повторений",
+  reps: "Рекорд повторений за тренировку",
   max_weight: "Новый максимальный вес",
-  max_reps: "Рекорд повторений (упражнение)",
+  max_reps: "Рекорд повторений в упражнении",
   max_volume_set: "Рекорд объема в подходе"
 };
 

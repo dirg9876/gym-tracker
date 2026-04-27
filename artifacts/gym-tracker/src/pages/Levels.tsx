@@ -699,7 +699,7 @@ function LevelDetailDialog({
                               if (nr) {
                                 return (
                                   <div className="text-[10px] text-muted-foreground/70">
-                                    до {nr.label}: {formatKg(nr.kgTarget)}
+                                    {nr.label}: {formatKg(nr.kgTarget)}
                                   </div>
                                 );
                               }
@@ -712,7 +712,7 @@ function LevelDetailDialog({
                               }
                               return (
                                 <div className="text-[10px] text-muted-foreground/70">
-                                  до МСМК: {formatKg(ex.mcKg)}
+                                  МСМК: {formatKg(ex.mcKg)}
                                 </div>
                               );
                             })()}

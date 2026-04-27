@@ -113,7 +113,7 @@ export function WorkoutComparisonPanel({ workoutId }: Props) {
               <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
                 <span className="min-w-0 flex-1 break-words">
                   Макс: {formatKg(ex.currentMaxWeight)}
-                  {ex.previousMaxWeight > 0 ? ` / было ${formatKg(ex.previousMaxWeight)}` : ""}
+                  {ex.previousMaxWeight > 0 ? ` (было ${formatKg(ex.previousMaxWeight)})` : ""}
                 </span>
                 {ex.deltaMaxWeight !== 0 && (
                   <DeltaPill delta={ex.deltaMaxWeight} formatFn={formatKg} />
