@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   useGetWorkout,
   useListExercises,
   useGetLevels,
+  useGetExerciseNorms,
   useAddSet,
   useDeleteSet,
   useFinishWorkout,
@@ -16,6 +17,7 @@ import {
   type PlannedExercise,
   type WorkoutSet,
 } from "@workspace/api-client-react";
+import { RankBadge } from "@/components/RankBadge";
 import { isBodyweight } from "@/lib/equipment";
 import { Link } from "wouter";
 import { AlertTriangle } from "lucide-react";
@@ -57,6 +59,27 @@ export function ActiveWorkout() {
 
   const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
   const isBwSelected = isBodyweight(selectedExercise?.equipment);
+
+  // Fetch rank norms for selected exercise (skip for bodyweight exercises — no rank norms apply).
+  const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
+    query: { enabled: !!selectedExerciseId && !isBwSelected, staleTime: 5 * 60 * 1000 },
+  });
+
+  // Derive the rank achieved by the current weight and the next-rank hint (if ≤ 15 kg away).
+  const rankHint = useMemo(() => {
+    const norms = exerciseNorms?.rankNorms;
+    if (!norms?.length || isBwSelected) return null;
+    // rankNorms is ascending: Б/Р (kgTarget≈0) → МСМК (highest kgTarget).
+    let achievedIdx = -1;
+    for (let i = 0; i < norms.length; i++) {
+      if (weight >= norms[i]!.kgTarget) achievedIdx = i;
+    }
+    const achieved = achievedIdx >= 0 ? norms[achievedIdx]! : null;
+    const nextEntry = achievedIdx < norms.length - 1 ? norms[achievedIdx + 1]! : null;
+    const delta = nextEntry ? Math.ceil(nextEntry.kgTarget - weight) : null;
+    const showNext = delta !== null && delta > 0 && delta <= 15;
+    return { achieved, next: showNext ? nextEntry : null, delta: showNext ? delta : null };
+  }, [exerciseNorms, weight, isBwSelected]);
 
   // When the user switches the picker to a bodyweight exercise, reset the
   // weight stepper to 0 — for bodyweight exercises the field means "extra
@@ -276,6 +299,28 @@ export function ActiveWorkout() {
             min={0}
             chips={isBwSelected ? [0, 5, 10, 15, 20] : [20, 40, 60, 80, 100]}
           />
+
+          {/* Rank hint: shown only for non-bodyweight exercises with norms */}
+          <AnimatePresence mode="wait">
+            {rankHint?.achieved && (
+              <motion.div
+                key={rankHint.achieved.rank.code}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="-mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              >
+                <RankBadge rank={rankHint.achieved.rank} variant="compact" />
+                {rankHint.next && rankHint.delta !== null && (
+                  <span className="text-muted-foreground/60">
+                    · до {rankHint.next.rank.shortLabel}: +{rankHint.delta} кг
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {isBwSelected && bodyWeightKg > 0 && (
             <div className="-mt-3 text-xs text-muted-foreground">
               = {formatNumber(weight)} + {formatNumber(bodyWeightKg)} кг с собственным весом
