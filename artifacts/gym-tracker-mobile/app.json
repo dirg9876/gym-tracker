@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.dirg9876.gymbeam",
-      "versionCode": 2,
+      "versionCode": 3,
       "backgroundColor": "#0a0a0a",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
@@ -38,7 +38,19 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "exclude": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
+            }
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
