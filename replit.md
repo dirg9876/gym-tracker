@@ -75,7 +75,7 @@ II р. ≥ 59%, III р. ≥ 52%, Юн I ≥ 35%, Юн II ≥ 22%, Юн III ≥ 1
 
 Level ladder (minLevel per rank, consistent with ceil(pct × 80)):
   lvl 0 = Б/Р, 8 = Юн III, 18 = Юн II, 28 = Юн I,
-  42 = III р., 48 = II р., 54 = I р., 60 = КМС, 70 = МС, 76–80 = МСМК.
+  42 = III р., 48 = II р., 54 = I р., 60 = КМС, 70 = МС, 78–80 = МСМК.
 
 `profile.sex` (male/female, default male) is stored in `app_meta` and used to
 select the correct МСМК standards table for weight-class lookup.

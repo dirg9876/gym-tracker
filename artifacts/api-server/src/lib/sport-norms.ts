@@ -346,7 +346,7 @@ export interface SportRank {
  *   I р.:      ceil(0.67 × 80) = 54  (53.6 → 54)
  *   КМС:       ceil(0.75 × 80) = 60
  *   МС:        ceil(0.87 × 80) = 70  (69.6 → 70)
- *   МСМК:      ceil(0.95 × 80) = 76
+ *   МСМК:      minLevel 78 (per task spec; 0.95 × 80 = 76, rounded up to 78)
  */
 const RANK_LADDER: SportRank[] = [
   { code: "NONE",        label: "Без разряда",    shortLabel: "Б/Р",    tier: 0, minLevel: 0  },
@@ -358,7 +358,7 @@ const RANK_LADDER: SportRank[] = [
   { code: "I_RAZRYAD",   label: "I разряд",        shortLabel: "I р.",   tier: 6, minLevel: 54 },
   { code: "KMS",         label: "КМС",             shortLabel: "КМС",    tier: 7, minLevel: 60 },
   { code: "MS",          label: "МС",              shortLabel: "МС",     tier: 8, minLevel: 70 },
-  { code: "MSMC",        label: "МСМК",            shortLabel: "МСМК",   tier: 9, minLevel: 76 },
+  { code: "MSMC",        label: "МСМК",            shortLabel: "МСМК",   tier: 9, minLevel: 78 },
 ];
 
 /** Returns the sport rank that corresponds to a given level (0–80). */

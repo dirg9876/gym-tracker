@@ -54,9 +54,10 @@ export const ListExercisesResponseItem = zod.object({
             "I_RAZRYAD",
             "KMS",
             "MS",
+            "MSMC",
           ])
           .describe(
-            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
           ),
         label: zod
           .string()
@@ -71,7 +72,7 @@ export const ListExercisesResponseItem = zod.object({
         tier: zod
           .number()
           .describe(
-            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
           ),
         minLevel: zod
           .number()
@@ -162,9 +163,10 @@ export const UpdateExerciseResponse = zod.object({
             "I_RAZRYAD",
             "KMS",
             "MS",
+            "MSMC",
           ])
           .describe(
-            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
           ),
         label: zod
           .string()
@@ -179,7 +181,7 @@ export const UpdateExerciseResponse = zod.object({
         tier: zod
           .number()
           .describe(
-            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
           ),
         minLevel: zod
           .number()
@@ -416,9 +418,10 @@ export const GetExerciseNormsResponse = zod.object({
             "I_RAZRYAD",
             "KMS",
             "MS",
+            "MSMC",
           ])
           .describe(
-            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
           ),
         label: zod
           .string()
@@ -433,7 +436,7 @@ export const GetExerciseNormsResponse = zod.object({
         tier: zod
           .number()
           .describe(
-            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
           ),
         minLevel: zod
           .number()
@@ -458,9 +461,10 @@ export const GetExerciseNormsResponse = zod.object({
             "I_RAZRYAD",
             "KMS",
             "MS",
+            "MSMC",
           ])
           .describe(
-            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+            "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
           ),
         label: zod
           .string()
@@ -475,7 +479,7 @@ export const GetExerciseNormsResponse = zod.object({
         tier: zod
           .number()
           .describe(
-            "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+            "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
           ),
         minLevel: zod
           .number()
@@ -524,7 +528,7 @@ export const GetExerciseNormsResponse = zod.object({
           tier: zod
             .number()
             .describe(
-              "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+              "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
             ),
           minLevel: zod
             .number()
@@ -815,7 +819,7 @@ export const GetExerciseProgressResponse = zod.object({
           tier: zod
             .number()
             .describe(
-              "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+              "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
             ),
           minLevel: zod
             .number()
@@ -894,7 +898,7 @@ export const GetLevelsResponse = zod.object({
           tier: zod
             .number()
             .describe(
-              "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+              "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
             ),
           minLevel: zod
             .number()
