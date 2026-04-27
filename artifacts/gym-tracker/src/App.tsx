@@ -24,7 +24,10 @@ import NotFound from "@/pages/not-found";
 const queryClient = new QueryClient();
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+// Proxy URL is only needed in production — in dev preview Clerk authenticates directly
+const clerkProxyUrl = import.meta.env.PROD
+  ? import.meta.env.VITE_CLERK_PROXY_URL
+  : undefined;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 if (!clerkPubKey) {
