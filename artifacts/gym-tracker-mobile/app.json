@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Gym-Beam",
-    "slug": "gym-beam",
+    "slug": "gym-tracker-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
