@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { db, pageViewsTable } from "@workspace/db";
-import { sql, eq, and, desc } from "drizzle-orm";
+import { sql, eq, desc } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
+
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID ?? "";
 
 const router = Router();
 
@@ -26,7 +28,12 @@ router.post("/analytics/pageview", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.get("/analytics/stats", requireAuth, async (_req, res) => {
+router.get("/analytics/stats", requireAuth, async (req, res) => {
+  if (!ADMIN_USER_ID || req.userId !== ADMIN_USER_ID) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   const [totalRow] = await db
     .select({ total: sql<number>`sum(${pageViewsTable.count})::int` })
     .from(pageViewsTable);

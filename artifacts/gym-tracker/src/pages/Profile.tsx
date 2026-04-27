@@ -1,12 +1,17 @@
 import { useLocation } from "wouter";
 import { ChevronLeft, BarChart2 } from "lucide-react";
+import { useUser } from "@clerk/react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { ProfileCard } from "@/components/ProfileCard";
 import { Button } from "@/components/ui/button";
 
+const ADMIN_USER_ID = "user_3CtGEBE9BbJHCtWlcUi1jo0WuXK";
+
 export function Profile() {
   const [, setLocation] = useLocation();
+  const { user } = useUser();
+  const isAdmin = user?.id === ADMIN_USER_ID;
 
   return (
     <AppShell>
@@ -31,17 +36,19 @@ export function Profile() {
 
         <ProfileCard />
 
-        <button
-          type="button"
-          onClick={() => setLocation("/analytics")}
-          className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:bg-accent/40 transition-colors text-left"
-        >
-          <BarChart2 className="h-5 w-5 text-primary shrink-0" />
-          <div>
-            <div className="font-medium text-sm">Аналитика посещений</div>
-            <div className="text-xs text-muted-foreground">Сколько раз открывали приложение</div>
-          </div>
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setLocation("/analytics")}
+            className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:bg-accent/40 transition-colors text-left"
+          >
+            <BarChart2 className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <div className="font-medium text-sm">Аналитика посещений</div>
+              <div className="text-xs text-muted-foreground">Сколько раз открывали приложение</div>
+            </div>
+          </button>
+        )}
       </div>
     </AppShell>
   );

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/react";
+import { useLocation } from "wouter";
 import { AppShell } from "@/components/layout/AppShell";
-import { BarChart2, Eye, Calendar, TrendingUp } from "lucide-react";
+import { BarChart2, Eye, Calendar, TrendingUp, Lock } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const ADMIN_USER_ID = "user_3CtGEBE9BbJHCtWlcUi1jo0WuXK";
 
 interface AnalyticsStats {
   total: number;
@@ -27,11 +30,20 @@ function formatDate(dateStr: string): string {
 }
 
 export function Analytics() {
+  const { user, isLoaded } = useUser();
+  const [, setLocation] = useLocation();
   const [data, setData] = useState<AnalyticsStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const isAdmin = isLoaded && user?.id === ADMIN_USER_ID;
+
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!isAdmin) {
+      setIsLoading(false);
+      return;
+    }
     fetch(`${BASE}/api/analytics/stats`, { credentials: "include" })
       .then((r) => {
         if (!r.ok) throw new Error("Ошибка загрузки");
@@ -40,12 +52,30 @@ export function Analytics() {
       .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [isLoaded, isAdmin]);
 
-  if (isLoading) {
+  if (!isLoaded || isLoading) {
     return (
       <AppShell>
         <div className="p-8 text-center text-muted-foreground">Загрузка...</div>
+      </AppShell>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+          <Lock className="h-10 w-10 text-muted-foreground" />
+          <div className="text-muted-foreground text-sm">Доступ закрыт</div>
+          <button
+            type="button"
+            onClick={() => setLocation("/")}
+            className="text-primary text-sm underline underline-offset-4"
+          >
+            На главную
+          </button>
+        </div>
       </AppShell>
     );
   }
@@ -66,7 +96,6 @@ export function Analytics() {
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
         <h1 className="text-2xl font-bold">Аналитика посещений</h1>
 
-        {/* Summary cards */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-1">
             <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider">
@@ -84,7 +113,6 @@ export function Analytics() {
           </div>
         </div>
 
-        {/* Last 7 days bar chart */}
         <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <TrendingUp className="h-4 w-4 text-primary" />
@@ -112,7 +140,6 @@ export function Analytics() {
           )}
         </div>
 
-        {/* By page */}
         <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <BarChart2 className="h-4 w-4 text-primary" />
@@ -141,7 +168,7 @@ export function Analytics() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Данные собираются без куков и личных данных. Считаются только загрузки страниц.
+          Данные собираются без куков и личных данных.
         </p>
       </div>
     </AppShell>
