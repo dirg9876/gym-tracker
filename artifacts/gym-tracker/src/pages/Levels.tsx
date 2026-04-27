@@ -183,10 +183,14 @@ export function Levels() {
 
               {/* Per-exercise sport rank badges */}
               {(() => {
+                const noneEntry = RANK_THRESHOLDS_DESC[RANK_THRESHOLDS_DESC.length - 1]!;
                 const exerciseRanks = stats.mainExercises
                   .filter((e) => (e.mcKg ?? 0) > 0)
-                  .map((e) => ({ name: abbreviateExercise(e.name), rank: exerciseRankFromStats(e.maxWeightKg, e.mcKg) }))
-                  .filter((e): e is { name: string; rank: NonNullable<ReturnType<typeof exerciseRankFromStats>> } => e.rank != null);
+                  .map((e) => ({
+                    name: abbreviateExercise(e.name),
+                    // Fall back to NONE (Б/Р) when user has no lifts yet for this exercise
+                    entry: exerciseRankFromStats(e.maxWeightKg, e.mcKg) ?? noneEntry,
+                  }));
                 if (exerciseRanks.length === 0) return null;
                 return (
                   <motion.div
@@ -195,12 +199,21 @@ export function Levels() {
                     transition={{ delay: 0.15, duration: 0.3 }}
                     className="flex flex-wrap justify-center gap-2"
                   >
-                    {exerciseRanks.map(({ name, rank }) => (
-                      <div key={name} className="flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground/60 font-medium">{name}</span>
-                        <RankBadge rank={rank as unknown as SportRank} variant="compact" />
-                      </div>
-                    ))}
+                    {exerciseRanks.map(({ name, entry }) => {
+                      const rankForBadge: SportRank = {
+                        code: entry.code as SportRank["code"],
+                        label: entry.label,
+                        shortLabel: entry.shortLabel,
+                        tier: entry.tier,
+                        minLevel: 0,
+                      };
+                      return (
+                        <div key={name} className="flex items-center gap-1">
+                          <span className="text-[10px] text-muted-foreground/60 font-medium">{name}</span>
+                          <RankBadge rank={rankForBadge} variant="compact" />
+                        </div>
+                      );
+                    })}
                   </motion.div>
                 );
               })()}
