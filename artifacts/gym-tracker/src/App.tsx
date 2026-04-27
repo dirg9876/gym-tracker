@@ -18,6 +18,7 @@ import { Levels } from "@/pages/Levels";
 import { Programs } from "@/pages/Programs";
 import { ProgramDetail } from "@/pages/ProgramDetail";
 import { Profile } from "@/pages/Profile";
+import { Analytics } from "@/pages/Analytics";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -208,6 +209,9 @@ function AppRouter() {
       </Route>
       <Route path="/programs/:id">
         {() => <Protected><ProgramDetail /></Protected>}
+      </Route>
+      <Route path="/analytics">
+        {() => <Protected><Analytics /></Protected>}
       </Route>
       <Route component={NotFound} />
     </Switch>

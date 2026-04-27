@@ -1,4 +1,5 @@
 import { useGetStatsOverview, useGetProgress } from "@workspace/api-client-react";
+import { usePageView } from "@/hooks/usePageView";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProgressLineChart } from "@/components/charts/ProgressLineChart";
 import { MuscleGroupBarChart } from "@/components/charts/MuscleGroupBarChart";
@@ -8,6 +9,7 @@ import { Dumbbell, Activity, CalendarDays, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 
 export function Stats() {
+  usePageView("/stats");
   const [, setLocation] = useLocation();
   const { data: stats, isLoading: isStatsLoading } = useGetStatsOverview();
   const { data: progress, isLoading: isProgressLoading } = useGetProgress();

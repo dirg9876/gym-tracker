@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePageView } from "@/hooks/usePageView";
 import {
   useGetLevels,
   type Level,
@@ -68,6 +69,7 @@ function formatPenaltyPct(mul: number): string {
 }
 
 export function Levels() {
+  usePageView("/levels");
   const { data, isLoading } = useGetLevels();
 
   const currentRef = useRef<HTMLButtonElement | null>(null);

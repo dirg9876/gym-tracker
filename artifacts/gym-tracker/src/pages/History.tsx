@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageView } from "@/hooks/usePageView";
 import {
   useListWorkouts,
   useDeleteWorkout,
@@ -24,6 +25,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 export function History() {
+  usePageView("/history");
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { data: workouts, isLoading } = useListWorkouts({ limit: 50 });

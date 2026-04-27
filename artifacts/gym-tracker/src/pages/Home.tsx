@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { useGetActiveWorkout, useGetStatsOverview, useListWorkouts, useCreateWorkout, useGetLevels, getGetActiveWorkoutQueryKey } from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { usePageView } from "@/hooks/usePageView";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber, formatDate } from "@/lib/format";
 import { Dumbbell, Activity, Flame, ChevronRight } from "lucide-react";
@@ -9,6 +10,7 @@ import { levelImage } from "@/lib/tierImages";
 import { HomeStrengthCard } from "@/components/HomeStrengthCard";
 
 export function Home() {
+  usePageView("/");
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 

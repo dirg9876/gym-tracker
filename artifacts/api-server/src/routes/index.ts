@@ -7,10 +7,12 @@ import statsRouter from "./stats";
 import levelsRouter from "./levels";
 import programsRouter from "./programs";
 import profileRouter from "./profile";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(analyticsRouter);
 router.use(requireAuth);
 router.use(exercisesRouter);
 router.use(workoutsRouter);
