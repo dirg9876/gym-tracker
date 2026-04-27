@@ -7,7 +7,7 @@
  */
 
 /**
- * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.
+ * Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 76+). Maps to Russian powerlifting rank system.
  */
 export type SportRankCode = (typeof SportRankCode)[keyof typeof SportRankCode];
 
@@ -21,4 +21,5 @@ export const SportRankCode = {
   I_RAZRYAD: "I_RAZRYAD",
   KMS: "KMS",
   MS: "MS",
+  MSMC: "MSMC",
 } as const;

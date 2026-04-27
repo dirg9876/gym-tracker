@@ -334,18 +334,31 @@ export interface SportRank {
   minLevel: number;
 }
 
-/** Ordered from lowest to highest. */
+/**
+ * Ordered from lowest to highest.
+ * minLevel = ceil(pct × 80) where pct matches rankForMcPercent thresholds,
+ * so the level-based display is consistent with the percent-based rank system.
+ *   YOUTH_III: ceil(0.10 × 80) = 8
+ *   YOUTH_II:  ceil(0.22 × 80) = 18
+ *   YOUTH_I:   ceil(0.35 × 80) = 28
+ *   III р.:    ceil(0.52 × 80) = 42
+ *   II р.:     ceil(0.59 × 80) = 48  (47.2 → 48)
+ *   I р.:      ceil(0.67 × 80) = 54  (53.6 → 54)
+ *   КМС:       ceil(0.75 × 80) = 60
+ *   МС:        ceil(0.87 × 80) = 70  (69.6 → 70)
+ *   МСМК:      ceil(0.95 × 80) = 76
+ */
 const RANK_LADDER: SportRank[] = [
   { code: "NONE",        label: "Без разряда",    shortLabel: "Б/Р",    tier: 0, minLevel: 0  },
   { code: "YOUTH_III",   label: "III юн. разряд", shortLabel: "Юн III", tier: 1, minLevel: 8  },
   { code: "YOUTH_II",    label: "II юн. разряд",  shortLabel: "Юн II",  tier: 2, minLevel: 18 },
   { code: "YOUTH_I",     label: "I юн. разряд",   shortLabel: "Юн I",   tier: 3, minLevel: 28 },
-  { code: "III_RAZRYAD", label: "III разряд",      shortLabel: "III р.", tier: 4, minLevel: 38 },
+  { code: "III_RAZRYAD", label: "III разряд",      shortLabel: "III р.", tier: 4, minLevel: 42 },
   { code: "II_RAZRYAD",  label: "II разряд",       shortLabel: "II р.",  tier: 5, minLevel: 48 },
-  { code: "I_RAZRYAD",   label: "I разряд",        shortLabel: "I р.",   tier: 6, minLevel: 58 },
-  { code: "KMS",         label: "КМС",             shortLabel: "КМС",    tier: 7, minLevel: 67 },
-  { code: "MS",          label: "МС",              shortLabel: "МС",     tier: 8, minLevel: 76 },
-  { code: "MSMC",        label: "МСМК",            shortLabel: "МСМК",   tier: 9, minLevel: 78 },
+  { code: "I_RAZRYAD",   label: "I разряд",        shortLabel: "I р.",   tier: 6, minLevel: 54 },
+  { code: "KMS",         label: "КМС",             shortLabel: "КМС",    tier: 7, minLevel: 60 },
+  { code: "MS",          label: "МС",              shortLabel: "МС",     tier: 8, minLevel: 70 },
+  { code: "MSMC",        label: "МСМК",            shortLabel: "МСМК",   tier: 9, minLevel: 76 },
 ];
 
 /** Returns the sport rank that corresponds to a given level (0–80). */
