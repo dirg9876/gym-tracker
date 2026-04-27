@@ -187,6 +187,7 @@ export function Levels() {
                 const exerciseRanks = stats.mainExercises
                   .filter((e) => (e.mcKg ?? 0) > 0)
                   .map((e) => ({
+                    id: e.exerciseId,
                     name: abbreviateExercise(e.name),
                     // Fall back to NONE (Б/Р) when user has no lifts yet for this exercise
                     entry: exerciseRankFromStats(e.maxWeightKg, e.mcKg) ?? noneEntry,
@@ -199,7 +200,7 @@ export function Levels() {
                     transition={{ delay: 0.15, duration: 0.3 }}
                     className="flex flex-wrap justify-center gap-2"
                   >
-                    {exerciseRanks.map(({ name, entry }) => {
+                    {exerciseRanks.map(({ id, name, entry }) => {
                       const rankForBadge: SportRank = {
                         code: entry.code as SportRank["code"],
                         label: entry.label,
@@ -208,7 +209,7 @@ export function Levels() {
                         minLevel: 0,
                       };
                       return (
-                        <div key={name} className="flex items-center gap-1">
+                        <div key={id} className="flex items-center gap-1">
                           <span className="text-[10px] text-muted-foreground/60 font-medium">{name}</span>
                           <RankBadge rank={rankForBadge} variant="compact" />
                         </div>
