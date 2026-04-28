@@ -61,13 +61,6 @@ export function Home() {
             style={{ imageRendering: "pixelated" }}
           />
         </div>
-        <p className="mt-2 mb-3 font-mono font-black tracking-[0.3em] text-sm uppercase select-none">
-          <span className="text-primary">LIFT</span>
-          <span className="text-muted-foreground mx-2">·</span>
-          <span className="text-primary">SHINE</span>
-          <span className="text-muted-foreground mx-2">·</span>
-          <span className="text-primary">REPEAT</span>
-        </p>
       </div>
 
       <div className="p-4 space-y-8 pb-24">
