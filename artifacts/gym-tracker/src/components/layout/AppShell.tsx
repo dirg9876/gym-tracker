@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import gymBeamLogo from "@/assets/gymbeam-logo.png";
 import { WhatsNewDialog } from "@/components/WhatsNewDialog";
 
-const APP_VERSION = "0.2.0";
+const APP_VERSION = "0.3.0";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
