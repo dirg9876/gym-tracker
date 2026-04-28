@@ -9,11 +9,11 @@ import type { SportRankCode } from "./sportRankCode";
 
 export interface SportRank {
   code: SportRankCode;
-  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС". */
+  /** Full Russian label, e.g. "III юн. разряд", "КМС", "МС", "МСМК". */
   label: string;
-  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС". */
+  /** Short label for compact UI, e.g. "Юн III", "I р.", "КМС", "МСМК". */
   shortLabel: string;
-  /** 0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping. */
+  /** 0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping. */
   tier: number;
   /** Minimum level to display this rank on the ladder. */
   minLevel: number;

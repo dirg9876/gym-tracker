@@ -15,5 +15,6 @@ export interface ProgramPlan {
   basedOnLevel: number;
   basedOnLevelName: string;
   benchmarkKg: number;
+  isCustom: boolean;
   exercises: PlannedExercise[];
 }

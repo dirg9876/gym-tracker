@@ -62,12 +62,12 @@ export const ListExercisesResponseItem = zod.object({
         label: zod
           .string()
           .describe(
-            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
           ),
         shortLabel: zod
           .string()
           .describe(
-            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
           ),
         tier: zod
           .number()
@@ -171,12 +171,12 @@ export const UpdateExerciseResponse = zod.object({
         label: zod
           .string()
           .describe(
-            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
           ),
         shortLabel: zod
           .string()
           .describe(
-            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
           ),
         tier: zod
           .number()
@@ -236,6 +236,29 @@ export const createWorkoutBodyNameMax = 80;
 
 export const CreateWorkoutBody = zod.object({
   name: zod.string().max(createWorkoutBodyNameMax).optional(),
+});
+
+export const CreateWorkoutResponse = zod.object({
+  id: zod.number(),
+  name: zod.string().nullish(),
+  startedAt: zod.coerce.date(),
+  finishedAt: zod.coerce.date().nullish(),
+  sets: zod.array(
+    zod.object({
+      id: zod.number(),
+      workoutId: zod.number(),
+      exerciseId: zod.number(),
+      exerciseName: zod.string(),
+      muscleGroup: zod.string(),
+      weightKg: zod.number(),
+      reps: zod.number(),
+      volume: zod.number().describe("weightKg \* reps"),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  totalVolume: zod.number(),
+  totalReps: zod.number(),
+  totalSets: zod.number(),
 });
 
 /**
@@ -426,12 +449,12 @@ export const GetExerciseNormsResponse = zod.object({
         label: zod
           .string()
           .describe(
-            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
           ),
         shortLabel: zod
           .string()
           .describe(
-            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
           ),
         tier: zod
           .number()
@@ -469,12 +492,12 @@ export const GetExerciseNormsResponse = zod.object({
         label: zod
           .string()
           .describe(
-            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+            'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
           ),
         shortLabel: zod
           .string()
           .describe(
-            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+            'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
           ),
         tier: zod
           .number()
@@ -511,19 +534,20 @@ export const GetExerciseNormsResponse = zod.object({
               "I_RAZRYAD",
               "KMS",
               "MS",
+              "MSMC",
             ])
             .describe(
-              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
             ),
           label: zod
             .string()
             .describe(
-              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
             ),
           shortLabel: zod
             .string()
             .describe(
-              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
             ),
           tier: zod
             .number()
@@ -802,19 +826,20 @@ export const GetExerciseProgressResponse = zod.object({
               "I_RAZRYAD",
               "KMS",
               "MS",
+              "MSMC",
             ])
             .describe(
-              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
             ),
           label: zod
             .string()
             .describe(
-              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
             ),
           shortLabel: zod
             .string()
             .describe(
-              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
             ),
           tier: zod
             .number()
@@ -881,19 +906,20 @@ export const GetLevelsResponse = zod.object({
               "I_RAZRYAD",
               "KMS",
               "MS",
+              "MSMC",
             ])
             .describe(
-              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+              "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
             ),
           label: zod
             .string()
             .describe(
-              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+              'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
             ),
           shortLabel: zod
             .string()
             .describe(
-              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+              'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
             ),
           tier: zod
             .number()
@@ -961,24 +987,25 @@ export const GetLevelsResponse = zod.object({
           "I_RAZRYAD",
           "KMS",
           "MS",
+          "MSMC",
         ])
         .describe(
-          "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MS (Мастер спорта, LVL 76+). Maps to Russian powerlifting rank system.",
+          "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
         ),
       label: zod
         .string()
         .describe(
-          'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\".',
+          'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
         ),
       shortLabel: zod
         .string()
         .describe(
-          'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\".',
+          'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
         ),
       tier: zod
         .number()
         .describe(
-          "0 (lowest, NONE) to 8 (highest, МС) — for ordering and colour mapping.",
+          "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
         ),
       minLevel: zod
         .number()
@@ -1143,8 +1170,41 @@ export const ListProgramsResponse = zod.object({
       description: zod.string(),
       emoji: zod.string(),
       exerciseCount: zod.number(),
+      isCustom: zod.boolean(),
     }),
   ),
+});
+
+/**
+ * @summary Create a custom training program
+ */
+export const createCustomProgramBodyNameMax = 80;
+
+export const createCustomProgramBodyDescriptionMax = 200;
+
+export const createCustomProgramBodyExercisesItemSetsMax = 20;
+
+export const CreateCustomProgramBody = zod.object({
+  name: zod.string().min(1).max(createCustomProgramBodyNameMax),
+  description: zod
+    .string()
+    .max(createCustomProgramBodyDescriptionMax)
+    .optional(),
+  exercises: zod
+    .array(
+      zod.object({
+        exerciseId: zod.number(),
+        sets: zod
+          .number()
+          .min(1)
+          .max(createCustomProgramBodyExercisesItemSetsMax),
+        repsMin: zod.number().min(1),
+        repsMax: zod.number().min(1),
+        intent: zod.enum(["strength", "hypertrophy", "accessory"]),
+        note: zod.string().nullish(),
+      }),
+    )
+    .min(1),
 });
 
 /**
@@ -1162,6 +1222,7 @@ export const GetProgramPlanResponse = zod.object({
   basedOnLevel: zod.number(),
   basedOnLevelName: zod.string(),
   benchmarkKg: zod.number(),
+  isCustom: zod.boolean(),
   exercises: zod.array(
     zod.object({
       exerciseId: zod.number(),
@@ -1182,4 +1243,11 @@ export const GetProgramPlanResponse = zod.object({
       note: zod.string().nullable(),
     }),
   ),
+});
+
+/**
+ * @summary Delete a custom program (only owner can delete; built-in programs cannot be deleted)
+ */
+export const DeleteCustomProgramParams = zod.object({
+  programId: zod.coerce.string(),
 });

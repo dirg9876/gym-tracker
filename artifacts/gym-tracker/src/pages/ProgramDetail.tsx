@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import {
   useGetProgramPlan,
@@ -5,10 +6,22 @@ import {
   useCreateWorkout,
   getGetActiveWorkoutQueryKey,
   useGetActiveWorkout,
+  useDeleteCustomProgram,
+  getListProgramsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ChevronLeft,
   Dumbbell,
@@ -19,6 +32,7 @@ import {
   Flame,
   ArrowUp,
   ArrowDown,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,7 +47,8 @@ const PROGRAM_ICON: Record<string, LucideIcon> = {
   fullbody: Activity,
 };
 
-function ProgramIcon({ id, className }: { id: string; className?: string }) {
+function ProgramIcon({ id, isCustom, className }: { id: string; isCustom: boolean; className?: string }) {
+  if (isCustom) return <Zap className={className} />;
   const Icon = PROGRAM_ICON[id] ?? Dumbbell;
   return <Icon className={className} />;
 }
@@ -51,6 +66,7 @@ export function ProgramDetail() {
   const programId = params?.id ?? "";
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: plan, isLoading, isError } = useGetProgramPlan(programId, {
     query: {
@@ -81,6 +97,15 @@ export function ProgramDetail() {
     },
   });
 
+  const deleteMutation = useDeleteCustomProgram({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListProgramsQueryKey() });
+        setLocation("/programs");
+      },
+    },
+  });
+
   if (isLoading) {
     return (
       <AppShell>
@@ -104,8 +129,6 @@ export function ProgramDetail() {
 
   const handleStart = () => {
     if (activeWorkout) {
-      // Don't apply this program's plan to an unrelated active workout —
-      // the user must finish the current one first. Just navigate to it.
       setLocation(`/workout/${activeWorkout.id}`);
       return;
     }
@@ -115,16 +138,33 @@ export function ProgramDetail() {
   return (
     <AppShell>
       <div className="p-4 space-y-6 pb-32">
-        <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setLocation("/programs")}>
-          <ChevronLeft className="h-4 w-4 mr-1" /> Программы
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setLocation("/programs")}>
+            <ChevronLeft className="h-4 w-4 mr-1" /> Программы
+          </Button>
+          {plan.isCustom && (
+            <button
+              onClick={() => setDeleteOpen(true)}
+              className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
 
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <ProgramIcon id={plan.id} className="h-7 w-7 text-primary" />
+            <ProgramIcon id={plan.id} isCustom={plan.isCustom} className="h-7 w-7 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">{plan.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black tracking-tight">{plan.name}</h1>
+              {plan.isCustom && (
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  Моя
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>
           </div>
         </div>
@@ -207,6 +247,27 @@ export function ProgramDetail() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить программу?</AlertDialogTitle>
+            <AlertDialogDescription>
+              «{plan.name}» будет удалена навсегда. Это действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate({ programId })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

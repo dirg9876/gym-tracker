@@ -466,6 +466,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProgramsListResponse"
+    post:
+      operationId: createCustomProgram
+      tags: [programs]
+      summary: Create a custom training program
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomProgramInput"
+      responses:
+        "201":
+          description: Created program summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgramSummary"
+        "400":
+          description: Validation error
 
   /programs/{programId}:
     get:
@@ -484,6 +503,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProgramPlan"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCustomProgram
+      tags: [programs]
+      summary: Delete a custom program (only owner can delete; built-in programs cannot be deleted)
+      parameters:
+        - name: programId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not allowed (built-in program or not owner)
         "404":
           description: Not found
 
@@ -1317,7 +1352,49 @@ components:
           type: string
         exerciseCount:
           type: integer
-      required: [id, name, description, emoji, exerciseCount]
+        isCustom:
+          type: boolean
+      required: [id, name, description, emoji, exerciseCount, isCustom]
+
+    CreateCustomProgramExerciseInput:
+      type: object
+      properties:
+        exerciseId:
+          type: integer
+        sets:
+          type: integer
+          minimum: 1
+          maximum: 20
+        repsMin:
+          type: integer
+          minimum: 1
+        repsMax:
+          type: integer
+          minimum: 1
+        intent:
+          type: string
+          enum: [strength, hypertrophy, accessory]
+        note:
+          type: string
+          nullable: true
+      required: [exerciseId, sets, repsMin, repsMax, intent]
+
+    CreateCustomProgramInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 200
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateCustomProgramExerciseInput"
+          minItems: 1
+      required: [name, exercises]
 
     ProgramsListResponse:
       type: object
@@ -1389,6 +1466,8 @@ components:
           type: string
         benchmarkKg:
           type: number
+        isCustom:
+          type: boolean
         exercises:
           type: array
           items:
@@ -1401,6 +1480,7 @@ components:
         - basedOnLevel
         - basedOnLevelName
         - benchmarkKg
+        - isCustom
         - exercises
 
     ExerciseLastSetEntry:

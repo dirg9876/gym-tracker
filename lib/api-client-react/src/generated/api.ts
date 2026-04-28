@@ -19,6 +19,7 @@ import type {
 import type {
   ActiveWorkoutResponse,
   AddSetInput,
+  CreateCustomProgramInput,
   CreateExerciseInput,
   CreateWorkoutInput,
   Exercise,
@@ -33,6 +34,7 @@ import type {
   ListWorkoutsParams,
   Profile,
   ProgramPlan,
+  ProgramSummary,
   ProgramsListResponse,
   ProgressSeries,
   StatsOverview,
@@ -2215,6 +2217,93 @@ export function useListPrograms<
 }
 
 /**
+ * @summary Create a custom training program
+ */
+export const getCreateCustomProgramUrl = () => {
+  return `/api/programs`;
+};
+
+export const createCustomProgram = async (
+  createCustomProgramInput: CreateCustomProgramInput,
+  options?: RequestInit,
+): Promise<ProgramSummary> => {
+  return customFetch<ProgramSummary>(getCreateCustomProgramUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCustomProgramInput),
+  });
+};
+
+export const getCreateCustomProgramMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCustomProgram>>,
+    TError,
+    { data: BodyType<CreateCustomProgramInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCustomProgram>>,
+  TError,
+  { data: BodyType<CreateCustomProgramInput> },
+  TContext
+> => {
+  const mutationKey = ["createCustomProgram"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCustomProgram>>,
+    { data: BodyType<CreateCustomProgramInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createCustomProgram(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCustomProgramMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCustomProgram>>
+>;
+export type CreateCustomProgramMutationBody =
+  BodyType<CreateCustomProgramInput>;
+export type CreateCustomProgramMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a custom training program
+ */
+export const useCreateCustomProgram = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCustomProgram>>,
+    TError,
+    { data: BodyType<CreateCustomProgramInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCustomProgram>>,
+  TError,
+  { data: BodyType<CreateCustomProgramInput> },
+  TContext
+> => {
+  return useMutation(getCreateCustomProgramMutationOptions(options));
+};
+
+/**
  * @summary Build a workout plan for the given program based on the user's current level and PRs
  */
 export const getGetProgramPlanUrl = (programId: string) => {
@@ -2301,3 +2390,87 @@ export function useGetProgramPlan<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Delete a custom program (only owner can delete; built-in programs cannot be deleted)
+ */
+export const getDeleteCustomProgramUrl = (programId: string) => {
+  return `/api/programs/${programId}`;
+};
+
+export const deleteCustomProgram = async (
+  programId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCustomProgramUrl(programId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCustomProgramMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCustomProgram>>,
+    TError,
+    { programId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCustomProgram>>,
+  TError,
+  { programId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteCustomProgram"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCustomProgram>>,
+    { programId: string }
+  > = (props) => {
+    const { programId } = props ?? {};
+
+    return deleteCustomProgram(programId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCustomProgramMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCustomProgram>>
+>;
+
+export type DeleteCustomProgramMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a custom program (only owner can delete; built-in programs cannot be deleted)
+ */
+export const useDeleteCustomProgram = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCustomProgram>>,
+    TError,
+    { programId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCustomProgram>>,
+  TError,
+  { programId: string },
+  TContext
+> => {
+  return useMutation(getDeleteCustomProgramMutationOptions(options));
+};

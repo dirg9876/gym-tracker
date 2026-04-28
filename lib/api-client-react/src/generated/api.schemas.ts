@@ -465,6 +465,43 @@ export interface ProgramSummary {
   description: string;
   emoji: string;
   exerciseCount: number;
+  isCustom: boolean;
+}
+
+export type CreateCustomProgramExerciseInputIntent =
+  (typeof CreateCustomProgramExerciseInputIntent)[keyof typeof CreateCustomProgramExerciseInputIntent];
+
+export const CreateCustomProgramExerciseInputIntent = {
+  strength: "strength",
+  hypertrophy: "hypertrophy",
+  accessory: "accessory",
+} as const;
+
+export interface CreateCustomProgramExerciseInput {
+  exerciseId: number;
+  /**
+   * @minimum 1
+   * @maximum 20
+   */
+  sets: number;
+  /** @minimum 1 */
+  repsMin: number;
+  /** @minimum 1 */
+  repsMax: number;
+  intent: CreateCustomProgramExerciseInputIntent;
+  note?: string | null;
+}
+
+export interface CreateCustomProgramInput {
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  name: string;
+  /** @maxLength 200 */
+  description?: string;
+  /** @minItems 1 */
+  exercises: CreateCustomProgramExerciseInput[];
 }
 
 export interface ProgramsListResponse {
@@ -511,6 +548,7 @@ export interface ProgramPlan {
   basedOnLevel: number;
   basedOnLevelName: string;
   benchmarkKg: number;
+  isCustom: boolean;
   exercises: PlannedExercise[];
 }
 

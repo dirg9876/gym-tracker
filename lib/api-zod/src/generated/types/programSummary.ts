@@ -12,4 +12,5 @@ export interface ProgramSummary {
   description: string;
   emoji: string;
   exerciseCount: number;
+  isCustom: boolean;
 }

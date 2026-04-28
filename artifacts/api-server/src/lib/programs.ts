@@ -1,4 +1,11 @@
-import { db, exercisesTable, workoutSetsTable, workoutsTable } from "@workspace/db";
+import {
+  db,
+  exercisesTable,
+  workoutSetsTable,
+  workoutsTable,
+  customProgramsTable,
+  customProgramExercisesTable,
+} from "@workspace/db";
 import { and, asc, eq, isNotNull, inArray, or } from "drizzle-orm";
 import { computeCurrentLevel, LEVELS, MAX_LEVEL, referenceKg, levelFactor } from "./levels";
 import { getMcKgForExercise } from "./sport-norms";
@@ -201,38 +208,158 @@ export type ProgramPlan = {
   basedOnLevel: number;
   basedOnLevelName: string;
   benchmarkKg: number;
+  isCustom: boolean;
   exercises: PlannedExercise[];
 };
 
-export async function listPrograms(): Promise<
-  Array<{
-    id: string;
-    name: string;
-    description: string;
-    emoji: string;
-    exerciseCount: number;
-  }>
-> {
-  return PROGRAMS.map((p) => ({
+export type ProgramListItem = {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  exerciseCount: number;
+  isCustom: boolean;
+};
+
+export async function listPrograms(userId: string = ""): Promise<ProgramListItem[]> {
+  const builtIn: ProgramListItem[] = PROGRAMS.map((p) => ({
     id: p.id,
     name: p.name,
     description: p.description,
     emoji: p.emoji,
     exerciseCount: p.exercises.length,
+    isCustom: false,
   }));
+
+  if (!userId) return builtIn;
+
+  const customRows = await db
+    .select({
+      id: customProgramsTable.id,
+      name: customProgramsTable.name,
+      description: customProgramsTable.description,
+    })
+    .from(customProgramsTable)
+    .where(eq(customProgramsTable.userId, userId))
+    .orderBy(asc(customProgramsTable.createdAt));
+
+  if (customRows.length === 0) return builtIn;
+
+  const customIds = customRows.map((r) => r.id);
+  const exerciseCounts = await db
+    .select({ programId: customProgramExercisesTable.programId })
+    .from(customProgramExercisesTable)
+    .where(inArray(customProgramExercisesTable.programId, customIds));
+
+  const countByProgramId = new Map<number, number>();
+  for (const r of exerciseCounts) {
+    countByProgramId.set(r.programId, (countByProgramId.get(r.programId) ?? 0) + 1);
+  }
+
+  const custom: ProgramListItem[] = customRows.map((r) => ({
+    id: String(r.id),
+    name: r.name,
+    description: r.description,
+    emoji: "⚡",
+    exerciseCount: countByProgramId.get(r.id) ?? 0,
+    isCustom: true,
+  }));
+
+  return [...builtIn, ...custom];
 }
 
-export async function buildProgramPlan(
-  programId: string,
-  userId: string = "",
-): Promise<ProgramPlan | null> {
-  const program = PROGRAMS.find((p) => p.id === programId);
-  if (!program) return null;
+export type CreateCustomProgramExerciseInput = {
+  exerciseId: number;
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  intent: Intent;
+  note?: string | null;
+};
 
+export type CreateCustomProgramInput = {
+  name: string;
+  description?: string;
+  exercises: CreateCustomProgramExerciseInput[];
+};
+
+export async function createCustomProgram(
+  userId: string,
+  input: CreateCustomProgramInput,
+): Promise<ProgramListItem> {
+  const [program] = await db
+    .insert(customProgramsTable)
+    .values({
+      userId,
+      name: input.name.trim(),
+      description: input.description?.trim() ?? "",
+    })
+    .returning();
+
+  if (!program) throw new Error("Failed to create program");
+
+  if (input.exercises.length > 0) {
+    await db.insert(customProgramExercisesTable).values(
+      input.exercises.map((ex, idx) => ({
+        programId: program.id,
+        exerciseId: ex.exerciseId,
+        sortOrder: idx,
+        sets: ex.sets,
+        repsMin: ex.repsMin,
+        repsMax: ex.repsMax,
+        intent: ex.intent,
+        note: ex.note ?? null,
+      })),
+    );
+  }
+
+  return {
+    id: String(program.id),
+    name: program.name,
+    description: program.description,
+    emoji: "⚡",
+    exerciseCount: input.exercises.length,
+    isCustom: true,
+  };
+}
+
+export async function deleteCustomProgram(
+  programId: string,
+  userId: string,
+): Promise<{ status: "deleted" | "not_found" | "forbidden" }> {
+  const numericId = Number(programId);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    return { status: "forbidden" };
+  }
+  const [row] = await db
+    .select({ id: customProgramsTable.id, userId: customProgramsTable.userId })
+    .from(customProgramsTable)
+    .where(eq(customProgramsTable.id, numericId));
+  if (!row) return { status: "not_found" };
+  if (row.userId !== userId) return { status: "forbidden" };
+  await db.delete(customProgramsTable).where(eq(customProgramsTable.id, numericId));
+  return { status: "deleted" };
+}
+
+async function buildPlanFromExerciseDefs(
+  programId: string,
+  name: string,
+  description: string,
+  emoji: string,
+  isCustom: boolean,
+  exerciseDefs: Array<{
+    name: string;
+    exerciseId?: number;
+    sets: number;
+    repsMin: number;
+    repsMax: number;
+    intent: Intent;
+    note?: string | null;
+  }>,
+  userId: string,
+): Promise<ProgramPlan> {
   const levelInfo = await computeCurrentLevel(userId);
   const planningLevel = Math.max(1, Math.min(MAX_LEVEL, levelInfo.currentLevel));
-  // Use the user's actual body weight for the benchmark reference so that the
-  // level-based fallback weight scales to the real MC anchor, not FALLBACK_BODY_WEIGHT_KG.
   const benchmark = referenceKg(planningLevel, levelInfo.bodyWeightKg);
 
   const allExerciseRows = await db
@@ -250,12 +377,11 @@ export async function buildProgramPlan(
       ),
     );
   const byName = new Map(allExerciseRows.map((r) => [r.name, r]));
+  const byId = new Map(allExerciseRows.map((r) => [r.id, r]));
 
-  const wantedNames = program.exercises.map((e) => e.name);
-  const wantedRows = wantedNames
-    .map((n) => byName.get(n))
-    .filter((r): r is NonNullable<typeof r> => !!r);
-  const wantedIds = wantedRows.map((r) => r.id);
+  const wantedIds = exerciseDefs
+    .map((def) => def.exerciseId ?? byName.get(def.name)?.id)
+    .filter((id): id is number => id != null);
 
   const maxByExercise = new Map<number, number>();
   if (wantedIds.length > 0) {
@@ -281,9 +407,9 @@ export async function buildProgramPlan(
     }
   }
 
-  const exercises: PlannedExercise[] = program.exercises
+  const exercises: PlannedExercise[] = exerciseDefs
     .map((def) => {
-      const row = byName.get(def.name);
+      const row = def.exerciseId != null ? byId.get(def.exerciseId) : byName.get(def.name);
       if (!row) return null;
       const isBodyweight = row.equipment === "bodyweight";
       const intentFactor = INTENT_FACTOR[def.intent];
@@ -298,10 +424,6 @@ export async function buildProgramPlan(
         suggestedWeightKg = 0;
         basedOn = "level-benchmark";
       } else {
-        // Use the MC-derived anchor for this exercise so that level-based
-        // suggestions stay consistent with the MS-anchored norm system.
-        // For exercises not in EXERCISE_NORMS, getMcKgForExercise falls back to
-        // bodyWeightKg × fallbackMultiplier (same as the old formula).
         const exFactor = EXERCISE_BENCHMARK_FACTOR[def.name] ?? 0.5;
         const mcResult = getMcKgForExercise(
           def.name,
@@ -312,21 +434,13 @@ export async function buildProgramPlan(
         if (mcResult.kg != null) {
           suggestedWeightKg = mcResult.kg * levelFactor(planningLevel) * intentFactor;
         } else {
-          // time-based exercise with no kg target
           suggestedWeightKg = 0;
         }
         basedOn = "level-benchmark";
       }
 
-      // Bodyweight exercises with a PR (e.g. weighted dips/pull-ups) keep
-      // the suggested external load. Bodyweight exercises without a PR
-      // default to 0 (just bodyweight).
       const isBodyweightWithoutLoad = isBodyweight && pr <= 0;
-      const minWeight = isBodyweightWithoutLoad
-        ? 0
-        : suggestedWeightKg > 0
-          ? 5
-          : 0;
+      const minWeight = isBodyweightWithoutLoad ? 0 : suggestedWeightKg > 0 ? 5 : 0;
       const stepped = isBodyweightWithoutLoad
         ? 0
         : Math.max(minWeight, roundTo(suggestedWeightKg, 2.5));
@@ -349,13 +463,74 @@ export async function buildProgramPlan(
     .filter((p): p is PlannedExercise => p !== null);
 
   return {
-    id: program.id,
-    name: program.name,
-    description: program.description,
-    emoji: program.emoji,
+    id: programId,
+    name,
+    description,
+    emoji,
     basedOnLevel: planningLevel,
     basedOnLevelName: LEVELS[planningLevel].name,
     benchmarkKg: benchmark,
+    isCustom,
     exercises,
   };
+}
+
+export async function buildProgramPlan(
+  programId: string,
+  userId: string = "",
+): Promise<ProgramPlan | null> {
+  const numericId = Number(programId);
+  const isCustomNumericId = Number.isInteger(numericId) && numericId > 0;
+
+  if (isCustomNumericId) {
+    const [program] = await db
+      .select()
+      .from(customProgramsTable)
+      .where(
+        and(
+          eq(customProgramsTable.id, numericId),
+          eq(customProgramsTable.userId, userId),
+        ),
+      );
+    if (!program) return null;
+
+    const exRows = await db
+      .select()
+      .from(customProgramExercisesTable)
+      .where(eq(customProgramExercisesTable.programId, numericId))
+      .orderBy(asc(customProgramExercisesTable.sortOrder));
+
+    const defs = exRows.map((r) => ({
+      name: "",
+      exerciseId: r.exerciseId,
+      sets: r.sets,
+      repsMin: r.repsMin,
+      repsMax: r.repsMax,
+      intent: r.intent as Intent,
+      note: r.note,
+    }));
+
+    return buildPlanFromExerciseDefs(
+      programId,
+      program.name,
+      program.description,
+      "⚡",
+      true,
+      defs,
+      userId,
+    );
+  }
+
+  const program = PROGRAMS.find((p) => p.id === programId);
+  if (!program) return null;
+
+  return buildPlanFromExerciseDefs(
+    programId,
+    program.name,
+    program.description,
+    program.emoji,
+    false,
+    program.exercises,
+    userId,
+  );
 }
