@@ -3,8 +3,9 @@ import { shadcn } from "@clerk/themes";
 import { BottomNav } from "./BottomNav";
 import { useLocation } from "wouter";
 import gymBeamLogo from "@/assets/gymbeam-logo.png";
+import { WhatsNewDialog } from "@/components/WhatsNewDialog";
 
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
@@ -40,6 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           v{APP_VERSION}
         </span>
       </div>
+      <WhatsNewDialog />
     </div>
   );
 }
