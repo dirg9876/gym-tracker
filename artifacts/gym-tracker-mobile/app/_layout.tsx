@@ -85,6 +85,7 @@ export default function RootLayout() {
                   <Stack.Screen name="programs/[id]" />
                   <Stack.Screen name="history/[id]" />
                   <Stack.Screen name="exercises/[id]" />
+                  <Stack.Screen name="profile" />
                 </Stack>
               </ToastProvider>
             </SafeAreaProvider>

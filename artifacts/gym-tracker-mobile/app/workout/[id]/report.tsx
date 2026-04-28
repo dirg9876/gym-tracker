@@ -1,7 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  getGetWorkoutExerciseBreakdownQueryKey,
   getGetWorkoutQueryKey,
+  useGetWorkoutExerciseBreakdown,
   useGetWorkout,
   type WorkoutReport as WorkoutReportType,
 } from "@workspace/api-client-react";
@@ -12,7 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { ExerciseProgressCard } from "@/components/ExerciseProgressCard";
 import { PRBadge } from "@/components/PRBadge";
+import { WorkoutComparisonPanel } from "@/components/WorkoutComparisonPanel";
 import { useColors } from "@/hooks/useColors";
 import { formatDuration, formatKg, formatNumber } from "@/lib/format";
 
@@ -31,6 +35,13 @@ export default function WorkoutReportScreen() {
 
   const { data: workout, isLoading } = useGetWorkout(workoutId, {
     query: { enabled: !report && !!workoutId, queryKey: getGetWorkoutQueryKey(workoutId) },
+  });
+
+  const { data: standaloneBreakdown } = useGetWorkoutExerciseBreakdown(workoutId, {
+    query: {
+      enabled: !report && !!workoutId,
+      queryKey: getGetWorkoutExerciseBreakdownQueryKey(workoutId),
+    },
   });
 
   if (isLoading) {
@@ -59,6 +70,7 @@ export default function WorkoutReportScreen() {
   const w = report?.workout || workout!;
   const hasPRs =
     report && (report.newPersonalRecords.length > 0 || report.newExerciseRecords.length > 0);
+  const breakdown = report?.exerciseBreakdown ?? standaloneBreakdown?.items ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -107,6 +119,8 @@ export default function WorkoutReportScreen() {
           ))}
         </View>
 
+        <WorkoutComparisonPanel workoutId={workoutId} />
+
         {report && report.newPersonalRecords.length > 0 ? (
           <View style={{ gap: 10 }}>
             <Text style={{ color: colors.foreground, fontSize: 18, fontFamily: "Inter_700Bold", paddingHorizontal: 4 }}>
@@ -142,13 +156,17 @@ export default function WorkoutReportScreen() {
           </View>
         ) : null}
 
-        {report && report.exerciseBreakdown.length > 0 ? (
+        {breakdown.length > 0 ? (
           <View style={{ gap: 10 }}>
             <Text style={{ color: colors.foreground, fontSize: 18, fontFamily: "Inter_700Bold", paddingHorizontal: 4 }}>
               Сводка
             </Text>
+            {breakdown.map((item) => (
+              <ExerciseProgressCard key={item.exerciseId} item={item} />
+            ))}
+            {false ? (
             <Card padding={0}>
-              {report.exerciseBreakdown.map((ex, i) => (
+              {breakdown.map((ex, i) => (
                 <View
                   key={ex.exerciseId}
                   style={{
@@ -171,6 +189,7 @@ export default function WorkoutReportScreen() {
                 </View>
               ))}
             </Card>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>

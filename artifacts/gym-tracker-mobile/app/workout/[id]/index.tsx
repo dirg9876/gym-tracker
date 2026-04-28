@@ -13,13 +13,15 @@ import {
   useCreateExercise,
   useDeleteSet,
   useFinishWorkout,
+  useGetLevels,
   useGetWorkout,
   useListExercises,
 } from "@workspace/api-client-react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,11 +32,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ExercisePicker } from "@/components/ExercisePicker";
+import { PreviousSets } from "@/components/PreviousSets";
+import { RestTimer } from "@/components/RestTimer";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SetCard } from "@/components/SetCard";
 import { Stepper } from "@/components/Stepper";
 import { useToast } from "@/components/Toast";
 import { useColors } from "@/hooks/useColors";
+import { isBodyweight } from "@/lib/equipment";
 import { formatKg, formatNumber } from "@/lib/format";
 import { clearPlan, loadPlan } from "@/lib/programPlanStash";
 
@@ -51,11 +56,30 @@ export default function ActiveWorkoutScreen() {
     query: { enabled: !!workoutId, queryKey: getGetWorkoutQueryKey(workoutId) },
   });
   const { data: exercises, isLoading: isExercisesLoading } = useListExercises();
+  const { data: levelsData } = useGetLevels();
+  const bodyWeightKg = levelsData?.bodyWeightKg ?? 0;
+  const bodyWeightIsFallback = levelsData?.bodyWeightIsFallback ?? false;
 
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | undefined>();
   const [weight, setWeight] = useState(20);
   const [reps, setReps] = useState(10);
   const [planExercises, setPlanExercises] = useState<PlannedExercise[]>([]);
+  const [restTimerKey, setRestTimerKey] = useState(0);
+
+  const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
+  const isBwSelected = isBodyweight(selectedExercise?.equipment);
+  const prevBwRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (selectedExerciseId === undefined) {
+      prevBwRef.current = null;
+      return;
+    }
+    if (isBwSelected && prevBwRef.current !== true) {
+      setWeight(0);
+    }
+    prevBwRef.current = isBwSelected;
+  }, [selectedExerciseId, isBwSelected]);
 
   // Load plan from storage
   useEffect(() => {
@@ -101,6 +125,7 @@ export default function ActiveWorkoutScreen() {
         queryClient.invalidateQueries({ queryKey: getGetWorkoutQueryKey(workoutId) });
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
         toast.show("success", "Подход добавлен");
+        setRestTimerKey((key) => key + 1);
         // Auto-advance: if the just-added exercise has met its planned sets,
         // move on to the next planned exercise.
         if (planExercises.length > 0 && workout) {
@@ -166,9 +191,14 @@ export default function ActiveWorkoutScreen() {
       toast.show("error", "Выберите упражнение");
       return;
     }
+    if (isBwSelected && bodyWeightKg <= 0) {
+      toast.show("error", "Подожди: загружаем вес тела. Если он не появится, укажи его в профиле.");
+      return;
+    }
+    const submittedWeight = isBwSelected ? Math.max(0, bodyWeightKg + weight) : weight;
     addSet.mutate({
       workoutId,
-      data: { exerciseId: selectedExerciseId, weightKg: weight, reps },
+      data: { exerciseId: selectedExerciseId, weightKg: submittedWeight, reps },
     });
   };
 
@@ -178,6 +208,13 @@ export default function ActiveWorkoutScreen() {
       return;
     }
     finishWorkout.mutate({ workoutId });
+  };
+
+  const handleRepeatLast = (lastWeight: number, lastReps: number) => {
+    const extraWeight = isBwSelected ? Math.max(0, lastWeight - bodyWeightKg) : lastWeight;
+    setWeight(extraWeight);
+    setReps(lastReps);
+    toast.show("success", "Загружены значения прошлого подхода");
   };
 
   const setsByExercise = useMemo<
@@ -293,8 +330,32 @@ export default function ActiveWorkoutScreen() {
               onChange={setWeight}
               step={2.5}
               min={0}
-              chips={[20, 40, 60, 80, 100]}
+              chips={isBwSelected ? [0, 5, 10, 15, 20] : [20, 40, 60, 80, 100]}
             />
+            {isBwSelected && bodyWeightKg > 0 ? (
+              <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: -10 }}>
+                = {formatNumber(weight)} + {formatNumber(bodyWeightKg)} кг с собственным весом
+              </Text>
+            ) : null}
+            {isBwSelected && bodyWeightIsFallback ? (
+              <Pressable
+                onPress={() => router.push("/profile")}
+                style={({ pressed }) => [
+                  styles.warning,
+                  {
+                    backgroundColor: colors.amberSoft,
+                    borderColor: colors.amber,
+                    opacity: pressed ? 0.75 : 1,
+                  },
+                ]}
+              >
+                <Feather name="alert-triangle" size={15} color={colors.amber} />
+                <Text style={[styles.warningText, { color: colors.amber }]}>
+                  Укажи свой вес в профиле, чтобы тоннаж упражнений со своим весом считался верно.
+                  Сейчас используем {formatNumber(bodyWeightKg)} кг по умолчанию.
+                </Text>
+              </Pressable>
+            ) : null}
             <Stepper
               label="Повторения"
               value={reps}
@@ -312,6 +373,12 @@ export default function ActiveWorkoutScreen() {
             />
           </View>
         </Card>
+
+        {selectedExerciseId !== undefined ? (
+          <PreviousSets exerciseId={selectedExerciseId} onRepeatLast={handleRepeatLast} />
+        ) : null}
+
+        <RestTimer key={restTimerKey} />
 
         {setsByExercise.map((group) => (
           <View key={group.exerciseId} style={{ gap: 8 }}>
@@ -364,6 +431,22 @@ export default function ActiveWorkoutScreen() {
 }
 
 const styles = StyleSheet.create({
+  warning: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 16,
+  },
   bottomBar: {
     position: "absolute",
     left: 0,
