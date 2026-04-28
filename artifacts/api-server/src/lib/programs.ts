@@ -495,13 +495,23 @@ export async function buildProgramPlan(
     if (!program) return null;
 
     const exRows = await db
-      .select()
+      .select({
+        exerciseId: customProgramExercisesTable.exerciseId,
+        sets: customProgramExercisesTable.sets,
+        repsMin: customProgramExercisesTable.repsMin,
+        repsMax: customProgramExercisesTable.repsMax,
+        intent: customProgramExercisesTable.intent,
+        note: customProgramExercisesTable.note,
+        sortOrder: customProgramExercisesTable.sortOrder,
+        exerciseName: exercisesTable.name,
+      })
       .from(customProgramExercisesTable)
+      .innerJoin(exercisesTable, eq(customProgramExercisesTable.exerciseId, exercisesTable.id))
       .where(eq(customProgramExercisesTable.programId, numericId))
       .orderBy(asc(customProgramExercisesTable.sortOrder));
 
     const defs = exRows.map((r) => ({
-      name: "",
+      name: r.exerciseName,
       exerciseId: r.exerciseId,
       sets: r.sets,
       repsMin: r.repsMin,

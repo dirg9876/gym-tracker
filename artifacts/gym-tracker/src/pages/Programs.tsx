@@ -67,12 +67,6 @@ export function Programs() {
     },
   });
 
-  const handleDeleteClick = (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    setDeleteId(id);
-    setDeleteName(name);
-  };
-
   const handleConfirmDelete = () => {
     if (deleteId) {
       deleteMutation.mutate({ programId: deleteId });
@@ -105,37 +99,44 @@ export function Programs() {
 
         <div className="grid grid-cols-1 gap-3">
           {data?.programs.map((p) => (
-            <button
+            <div
               key={p.id}
-              onClick={() => setLocation(`/programs/${p.id}`)}
-              className="bg-card p-4 rounded-2xl border border-border active:bg-accent transition-colors text-left flex items-center gap-3"
+              className="bg-card rounded-2xl border border-border flex items-center gap-3 overflow-hidden"
             >
-              <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <ProgramIcon id={p.id} isCustom={p.isCustom} className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-base">{p.name}</div>
-                <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{p.description}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[11px] font-mono text-primary">{p.exerciseCount} упражнений</span>
-                  {p.isCustom && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                      Моя
-                    </span>
-                  )}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setLocation(`/programs/${p.id}`)}
+                onKeyDown={(e) => e.key === "Enter" && setLocation(`/programs/${p.id}`)}
+                className="flex-1 min-w-0 flex items-center gap-3 p-4 cursor-pointer active:bg-accent transition-colors text-left"
+              >
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <ProgramIcon id={p.id} isCustom={p.isCustom} className="h-6 w-6 text-primary" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-base">{p.name}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{p.description}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] font-mono text-primary">{p.exerciseCount} упражнений</span>
+                    {p.isCustom && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        Моя
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {!p.isCustom && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
               </div>
-              {p.isCustom ? (
+              {p.isCustom && (
                 <button
-                  onClick={(e) => handleDeleteClick(e, p.id, p.name)}
-                  className="shrink-0 p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  onClick={() => { setDeleteId(p.id); setDeleteName(p.name); }}
+                  className="shrink-0 p-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors h-full"
+                  aria-label={`Удалить программу ${p.name}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               )}
-            </button>
+            </div>
           ))}
         </div>
       </div>
