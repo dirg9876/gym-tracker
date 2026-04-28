@@ -53,10 +53,7 @@ export function Home() {
     <AppShell>
       {/* Full-width logo banner */}
       <div className="w-full flex flex-col items-center">
-        {/* overflow-hidden physically clips the bottom of the square image,
-            hiding the damaged wordmark artifact without any gradient hacks.
-            Image renders at natural width×height (square), container cuts at ~71%. */}
-        <div className="w-full overflow-hidden" style={{ height: 265 }}>
+        <div className="w-full overflow-hidden" style={{ aspectRatio: "100 / 71" }}>
           <img
             src={gymBeamLogo}
             alt="GYM-BEAM"
