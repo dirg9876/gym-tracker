@@ -1246,6 +1246,51 @@ export const GetProgramPlanResponse = zod.object({
 });
 
 /**
+ * @summary Update a custom program (only owner can update; built-in programs cannot be updated)
+ */
+export const UpdateCustomProgramParams = zod.object({
+  programId: zod.coerce.string(),
+});
+
+export const updateCustomProgramBodyNameMax = 80;
+
+export const updateCustomProgramBodyDescriptionMax = 200;
+
+export const updateCustomProgramBodyExercisesItemSetsMax = 20;
+
+export const UpdateCustomProgramBody = zod.object({
+  name: zod.string().min(1).max(updateCustomProgramBodyNameMax),
+  description: zod
+    .string()
+    .max(updateCustomProgramBodyDescriptionMax)
+    .optional(),
+  exercises: zod
+    .array(
+      zod.object({
+        exerciseId: zod.number(),
+        sets: zod
+          .number()
+          .min(1)
+          .max(updateCustomProgramBodyExercisesItemSetsMax),
+        repsMin: zod.number().min(1),
+        repsMax: zod.number().min(1),
+        intent: zod.enum(["strength", "hypertrophy", "accessory"]),
+        note: zod.string().nullish(),
+      }),
+    )
+    .min(1),
+});
+
+export const UpdateCustomProgramResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  description: zod.string(),
+  emoji: zod.string(),
+  exerciseCount: zod.number(),
+  isCustom: zod.boolean(),
+});
+
+/**
  * @summary Delete a custom program (only owner can delete; built-in programs cannot be deleted)
  */
 export const DeleteCustomProgramParams = zod.object({

@@ -505,6 +505,34 @@ paths:
                 $ref: "#/components/schemas/ProgramPlan"
         "404":
           description: Not found
+    put:
+      operationId: updateCustomProgram
+      tags: [programs]
+      summary: Update a custom program (only owner can update; built-in programs cannot be updated)
+      parameters:
+        - name: programId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomProgramInput"
+      responses:
+        "200":
+          description: Updated program summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgramSummary"
+        "400":
+          description: Validation error
+        "403":
+          description: Not allowed (built-in program or not owner)
+        "404":
+          description: Not found
     delete:
       operationId: deleteCustomProgram
       tags: [programs]
@@ -1380,6 +1408,23 @@ components:
       required: [exerciseId, sets, repsMin, repsMax, intent]
 
     CreateCustomProgramInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 200
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateCustomProgramExerciseInput"
+          minItems: 1
+      required: [name, exercises]
+
+    UpdateCustomProgramInput:
       type: object
       properties:
         name:

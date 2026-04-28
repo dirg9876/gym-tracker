@@ -38,6 +38,7 @@ import type {
   ProgramsListResponse,
   ProgressSeries,
   StatsOverview,
+  UpdateCustomProgramInput,
   UpdateExerciseInput,
   UpdateProfileInput,
   Workout,
@@ -2390,6 +2391,94 @@ export function useGetProgramPlan<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Update a custom program (only owner can update; built-in programs cannot be updated)
+ */
+export const getUpdateCustomProgramUrl = (programId: string) => {
+  return `/api/programs/${programId}`;
+};
+
+export const updateCustomProgram = async (
+  programId: string,
+  updateCustomProgramInput: UpdateCustomProgramInput,
+  options?: RequestInit,
+): Promise<ProgramSummary> => {
+  return customFetch<ProgramSummary>(getUpdateCustomProgramUrl(programId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateCustomProgramInput),
+  });
+};
+
+export const getUpdateCustomProgramMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCustomProgram>>,
+    TError,
+    { programId: string; data: BodyType<UpdateCustomProgramInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCustomProgram>>,
+  TError,
+  { programId: string; data: BodyType<UpdateCustomProgramInput> },
+  TContext
+> => {
+  const mutationKey = ["updateCustomProgram"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCustomProgram>>,
+    { programId: string; data: BodyType<UpdateCustomProgramInput> }
+  > = (props) => {
+    const { programId, data } = props ?? {};
+
+    return updateCustomProgram(programId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCustomProgramMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCustomProgram>>
+>;
+export type UpdateCustomProgramMutationBody =
+  BodyType<UpdateCustomProgramInput>;
+export type UpdateCustomProgramMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a custom program (only owner can update; built-in programs cannot be updated)
+ */
+export const useUpdateCustomProgram = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCustomProgram>>,
+    TError,
+    { programId: string; data: BodyType<UpdateCustomProgramInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCustomProgram>>,
+  TError,
+  { programId: string; data: BodyType<UpdateCustomProgramInput> },
+  TContext
+> => {
+  return useMutation(getUpdateCustomProgramMutationOptions(options));
+};
 
 /**
  * @summary Delete a custom program (only owner can delete; built-in programs cannot be deleted)

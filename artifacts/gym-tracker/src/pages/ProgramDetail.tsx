@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EditProgramDialog } from "@/components/EditProgramDialog";
 import {
   ChevronLeft,
   Dumbbell,
@@ -33,6 +34,7 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 
@@ -67,6 +69,7 @@ export function ProgramDetail() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: plan, isLoading, isError } = useGetProgramPlan(programId, {
     query: {
@@ -143,12 +146,22 @@ export function ProgramDetail() {
             <ChevronLeft className="h-4 w-4 mr-1" /> Программы
           </Button>
           {plan.isCustom && (
-            <button
-              onClick={() => setDeleteOpen(true)}
-              className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setEditOpen(true)}
+                className="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                aria-label="Редактировать программу"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                aria-label="Удалить программу"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </div>
 
@@ -268,6 +281,25 @@ export function ProgramDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {plan.isCustom && (
+        <EditProgramDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          programId={programId}
+          initialName={plan.name}
+          initialDescription={plan.description}
+          initialExercises={plan.exercises.map((ex) => ({
+            exerciseId: ex.exerciseId,
+            name: ex.name,
+            muscleGroup: ex.muscleGroup,
+            sets: ex.sets,
+            repsMin: ex.repsMin,
+            repsMax: ex.repsMax,
+            intent: ex.intent,
+          }))}
+        />
+      )}
     </AppShell>
   );
 }

@@ -504,6 +504,18 @@ export interface CreateCustomProgramInput {
   exercises: CreateCustomProgramExerciseInput[];
 }
 
+export interface UpdateCustomProgramInput {
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  name: string;
+  /** @maxLength 200 */
+  description?: string;
+  /** @minItems 1 */
+  exercises: CreateCustomProgramExerciseInput[];
+}
+
 export interface ProgramsListResponse {
   programs: ProgramSummary[];
 }

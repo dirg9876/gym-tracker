@@ -56,6 +56,7 @@ export * from "./sportRankCode";
 export * from "./statsOverview";
 export * from "./statsOverviewMuscleGroupVolumeItem";
 export * from "./statsOverviewTopExercisesItem";
+export * from "./updateCustomProgramInput";
 export * from "./updateExerciseInput";
 export * from "./updateProfileInput";
 export * from "./updateProfileInputSex";

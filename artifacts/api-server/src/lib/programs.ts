@@ -341,6 +341,61 @@ export async function deleteCustomProgram(
   return { status: "deleted" };
 }
 
+export type UpdateCustomProgramInput = CreateCustomProgramInput;
+
+export async function updateCustomProgram(
+  programId: string,
+  userId: string,
+  input: UpdateCustomProgramInput,
+): Promise<{ status: "updated" | "not_found" | "forbidden"; item?: ProgramListItem }> {
+  const numericId = Number(programId);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    return { status: "forbidden" };
+  }
+  const [row] = await db
+    .select({ id: customProgramsTable.id, userId: customProgramsTable.userId })
+    .from(customProgramsTable)
+    .where(eq(customProgramsTable.id, numericId));
+  if (!row) return { status: "not_found" };
+  if (row.userId !== userId) return { status: "forbidden" };
+
+  await db
+    .update(customProgramsTable)
+    .set({ name: input.name.trim(), description: input.description?.trim() ?? "" })
+    .where(eq(customProgramsTable.id, numericId));
+
+  await db
+    .delete(customProgramExercisesTable)
+    .where(eq(customProgramExercisesTable.programId, numericId));
+
+  if (input.exercises.length > 0) {
+    await db.insert(customProgramExercisesTable).values(
+      input.exercises.map((ex, idx) => ({
+        programId: numericId,
+        exerciseId: ex.exerciseId,
+        sortOrder: idx,
+        sets: ex.sets,
+        repsMin: ex.repsMin,
+        repsMax: ex.repsMax,
+        intent: ex.intent,
+        note: ex.note ?? null,
+      })),
+    );
+  }
+
+  return {
+    status: "updated",
+    item: {
+      id: programId,
+      name: input.name.trim(),
+      description: input.description?.trim() ?? "",
+      emoji: "⚡",
+      exerciseCount: input.exercises.length,
+      isCustom: true,
+    },
+  };
+}
+
 async function buildPlanFromExerciseDefs(
   programId: string,
   name: string,
