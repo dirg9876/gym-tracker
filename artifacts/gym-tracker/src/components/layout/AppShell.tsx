@@ -2,7 +2,6 @@ import { UserButton } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import { BottomNav } from "./BottomNav";
 import { useLocation } from "wouter";
-import gymBeamLogo from "@/assets/gymbeam-logo.png";
 
 const APP_VERSION = "0.1.0";
 
@@ -14,16 +13,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="w-full max-w-md mx-auto flex items-center justify-between px-4 pt-3 pb-1">
         <button
           onClick={() => setLocation("/")}
-          className="flex items-center gap-2 active:opacity-70 transition-opacity"
+          className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
           aria-label="На главную"
         >
-          <img
-            src={gymBeamLogo}
-            alt="GYM-BEAM"
-            className="h-9 w-9 object-contain"
-            style={{ imageRendering: "pixelated" }}
-          />
-          <span className="font-black text-sm tracking-tight leading-none">
+          <span className="font-black text-base tracking-tight leading-none">
             GYM<span className="text-primary">-BEAM</span>
           </span>
         </button>

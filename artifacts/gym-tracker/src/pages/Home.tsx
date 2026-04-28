@@ -8,7 +8,7 @@ import { Dumbbell, Activity, Flame, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { levelImage } from "@/lib/tierImages";
 import { HomeStrengthCard } from "@/components/HomeStrengthCard";
-import gymBeamLogo from "@/assets/gymbeam-logo.png";
+import gymBeamLogo from "@assets/ChatGPT_Image_28_апр._2026_г.,_17_14_50_1777385728026.png";
 
 export function Home() {
   usePageView("/");
@@ -51,19 +51,19 @@ export function Home() {
 
   return (
     <AppShell>
-      {/* Full-width logo banner */}
-      <div className="w-full flex items-center justify-center" style={{ maxHeight: 260 }}>
+      {/* Full-width logo banner — background matches logo's own black so no seams */}
+      <div className="w-full bg-black flex items-center justify-center overflow-hidden" style={{ height: 260 }}>
         <img
           src={gymBeamLogo}
           alt="GYM-BEAM"
-          className="w-full object-contain"
-          style={{ imageRendering: "pixelated", maxHeight: 260 }}
+          className="h-full w-full object-contain"
+          style={{ imageRendering: "pixelated" }}
         />
       </div>
 
       <div className="p-4 space-y-8 pb-24">
         {/* Hero CTA */}
-        <section>
+        <section className="mt-2">
           <h1 className="text-2xl font-black mb-4 tracking-tight">Готов к работе?</h1>
           <Button
             className="w-full min-h-20 h-auto py-4 text-lg font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
