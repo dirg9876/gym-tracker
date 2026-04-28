@@ -154,7 +154,7 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
       "start",
       "--no-dev",
       "--minify",
-      "--localhost",
+      "--offline",
     ],
     {
       stdio: ["ignore", "pipe", "pipe"],

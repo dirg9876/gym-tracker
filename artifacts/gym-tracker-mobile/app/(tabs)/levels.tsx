@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { type Level, type MainExerciseStat, useGetLevels } from "@workspace/api-client-react";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +20,7 @@ import { levelImage } from "@/lib/levelImages";
 export default function LevelsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const scrollRef = useRef<ScrollView | null>(null);
   const ladderTopRef = useRef<number | null>(null);
   const rowYRef = useRef<Map<number, number>>(new Map());
@@ -98,6 +101,15 @@ export default function LevelsScreen() {
           borderBottomColor: colors.cardBorder,
         }}
       >
+        <Pressable
+          onPress={() => router.push("/profile")}
+          style={{ alignSelf: "flex-start", marginBottom: 12, flexDirection: "row", gap: 6 }}
+        >
+          <Feather name="user" size={16} color={colors.mutedForeground} />
+          <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+            Профиль
+          </Text>
+        </Pressable>
         <Text
           style={{
             color: colors.mutedForeground,

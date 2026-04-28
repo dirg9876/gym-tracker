@@ -77,9 +77,13 @@ export default function TabLayout() {
         name="exercises"
         options={{
           title: "Упражнения",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="list" size={size - 2} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="list" size={size - 2} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
