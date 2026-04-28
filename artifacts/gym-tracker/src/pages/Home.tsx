@@ -61,12 +61,18 @@ export function Home() {
             style={{ imageRendering: "pixelated" }}
           />
         </div>
+        <p className="mt-2 mb-3 font-mono font-black tracking-[0.3em] text-sm uppercase select-none">
+          <span className="text-primary">LIFT</span>
+          <span className="text-muted-foreground mx-2">·</span>
+          <span className="text-primary">SHINE</span>
+          <span className="text-muted-foreground mx-2">·</span>
+          <span className="text-primary">REPEAT</span>
+        </p>
       </div>
 
       <div className="p-4 space-y-8 pb-24">
         {/* Hero CTA */}
         <section className="mt-2">
-          <h1 className="text-2xl font-black mb-4 tracking-tight">Готов к работе?</h1>
           <Button
             className="w-full min-h-20 h-auto py-4 text-lg font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
             onClick={handleStartWorkout}
