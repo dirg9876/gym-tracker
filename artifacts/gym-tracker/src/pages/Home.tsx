@@ -8,7 +8,7 @@ import { Dumbbell, Activity, Flame, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { levelImage } from "@/lib/tierImages";
 import { HomeStrengthCard } from "@/components/HomeStrengthCard";
-import gymBeamLogo from "@assets/ChatGPT_Image_28_апр._2026_г.,_17_14_50_1777385728026.png";
+import gymBeamLogo from "@/assets/gymbeam-logo.png";
 
 export function Home() {
   usePageView("/");
@@ -51,12 +51,12 @@ export function Home() {
 
   return (
     <AppShell>
-      {/* Full-width logo banner — background matches logo's own black so no seams */}
-      <div className="w-full bg-black flex items-center justify-center overflow-hidden" style={{ height: 260 }}>
+      {/* Full-width logo banner — transparent PNG sits on the app background */}
+      <div className="w-full" style={{ height: 260 }}>
         <img
           src={gymBeamLogo}
           alt="GYM-BEAM"
-          className="h-full w-full object-contain"
+          className="w-full h-full object-contain"
           style={{ imageRendering: "pixelated" }}
         />
       </div>
