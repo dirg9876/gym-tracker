@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ const INTENT_OPTIONS: { value: Intent; label: string }[] = [
 ];
 
 interface ProgramExerciseRow {
+  uid: string;
   exerciseId: number;
   name: string;
   muscleGroup: string;
@@ -33,6 +35,10 @@ interface ProgramExerciseRow {
   repsMin: number;
   repsMax: number;
   intent: Intent;
+}
+
+function makeUid() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 interface ExercisePickerDialogProps {
@@ -119,12 +125,29 @@ interface ExerciseRowEditorProps {
 
 function ExerciseRowEditor({ row, onChange, onRemove }: ExerciseRowEditorProps) {
   const [intentOpen, setIntentOpen] = useState(false);
+  const dragControls = useDragControls();
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+    <Reorder.Item
+      value={row}
+      dragListener={false}
+      dragControls={dragControls}
+      className="bg-card rounded-2xl border border-border p-4 space-y-3 list-none"
+      whileDrag={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 50, position: "relative" }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+          <button
+            className="shrink-0 p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
+            style={{ touchAction: "none" }}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              dragControls.start(e);
+            }}
+            aria-label="Перетащить упражнение"
+          >
+            <GripVertical className="h-5 w-5" />
+          </button>
           <div className="min-w-0">
             <div className="font-bold text-sm leading-tight break-words">{row.name}</div>
             <div className="text-[11px] text-muted-foreground">{row.muscleGroup}</div>
@@ -133,6 +156,7 @@ function ExerciseRowEditor({ row, onChange, onRemove }: ExerciseRowEditorProps) 
         <button
           onClick={onRemove}
           className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          aria-label="Удалить упражнение"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -201,7 +225,7 @@ function ExerciseRowEditor({ row, onChange, onRemove }: ExerciseRowEditorProps) 
           </div>
         )}
       </div>
-    </div>
+    </Reorder.Item>
   );
 }
 
@@ -234,6 +258,7 @@ export function CreateProgramDialog({ open, onOpenChange }: CreateProgramDialogP
     setExercises((prev) => [
       ...prev,
       {
+        uid: makeUid(),
         exerciseId: ex.id,
         name: ex.name,
         muscleGroup: ex.muscleGroup,
@@ -305,10 +330,15 @@ export function CreateProgramDialog({ open, onOpenChange }: CreateProgramDialogP
                   </label>
                 </div>
 
-                <div className="space-y-3">
+                <Reorder.Group
+                  axis="y"
+                  values={exercises}
+                  onReorder={setExercises}
+                  className="space-y-3 list-none p-0 m-0"
+                >
                   {exercises.map((ex, idx) => (
                     <ExerciseRowEditor
-                      key={`${ex.exerciseId}-${idx}`}
+                      key={ex.uid}
                       row={ex}
                       onChange={(updated) =>
                         setExercises((prev) =>
@@ -320,15 +350,15 @@ export function CreateProgramDialog({ open, onOpenChange }: CreateProgramDialogP
                       }
                     />
                   ))}
+                </Reorder.Group>
 
-                  <button
-                    onClick={() => setPickerOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors text-sm font-medium"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Добавить упражнение
-                  </button>
-                </div>
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors text-sm font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  Добавить упражнение
+                </button>
               </div>
             </div>
           </ScrollArea>
