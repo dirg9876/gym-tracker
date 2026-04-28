@@ -8,6 +8,7 @@ import { Dumbbell, Activity, Flame, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { levelImage } from "@/lib/tierImages";
 import { HomeStrengthCard } from "@/components/HomeStrengthCard";
+import gymBeamLogo from "@assets/ChatGPT_Image_28_апр._2026_г.,_17_14_50_1777385728026.png";
 
 export function Home() {
   usePageView("/");
@@ -52,8 +53,21 @@ export function Home() {
     <AppShell>
       <div className="p-4 space-y-8 pb-24">
         {/* Hero */}
-        <section className="mt-8">
-          <h1 className="text-3xl font-black mb-6 tracking-tight">Готов к работе?</h1>
+        <section className="mt-4">
+          <div className="flex items-center gap-4 mb-6">
+            <img
+              src={gymBeamLogo}
+              alt="GYM-BEAM"
+              className="h-24 w-24 object-contain shrink-0 drop-shadow-[0_0_16px_rgba(255,120,0,0.3)]"
+              style={{ imageRendering: "pixelated" }}
+            />
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">
+                Lift · Shine · Repeat
+              </div>
+              <h1 className="text-2xl font-black tracking-tight leading-tight">Готов к работе?</h1>
+            </div>
+          </div>
           <Button 
             className="w-full min-h-20 h-auto py-4 text-lg font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
             onClick={handleStartWorkout}
