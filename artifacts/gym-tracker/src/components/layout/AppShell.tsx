@@ -2,7 +2,7 @@ import { UserButton } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import { BottomNav } from "./BottomNav";
 import { useLocation } from "wouter";
-import gymBeamLogo from "@assets/ChatGPT_Image_28_апр._2026_г.,_17_14_50_1777385728026.png";
+import gymBeamLogo from "@/assets/gymbeam-logo.png";
 
 const APP_VERSION = "0.1.0";
 
