@@ -51,14 +51,23 @@ export function Home() {
 
   return (
     <AppShell>
-      {/* Full-width logo banner — transparent PNG sits on the app background */}
-      <div className="w-full" style={{ height: 260 }}>
-        <img
-          src={gymBeamLogo}
-          alt="GYM-BEAM"
-          className="w-full h-full object-contain"
-          style={{ imageRendering: "pixelated" }}
-        />
+      {/* Full-width logo banner */}
+      <div className="w-full flex flex-col items-center">
+        <div className="w-full overflow-hidden" style={{ height: 220 }}>
+          <img
+            src={gymBeamLogo}
+            alt="GYM-BEAM"
+            className="w-full h-full object-contain object-top"
+            style={{ imageRendering: "pixelated" }}
+          />
+        </div>
+        <p className="mt-1 mb-3 font-mono font-black tracking-[0.25em] text-[11px] uppercase select-none">
+          <span className="text-primary">LIFT</span>
+          <span className="text-muted-foreground mx-2">·</span>
+          <span className="text-primary">SHINE</span>
+          <span className="text-muted-foreground mx-2">·</span>
+          <span className="text-primary">REPEAT</span>
+        </p>
       </div>
 
       <div className="p-4 space-y-8 pb-24">
