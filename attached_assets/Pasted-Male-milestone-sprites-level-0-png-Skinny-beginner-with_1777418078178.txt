@@ -1,0 +1,52 @@
+Male milestone sprites:
+
+level-0.png — "Стартовый Дрыщ"
+Skinny beginner with oversized sneakers and tiny dumbbell. Nervous but determined.
+
+level-4.png — "Колобок на массе"
+Round funny beginner with gym belt too large, trying to roll a small weight plate.
+
+level-9.png — "Левша с грифом"
+Craftsman-like gym trainee, tiny tool detail on belt, inspecting the barbell like a mechanism.
+
+level-13.png — "Иван с печи"
+Lazy-to-hero gym archetype: sleepy face, blanket-like towel, finally holding a barbell.
+
+level-18.png — "Самовытаскиватель"
+Comedic heroic pose, pulling himself upward with one hand while holding dumbbell in the other.
+
+level-22.png — "Геракл-лайт"
+Young mythic hero: small lion-like towel pattern, beginner heroic pose, orange glow.
+
+level-27.png — "Гладиатор без арены"
+Arena fighter gym archetype: wrist wraps, barbell like a training weapon, no direct movie reference.
+
+level-31.png — "Лабиринтный герой"
+Maze-runner mythic athlete: rope/belt detail, dumbbell in one hand, confident explorer pose.
+
+level-36.png — "Святогор на минималках"
+Large folklore-style lifter, but still growing. Heavy boots, barbell on shoulders.
+
+level-40.png — "Самсон без парикмахера"
+Long-haired strongman joke, hair shining with orange glow, lifting a barbell.
+
+level-45.png — "Добрыня с абонементом"
+Folklore knight converted to gym regular: modern tank top, heroic stance, towel like cape.
+
+level-49.png — "Ахилл с бинтами"
+Athletic hero with ankle wraps exaggerated as joke, powerful sprint/lift pose.
+
+level-54.png — "Алёша с шейкером"
+Clever folklore athlete with shaker, smirk, one dumbbell casually raised.
+
+level-58.png — "Громовержец с молотом"
+Thunder-god archetype without direct copying: hammer-shaped kettlebell, lightning-orange beam.
+
+level-63.png — "Муромец после сна"
+Massive awakened hero, heavy barbell, sleepy-but-dangerous expression.
+
+level-72.png — "Избранный в плаще"
+Late-90s action hero archetype: black coat silhouette, sunglasses, orange beam, gravity-defying barbell.
+
+level-80.png — "Легенда Gym-Beam"
+Final champion sprite: massive barbell overhead, orange beam aura, trophy-like silhouette.
