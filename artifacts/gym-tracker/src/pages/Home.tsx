@@ -53,13 +53,15 @@ export function Home() {
     <AppShell>
       {/* Full-width logo banner */}
       <div className="w-full flex flex-col items-center">
-        <div className="w-full overflow-hidden" style={{ height: 220 }}>
+        <div className="w-full relative" style={{ height: 220 }}>
           <img
             src={gymBeamLogo}
             alt="GYM-BEAM"
             className="w-full h-full object-contain object-top"
             style={{ imageRendering: "pixelated" }}
           />
+          {/* Gradient overlay fades damaged wordmark artifact into the app background */}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
         </div>
         <p className="mt-1 mb-3 font-mono font-black tracking-[0.25em] text-[11px] uppercase select-none">
           <span className="text-primary">LIFT</span>
