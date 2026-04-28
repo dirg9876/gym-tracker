@@ -1,7 +1,34 @@
 import { useLocation } from "wouter";
 import { useListPrograms } from "@workspace/api-client-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  Dumbbell,
+  Zap,
+  Footprints,
+  Target,
+  Flame,
+  ArrowUp,
+  ArrowDown,
+  Activity,
+  type LucideIcon,
+} from "lucide-react";
+
+const PROGRAM_ICON: Record<string, LucideIcon> = {
+  chest: Dumbbell,
+  back: Zap,
+  legs: Footprints,
+  shoulders: Target,
+  arms: Flame,
+  push: ArrowUp,
+  pull: ArrowDown,
+  fullbody: Activity,
+};
+
+function ProgramIcon({ id, className }: { id: string; className?: string }) {
+  const Icon = PROGRAM_ICON[id] ?? Dumbbell;
+  return <Icon className={className} />;
+}
 
 export function Programs() {
   const [, setLocation] = useLocation();
@@ -30,8 +57,8 @@ export function Programs() {
               onClick={() => setLocation(`/programs/${p.id}`)}
               className="bg-card p-4 rounded-2xl border border-border active:bg-accent transition-colors text-left flex items-center gap-3"
             >
-              <div className="text-3xl shrink-0 w-12 h-12 rounded-xl bg-muted/40 flex items-center justify-center">
-                {p.emoji}
+              <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <ProgramIcon id={p.id} className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-base">{p.name}</div>

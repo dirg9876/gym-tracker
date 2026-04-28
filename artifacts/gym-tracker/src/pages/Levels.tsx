@@ -183,14 +183,12 @@ export function Levels() {
 
               {/* Per-exercise sport rank badges */}
               {(() => {
-                const noneEntry = RANK_THRESHOLDS_DESC[RANK_THRESHOLDS_DESC.length - 1]!;
                 const exerciseRanks = stats.mainExercises
-                  .filter((e) => (e.mcKg ?? 0) > 0)
+                  .filter((e) => (e.mcKg ?? 0) > 0 && e.maxWeightKg > 0)
                   .map((e) => ({
                     id: e.exerciseId,
                     name: abbreviateExercise(e.name),
-                    // Fall back to NONE (Б/Р) when user has no lifts yet for this exercise
-                    entry: exerciseRankFromStats(e.maxWeightKg, e.mcKg) ?? noneEntry,
+                    entry: exerciseRankFromStats(e.maxWeightKg, e.mcKg)!,
                   }));
                 if (exerciseRanks.length === 0) return null;
                 return (
@@ -695,6 +693,14 @@ function LevelDetailDialog({
                               </div>
                             </div>
                             {!isTimeBased && ex.mcKg != null && (() => {
+                              if (ex.maxWeightKg === 0) {
+                                const yun3Target = Math.ceil(ex.mcKg * 0.10 * 10) / 10;
+                                return (
+                                  <div className="text-[10px] text-muted-foreground/70">
+                                    Первая цель — Юн III: {formatKg(yun3Target)}
+                                  </div>
+                                );
+                              }
                               const nr = nextRankFromStats(ex.maxWeightKg, ex.mcKg);
                               if (nr) {
                                 return (

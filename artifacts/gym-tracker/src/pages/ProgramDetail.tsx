@@ -9,7 +9,34 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Dumbbell, Activity } from "lucide-react";
+import {
+  ChevronLeft,
+  Dumbbell,
+  Activity,
+  Zap,
+  Footprints,
+  Target,
+  Flame,
+  ArrowUp,
+  ArrowDown,
+  type LucideIcon,
+} from "lucide-react";
+
+const PROGRAM_ICON: Record<string, LucideIcon> = {
+  chest: Dumbbell,
+  back: Zap,
+  legs: Footprints,
+  shoulders: Target,
+  arms: Flame,
+  push: ArrowUp,
+  pull: ArrowDown,
+  fullbody: Activity,
+};
+
+function ProgramIcon({ id, className }: { id: string; className?: string }) {
+  const Icon = PROGRAM_ICON[id] ?? Dumbbell;
+  return <Icon className={className} />;
+}
 
 const intentLabel: Record<string, { label: string; color: string }> = {
   strength: { label: "Сила", color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
@@ -93,8 +120,8 @@ export function ProgramDetail() {
         </Button>
 
         <div className="flex items-start gap-3">
-          <div className="text-4xl shrink-0 w-14 h-14 rounded-2xl bg-muted/40 flex items-center justify-center">
-            {plan.emoji}
+          <div className="shrink-0 w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <ProgramIcon id={plan.id} className="h-7 w-7 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tight">{plan.name}</h1>
