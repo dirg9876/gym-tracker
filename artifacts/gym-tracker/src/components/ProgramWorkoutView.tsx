@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { type ProgramPlan, type WorkoutSet } from "@workspace/api-client-react";
-import { Check, Minus, Plus, SkipForward } from "lucide-react";
+import { Check, ChevronRight, Minus, Plus, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,8 @@ export function ProgramWorkoutView({
   const [activeReps, setActiveReps] = useState(10);
   const [activeWeight, setActiveWeight] = useState(20);
   const currentCardRef = useRef<HTMLDivElement | null>(null);
+  const stepperScrollRef = useRef<HTMLDivElement | null>(null);
+  const currentPillRef = useRef<HTMLButtonElement | null>(null);
 
   const currentExercise = plan.exercises.find((ex) => {
     const logged = loggedMap.get(ex.exerciseId)?.length ?? 0;
@@ -106,6 +108,11 @@ export function ProgramWorkoutView({
       setTimeout(() => {
         currentCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }, 150);
+    }
+    if (currentPillRef.current && stepperScrollRef.current) {
+      setTimeout(() => {
+        currentPillRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }, 100);
     }
   }, [currentExercise?.exerciseId]);
 
@@ -139,6 +146,8 @@ export function ProgramWorkoutView({
     0,
   );
 
+  const progressPct = totalPlanned > 0 ? (totalProcessed / totalPlanned) * 100 : 0;
+
   return (
     <div className="space-y-3 pb-28">
       <div className="flex items-center justify-between py-1">
@@ -146,6 +155,77 @@ export function ProgramWorkoutView({
         <span className="text-xs text-muted-foreground font-mono shrink-0">
           {totalProcessed} / {totalPlanned} подх.
         </span>
+      </div>
+
+      {/* Exercise stepper strip */}
+      <div
+        ref={stepperScrollRef}
+        className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {plan.exercises.map((ex, exIdx) => {
+          const logged = loggedMap.get(ex.exerciseId)?.length ?? 0;
+          const skipped = skippedMap.get(ex.exerciseId) ?? 0;
+          const processed = logged + skipped;
+          const isDone = processed >= ex.sets;
+          const isCurrent = currentExercise?.exerciseId === ex.exerciseId;
+
+          return (
+            <button
+              key={`pill-${ex.exerciseId}-${exIdx}`}
+              ref={isCurrent ? currentPillRef : null}
+              onClick={() => {
+                const cardEl = document.getElementById(`ex-card-${ex.exerciseId}-${exIdx}`);
+                cardEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              className={cn(
+                "flex-shrink-0 flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2 text-left transition-all",
+                "min-w-[100px] max-w-[130px]",
+                isCurrent && "border-primary/60 bg-primary/10",
+                isDone && !isCurrent && "border-border bg-card opacity-60",
+                !isCurrent && !isDone && "border-border/50 bg-card opacity-35",
+              )}
+            >
+              <div className="flex items-center gap-1.5 w-full">
+                <span
+                  className={cn(
+                    "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center",
+                    isDone && "bg-primary/20",
+                    isCurrent && !isDone && "bg-primary/30",
+                    !isCurrent && !isDone && "border border-border",
+                  )}
+                >
+                  {isDone ? (
+                    <Check className="h-2.5 w-2.5 text-primary" />
+                  ) : isCurrent ? (
+                    <ChevronRight className="h-2.5 w-2.5 text-primary" />
+                  ) : null}
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground ml-auto">
+                  {processed}/{ex.sets}
+                </span>
+              </div>
+              <span className="text-[11px] font-semibold leading-tight line-clamp-2 w-full">
+                {ex.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-1">
+        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-primary"
+            initial={false}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
+        </div>
+        <div className="text-[10px] text-muted-foreground text-right">
+          {totalProcessed} из {totalPlanned} подходов
+        </div>
       </div>
 
       {plan.exercises.map((ex, exIdx) => {
@@ -159,6 +239,7 @@ export function ProgramWorkoutView({
         return (
           <div
             key={`${ex.exerciseId}-${exIdx}`}
+            id={`ex-card-${ex.exerciseId}-${exIdx}`}
             ref={isCurrent ? currentCardRef : null}
             className={cn(
               "rounded-2xl border p-4 transition-all duration-300",
