@@ -12,6 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
+import { savePlan } from "@/lib/programPlanStash";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,8 +62,6 @@ const intentLabel: Record<string, { label: string; color: string }> = {
   accessory: { label: "Добивка", color: "text-muted-foreground bg-muted/40 border-border" },
 };
 
-const PROGRAM_PLAN_STORAGE_PREFIX = "gym-tracker:program-plan:";
-
 export function ProgramDetail() {
   const [, params] = useRoute("/programs/:id");
   const programId = params?.id ?? "";
@@ -85,14 +84,7 @@ export function ProgramDetail() {
     mutation: {
       onSuccess: (newWorkout) => {
         if (plan) {
-          try {
-            localStorage.setItem(
-              `${PROGRAM_PLAN_STORAGE_PREFIX}${newWorkout.id}`,
-              JSON.stringify(plan),
-            );
-          } catch {
-            // localStorage may be unavailable; not fatal
-          }
+          savePlan(newWorkout.id, plan);
         }
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
         setLocation(`/workout/${newWorkout.id}`);
@@ -132,6 +124,7 @@ export function ProgramDetail() {
 
   const handleStart = () => {
     if (activeWorkout) {
+      if (plan) savePlan(activeWorkout.id, plan);
       setLocation(`/workout/${activeWorkout.id}`);
       return;
     }
