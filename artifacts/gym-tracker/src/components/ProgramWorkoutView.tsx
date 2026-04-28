@@ -4,6 +4,7 @@ import { Check, Minus, Plus, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const intentLabel: Record<string, { label: string; color: string }> = {
   strength: { label: "Сила", color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
@@ -110,8 +111,14 @@ export function ProgramWorkoutView({
 
   const handleLog = () => {
     if (!currentExercise || isLoggingSet) return;
+    if (currentExercise.isBodyweight && bodyWeightKg <= 0) {
+      toast.error(
+        "Подожди секунду — загружаем твой вес. Если он не подгрузится, укажи его в профиле.",
+      );
+      return;
+    }
     const submitted = currentExercise.isBodyweight
-      ? Math.max(0, (bodyWeightKg || 0) + activeWeight)
+      ? Math.max(0, bodyWeightKg + activeWeight)
       : activeWeight;
     onLogSet(currentExercise.exerciseId, activeReps, submitted);
   };
