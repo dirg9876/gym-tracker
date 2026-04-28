@@ -53,17 +53,18 @@ export function Home() {
     <AppShell>
       {/* Full-width logo banner */}
       <div className="w-full flex flex-col items-center">
-        <div className="w-full relative" style={{ height: 220 }}>
+        {/* overflow-hidden physically clips the bottom of the square image,
+            hiding the damaged wordmark artifact without any gradient hacks.
+            Image renders at natural width×height (square), container cuts at ~71%. */}
+        <div className="w-full overflow-hidden" style={{ height: 265 }}>
           <img
             src={gymBeamLogo}
             alt="GYM-BEAM"
-            className="w-full h-full object-contain object-top"
+            className="w-full h-auto"
             style={{ imageRendering: "pixelated" }}
           />
-          {/* Gradient overlay fades damaged wordmark artifact into the app background */}
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
         </div>
-        <p className="mt-1 mb-3 font-mono font-black tracking-[0.25em] text-[11px] uppercase select-none">
+        <p className="mt-2 mb-3 font-mono font-black tracking-[0.3em] text-sm uppercase select-none">
           <span className="text-primary">LIFT</span>
           <span className="text-muted-foreground mx-2">·</span>
           <span className="text-primary">SHINE</span>
