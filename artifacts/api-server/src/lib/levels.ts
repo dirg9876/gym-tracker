@@ -806,6 +806,16 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
     await setConfirmedLevel(userId, confirmedLevel);
   }
 
+  // Lower the floor when historical data no longer supports it — e.g. the
+  // user explicitly deleted workouts or sets. bestLevelEver is computed over
+  // ALL historical data (max rolling 7-day window, no jump penalty), so it
+  // correctly reflects what the data can actually justify. If confirmedLevel
+  // exceeds that, the data that earned it is gone and the floor should drop.
+  if (confirmedLevel > bestLevelEver) {
+    confirmedLevel = bestLevelEver;
+    await setConfirmedLevel(userId, confirmedLevel);
+  }
+
   // currentLevel — bounded above by confirmed + ladder length, with each step
   // beyond confirmed + 1 charged the jump penalty.
   let currentLevel = 0;
