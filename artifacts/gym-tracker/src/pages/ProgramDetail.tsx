@@ -253,7 +253,7 @@ export function ProgramDetail() {
               ) : (
                 <>
                   <Dumbbell className="mr-2 h-5 w-5" />
-                  Начать «{plan.name}»
+                  Начать программу
                 </>
               )}
             </Button>

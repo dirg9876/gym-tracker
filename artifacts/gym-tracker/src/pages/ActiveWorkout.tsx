@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   useGetWorkout,
@@ -14,8 +14,8 @@ import {
   getListWorkoutsQueryKey,
   getGetStatsOverviewQueryKey,
   getGetProgressQueryKey,
-  type PlannedExercise,
   type WorkoutSet,
+  type ProgramPlan,
 } from "@workspace/api-client-react";
 import { RankBadge } from "@/components/RankBadge";
 import { isBodyweight } from "@/lib/equipment";
@@ -26,6 +26,7 @@ import { ExercisePicker } from "@/components/ExercisePicker";
 import { SetCard } from "@/components/SetCard";
 import { RestTimer } from "@/components/RestTimer";
 import { PreviousSets } from "@/components/PreviousSets";
+import { ProgramWorkoutView } from "@/components/ProgramWorkoutView";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatNumber } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,24 +46,19 @@ export function ActiveWorkout() {
   });
 
   const { data: exercises, isLoading: isExercisesLoading } = useListExercises();
-  // Bodyweight (and the fallback flag) lives on the levels endpoint — it's
-  // already cached for /levels and avoids an extra dedicated profile fetch.
   const { data: levelsData } = useGetLevels();
   const bodyWeightKg = levelsData?.bodyWeightKg ?? 0;
   const bodyWeightIsFallback = levelsData?.bodyWeightIsFallback ?? false;
 
+  const [programPlan, setProgramPlan] = useState<ProgramPlan | null>(null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | undefined>();
   const [weight, setWeight] = useState(20);
   const [reps, setReps] = useState(10);
-  const [planExercises, setPlanExercises] = useState<PlannedExercise[]>([]);
   const [restTimerKey, setRestTimerKey] = useState(0);
 
   const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
   const isBwSelected = isBodyweight(selectedExercise?.equipment);
 
-  // Fetch rank norms for selected exercise (skip for bodyweight and time-based exercises).
-  // `selectedExercise?.mcKg != null` is null/undefined for time-based exercises, avoiding
-  // unnecessary network calls for exercises that will never have rank norms.
   const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
     query: {
       enabled: !!selectedExerciseId && !isBwSelected && selectedExercise?.mcKg != null,
@@ -70,11 +66,9 @@ export function ActiveWorkout() {
     },
   });
 
-  // Derive the rank achieved by the current weight and the next-rank hint (if ≤ 15 kg away).
   const rankHint = useMemo(() => {
     const norms = exerciseNorms?.rankNorms;
     if (!norms?.length || isBwSelected) return null;
-    // rankNorms is ascending: Б/Р (kgTarget≈0) → МСМК (highest kgTarget).
     let achievedIdx = -1;
     for (let i = 0; i < norms.length; i++) {
       if (weight >= norms[i]!.kgTarget) achievedIdx = i;
@@ -86,12 +80,6 @@ export function ActiveWorkout() {
     return { achieved, next: showNext ? nextEntry : null, delta: showNext ? delta : null };
   }, [exerciseNorms, weight, isBwSelected]);
 
-  // When the user switches the picker to a bodyweight exercise, reset the
-  // weight stepper to 0 — for bodyweight exercises the field means "extra
-  // weight added on top of bodyweight", and the default must be 0 (no
-  // plate / weight belt) per the product requirement. We only fire this on
-  // an actual transition into a bodyweight exercise so we don't clobber a
-  // value the user is currently editing for a non-bodyweight exercise.
   const prevBwRef = useRef<boolean | null>(null);
   useEffect(() => {
     if (selectedExerciseId === undefined) {
@@ -104,66 +92,20 @@ export function ActiveWorkout() {
     prevBwRef.current = isBwSelected;
   }, [selectedExerciseId, isBwSelected]);
 
-  // Load plan from localStorage
   useEffect(() => {
     if (!workoutId) return;
     const plan = loadPlan(workoutId);
-    if (plan) setPlanExercises(plan.exercises);
+    if (plan) setProgramPlan(plan);
   }, [workoutId]);
-
-  // Pick the next planned exercise that hasn't met its planned set count yet.
-  const pickNextPlanned = useCallback(
-    (sets: WorkoutSet[]) => {
-      if (planExercises.length === 0) return undefined;
-      const counts = new Map<number, number>();
-      for (const s of sets) counts.set(s.exerciseId, (counts.get(s.exerciseId) ?? 0) + 1);
-      return planExercises.find((p) => (counts.get(p.exerciseId) ?? 0) < p.sets);
-    },
-    [planExercises],
-  );
-
-  const fillFromPlan = useCallback((p: PlannedExercise) => {
-    setSelectedExerciseId(p.exerciseId);
-    if (!p.isBodyweight && p.suggestedWeightKg > 0) setWeight(p.suggestedWeightKg);
-    else if (p.isBodyweight) setWeight(0);
-    const targetReps = Math.round((p.repsMin + p.repsMax) / 2);
-    if (targetReps > 0) setReps(targetReps);
-  }, []);
-
-  // First-time auto-fill when plan loads and nothing is selected.
-  useEffect(() => {
-    if (!workout || selectedExerciseId !== undefined) return;
-    const next = pickNextPlanned(workout.sets);
-    if (next) fillFromPlan(next);
-  }, [workout, selectedExerciseId, pickNextPlanned, fillFromPlan]);
 
   const addSet = useAddSet({
     mutation: {
-      onSuccess: (_data, variables) => {
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetWorkoutQueryKey(workoutId) });
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
-        toast.success("Подход добавлен", { icon: <Check className="h-4 w-4" /> });
-        // Bump rest timer key — start a fresh timer ready for the user.
-        setRestTimerKey((k) => k + 1);
-        // Auto-advance: if just-added exercise has met its planned sets, move on.
-        if (planExercises.length > 0 && workout) {
-          const projectedSets: WorkoutSet[] = [
-            ...workout.sets,
-            {
-              id: -1,
-              exerciseId: variables.data.exerciseId,
-              exerciseName: "",
-              muscleGroup: "",
-              weightKg: variables.data.weightKg,
-              reps: variables.data.reps,
-              volume: variables.data.weightKg * variables.data.reps,
-              createdAt: new Date().toISOString(),
-            } as WorkoutSet,
-          ];
-          const next = pickNextPlanned(projectedSets);
-          if (next && next.exerciseId !== variables.data.exerciseId) {
-            fillFromPlan(next);
-          }
+        if (!programPlan) {
+          toast.success("Подход добавлен", { icon: <Check className="h-4 w-4" /> });
+          setRestTimerKey((k) => k + 1);
         }
       },
     },
@@ -207,33 +149,18 @@ export function ActiveWorkout() {
       toast.error("Выберите упражнение");
       return;
     }
-    // For bodyweight exercises the user enters extra weight (e.g. plate on
-    // a belt for pull-ups); the actual top-set weight stored in the DB is
-    // bodyweight + extra so tonnage and PRs reflect the real load. Guard
-    // against logging while /levels is still in flight — bodyWeightKg
-    // would be 0 in that window and we'd write only the extra weight,
-    // silently corrupting tonnage/PRs for the user.
     if (isBwSelected && bodyWeightKg <= 0) {
       toast.error(
         "Подожди секунду — загружаем твой вес. Если он не подгрузится, укажи его в профиле.",
       );
       return;
     }
-    const submittedWeight = isBwSelected
-      ? Math.max(0, bodyWeightKg + weight)
-      : weight;
-    addSet.mutate({
-      workoutId,
-      data: {
-        exerciseId: selectedExerciseId,
-        weightKg: submittedWeight,
-        reps,
-      },
-    });
+    const submittedWeight = isBwSelected ? Math.max(0, bodyWeightKg + weight) : weight;
+    addSet.mutate({ workoutId, data: { exerciseId: selectedExerciseId, weightKg: submittedWeight, reps } });
   };
 
   const handleFinish = () => {
-    if (workout?.sets.length === 0) {
+    if (workout?.sets.length === 0 && !programPlan) {
       toast.error("Добавьте хотя бы один подход");
       return;
     }
@@ -252,42 +179,80 @@ export function ActiveWorkout() {
 
   if (!workout) return <div className="p-4">Тренировка не найдена</div>;
 
-  // Group sets by exercise for display
-  const setsByExercise = workout.sets.reduce((acc, set) => {
-    if (!acc[set.exerciseId]) acc[set.exerciseId] = [];
-    acc[set.exerciseId].push(set);
-    return acc;
-  }, {} as Record<number, typeof workout.sets>);
-
+  const setsByExercise = workout.sets.reduce(
+    (acc, set) => {
+      if (!acc[set.exerciseId]) acc[set.exerciseId] = [];
+      acc[set.exerciseId].push(set);
+      return acc;
+    },
+    {} as Record<number, WorkoutSet[]>,
+  );
   const uniqueExercises = Object.keys(setsByExercise).length;
+
+  const StatsBar = () => (
+    <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3 shadow-sm">
+      <div className="max-w-md mx-auto flex justify-between items-center text-sm">
+        <motion.div
+          key={`vol-${workout.totalVolume}`}
+          initial={{ scale: 1.1, color: "hsl(var(--primary))" }}
+          animate={{ scale: 1, color: "inherit" }}
+          className="flex flex-col items-center"
+        >
+          <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Тоннаж</span>
+          <span className="font-mono font-bold">{formatKg(workout.totalVolume)}</span>
+        </motion.div>
+        <motion.div
+          key={`reps-${workout.totalReps}`}
+          initial={{ scale: 1.1, color: "hsl(var(--primary))" }}
+          animate={{ scale: 1, color: "inherit" }}
+          className="flex flex-col items-center"
+        >
+          <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Повторы</span>
+          <span className="font-mono font-bold">{formatNumber(workout.totalReps)}</span>
+        </motion.div>
+        <motion.div
+          key={`sets-${workout.totalSets}`}
+          initial={{ scale: 1.1, color: "hsl(var(--primary))" }}
+          animate={{ scale: 1, color: "inherit" }}
+          className="flex flex-col items-center"
+        >
+          <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Подходы</span>
+          <span className="font-mono font-bold">{workout.totalSets}</span>
+        </motion.div>
+        <div className="flex flex-col items-center">
+          <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Упражнения</span>
+          <span className="font-mono font-bold">{uniqueExercises}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (programPlan) {
+    return (
+      <div className="flex flex-col min-h-[100dvh] bg-background text-foreground">
+        <StatsBar />
+        <div className="flex-1 w-full max-w-md mx-auto p-4">
+          <ProgramWorkoutView
+            plan={programPlan}
+            workoutSets={workout.sets}
+            bodyWeightKg={bodyWeightKg}
+            onLogSet={(exerciseId, repsVal, weightKg) => {
+              addSet.mutate({ workoutId, data: { exerciseId, weightKg, reps: repsVal } });
+            }}
+            onFinish={handleFinish}
+            isLoggingSet={addSet.isPending}
+            isFinishing={finishWorkout.isPending}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background text-foreground pb-24">
-      {/* Top Running Totals */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3 shadow-sm">
-        <div className="max-w-md mx-auto flex justify-between items-center text-sm">
-          <motion.div key={`vol-${workout.totalVolume}`} initial={{ scale: 1.1, color: "hsl(var(--primary))" }} animate={{ scale: 1, color: "inherit" }} className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Тоннаж</span>
-            <span className="font-mono font-bold">{formatKg(workout.totalVolume)}</span>
-          </motion.div>
-          <motion.div key={`reps-${workout.totalReps}`} initial={{ scale: 1.1, color: "hsl(var(--primary))" }} animate={{ scale: 1, color: "inherit" }} className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Повторы</span>
-            <span className="font-mono font-bold">{formatNumber(workout.totalReps)}</span>
-          </motion.div>
-          <motion.div key={`sets-${workout.totalSets}`} initial={{ scale: 1.1, color: "hsl(var(--primary))" }} animate={{ scale: 1, color: "inherit" }} className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Подходы</span>
-            <span className="font-mono font-bold">{workout.totalSets}</span>
-          </motion.div>
-          <div className="flex flex-col items-center">
-            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Упражнения</span>
-            <span className="font-mono font-bold">{uniqueExercises}</span>
-          </div>
-        </div>
-      </div>
+      <StatsBar />
 
       <div className="flex-1 w-full max-w-md mx-auto p-4 space-y-4">
-
-        {/* Logger Form */}
         <div className="bg-card p-4 rounded-3xl border border-border shadow-sm space-y-6">
           <ExercisePicker
             exercises={exercises || []}
@@ -305,7 +270,6 @@ export function ActiveWorkout() {
             chips={isBwSelected ? [0, 5, 10, 15, 20] : [20, 40, 60, 80, 100]}
           />
 
-          {/* Rank hint: shown only for non-bodyweight exercises with norms */}
           <AnimatePresence mode="wait">
             {rankHint?.achieved && (
               <motion.div
@@ -338,9 +302,8 @@ export function ActiveWorkout() {
             >
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>
-                Укажи свой вес в профиле, чтобы тоннаж по упражнениям с
-                собственным весом считался верно. Сейчас используем {formatNumber(bodyWeightKg)} кг
-                по умолчанию.
+                Укажи свой вес в профиле, чтобы тоннаж по упражнениям с собственным весом считался
+                верно. Сейчас используем {formatNumber(bodyWeightKg)} кг по умолчанию.
               </span>
             </Link>
           )}
@@ -364,15 +327,11 @@ export function ActiveWorkout() {
         </div>
 
         {selectedExerciseId !== undefined && (
-          <PreviousSets
-            exerciseId={selectedExerciseId}
-            onRepeatLast={handleRepeatLast}
-          />
+          <PreviousSets exerciseId={selectedExerciseId} onRepeatLast={handleRepeatLast} />
         )}
 
         <RestTimer key={restTimerKey} />
 
-        {/* Logged Sets */}
         <div className="space-y-6 pt-2">
           <AnimatePresence>
             {Object.entries(setsByExercise).map(([exerciseIdStr, sets]) => {
@@ -385,7 +344,9 @@ export function ActiveWorkout() {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-2"
                 >
-                  <h3 className="font-bold text-lg sticky top-16 bg-background/80 backdrop-blur py-2 z-0">{exName}</h3>
+                  <h3 className="font-bold text-lg sticky top-16 bg-background/80 backdrop-blur py-2 z-0">
+                    {exName}
+                  </h3>
                   <div className="space-y-2">
                     {sets.map((set, idx) => (
                       <SetCard
@@ -403,7 +364,6 @@ export function ActiveWorkout() {
         </div>
       </div>
 
-      {/* Finish Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pb-8">
         <div className="max-w-md mx-auto">
           <Button
