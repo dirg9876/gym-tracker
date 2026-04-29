@@ -113,7 +113,7 @@ title = "level 8"
 id = "Yybqznri1vsVTX6OUsTOx"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-0.png"
 type = "image"
-title = "generated_image"
+title = "level 0 test"
 
 [[generated]]
 id = "kX77FQFkmAnP3BjoNayhg"
@@ -221,7 +221,7 @@ title = "lvl 26"
 id = "ftJCKbJcxdlQrxNbqe8Bl"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-27.png"
 type = "image"
-title = "generated_image"
+title = "lvl 27"
 
 [[generated]]
 id = "PVkcH_y-MniqIq6rKi4Hd"
@@ -329,7 +329,7 @@ title = "lvl 44"
 id = "ANn31QGDKHRPgnKStHC0_"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-45.png"
 type = "image"
-title = "generated_image"
+title = "lvl 45"
 
 [[generated]]
 id = "wT2x_CAE-ghQNFwSnFwXc"
@@ -383,7 +383,7 @@ title = "lvl 53"
 id = "iQErvpqvPscK4q9jhKmTM"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-54.png"
 type = "image"
-title = "generated_image"
+title = "lvl 54"
 
 [[generated]]
 id = "9f15ojaIe2ujS-PWAzCgT"
@@ -407,7 +407,7 @@ title = "lvl 57"
 id = "DZ2V1QGywpRWTqYyVikmZ"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-58.png"
 type = "image"
-title = "generated_image"
+title = "thor viking norse"
 
 [[generated]]
 id = "POQTx2AdU1v60stomm655"
@@ -437,7 +437,7 @@ title = "lvl 62"
 id = "5UU9yXi4nvWLqLyylspCB"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-63.png"
 type = "image"
-title = "generated_image"
+title = "lvl 63"
 
 [[generated]]
 id = "obtgZadIFGV_NOICSWPf-"
@@ -491,7 +491,7 @@ title = "lvl 71"
 id = "7G0SNyAePDeEQAL_fLInu"
 uri = "file://artifacts/gym-tracker/src/assets/levels/level-72.png"
 type = "image"
-title = "generated_image"
+title = "lvl 72"
 
 [[generated]]
 id = "cQU2_lsY5rKvCuJFZcosd"
