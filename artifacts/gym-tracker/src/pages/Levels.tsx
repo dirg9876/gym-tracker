@@ -3,6 +3,7 @@ import { usePageView } from "@/hooks/usePageView";
 import {
   useGetLevels,
   useGetExerciseNorms,
+  getGetExerciseNormsQueryKey,
   type Level,
   type MainExerciseStat,
   type SportRank,
@@ -433,7 +434,7 @@ export function Levels() {
                                   {short}
                                   {bwAutoPassed && ": любой подход"}
                                   {kgReqLabel && `: ${kgReqLabel}`}
-                                  {isBw && !bwAutoPassed && <>: <BwRepCompact exerciseId={e.exerciseId} /></>}
+                                  {isBw && !bwAutoPassed && `: +${formatKg(Math.max(0, req - bodyWeightKg))} кг доп.`}
                                 </span>
                               );
                             })}
@@ -555,13 +556,9 @@ function DialogExerciseRow({
             <span className="text-primary">Ниже грифа — засчитано</span>
           ) : bwAutoPass ? (
             <span className="text-primary">Любой подход</span>
-          ) : isBw && bwRep ? (
-            <span className="font-mono text-foreground/80">
-              {bwRep.currentLabel ?? bwRep.nextLabel ?? "—"}
-            </span>
           ) : isBw ? (
             <span className="font-mono text-foreground/80">
-              +{formatKg(required - bodyWeightKg)} доп.
+              +{formatKg(Math.max(0, required - bodyWeightKg))} кг доп.
             </span>
           ) : (
             <span className="font-mono text-foreground/80">{formatKg(required)}</span>
@@ -570,12 +567,17 @@ function DialogExerciseRow({
       </div>
       {!isTimeBased && ex.mcKg != null && (() => {
         if (isBw && bwRep) {
+          const userPart = bwRep.currentLabel ? `Сейчас: ${bwRep.currentLabel}` : null;
           if (!bwRep.nextEntry) {
-            return <div className="text-[10px] text-primary/70">МСМК достигнут ✓</div>;
+            return (
+              <div className="text-[10px] text-primary/70">
+                {userPart ? `${userPart} · ` : ""}МСМК достигнут ✓
+              </div>
+            );
           }
           return (
             <div className="text-[10px] text-muted-foreground/70">
-              → {bwRep.nextEntry.rank.shortLabel}: {bwRep.nextLabel}
+              {userPart ? `${userPart} · ` : ""}до {bwRep.nextEntry.rank.shortLabel}: {bwRep.nextLabel}
             </div>
           );
         }
@@ -811,8 +813,9 @@ function ProgressRow({
 }
 
 function useBwRepState(exerciseId: number, enabled: boolean) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: norms } = useGetExerciseNorms(exerciseId, { query: { enabled } as any });
+  const { data: norms } = useGetExerciseNorms(exerciseId, {
+    query: { enabled, queryKey: getGetExerciseNormsQueryKey(exerciseId) },
+  });
   const repNorms = norms?.repNorms;
   const userMaxReps = norms?.userMaxRepsAtBodyweight ?? null;
   const userMaxExtra = norms?.userMaxExtraWeightAt30Reps ?? null;
@@ -856,16 +859,9 @@ function useBwRepState(exerciseId: number, enabled: boolean) {
     return Math.min(100, Math.max(0, ((reps - prev) / (nextEntry.reps - prev)) * 100));
   })();
 
-  return { achieved, nextEntry, currentLabel, nextLabel, barPct, userMaxReps, userMaxExtra };
+  return { achieved, nextEntry, currentLabel, nextLabel, barPct, userMaxReps, userMaxExtra, repNorms };
 }
 
-function BwRepCompact({ exerciseId }: { exerciseId: number }) {
-  const state = useBwRepState(exerciseId, true);
-  if (!state) return null;
-  const text = state.currentLabel ?? state.nextLabel;
-  if (!text) return null;
-  return <span className="text-[10px] text-muted-foreground/70">{text}</span>;
-}
 
 function MainExercisesGrid({
   exercises,
@@ -981,34 +977,17 @@ function BwAwareGridRow({
           <span className="text-[11px] text-primary">Ниже грифа — засчитано</span>
         ) : bwAutoPass ? (
           <span className="text-[11px] text-primary">Любой подход — засчитано</span>
-        ) : isBw && bwRep ? (
-          <div className="space-y-1">
-            <div className="flex items-baseline justify-between gap-2 leading-tight">
-              <span className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}>
-                {bwRep.currentLabel ?? "—"}
-              </span>
-              {bwRep.nextLabel && (
-                <span className="text-[10px] text-muted-foreground/70">
-                  → {bwRep.nextLabel}
-                </span>
-              )}
-            </div>
-            <div className="h-1 rounded-full overflow-hidden bg-border/60">
-              <div
-                className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
-                style={{ width: `${bwRep.barPct}%` }}
-              />
-            </div>
-          </div>
         ) : required != null && required > 0 ? (
           <div className="space-y-1">
             <div className="flex items-baseline justify-between gap-2 leading-tight">
               <span
                 className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
               >
-                {isBw
-                  ? `+${formatNumber(userExtra ?? 0)} кг доп.`
-                  : `${formatNumber(e.maxWeightKg)} кг`}
+                {isBw && bwRep?.currentLabel
+                  ? bwRep.currentLabel
+                  : isBw
+                    ? `+${formatNumber(userExtra ?? 0)} кг доп.`
+                    : `${formatNumber(e.maxWeightKg)} кг`}
               </span>
               <span className="text-[10px] text-muted-foreground/70">
                 {isBw && extraRequired != null
