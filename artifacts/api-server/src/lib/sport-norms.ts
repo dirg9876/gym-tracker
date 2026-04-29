@@ -336,9 +336,9 @@ export const BODYWEIGHT_REP_NORMS: Record<
 > = {
   "Подтягивания": {
     male: [
-      { reps: 1,  extraKg: 0  }, // NONE
-      { reps: 6,  extraKg: 0  }, // Юн III
-      { reps: 10, extraKg: 0  }, // Юн II
+      { reps: 5,  extraKg: 0  }, // NONE
+      { reps: 8,  extraKg: 0  }, // Юн III
+      { reps: 12, extraKg: 0  }, // Юн II
       { reps: 15, extraKg: 0  }, // Юн I
       { reps: 20, extraKg: 0  }, // III р.
       { reps: 25, extraKg: 0  }, // II р.
@@ -348,13 +348,13 @@ export const BODYWEIGHT_REP_NORMS: Record<
       { reps: 30, extraKg: 38 }, // МСМК
     ],
     female: [
-      { reps: 1,  extraKg: 0  }, // NONE
-      { reps: 3,  extraKg: 0  }, // Юн III
-      { reps: 6,  extraKg: 0  }, // Юн II
-      { reps: 10, extraKg: 0  }, // Юн I
-      { reps: 14, extraKg: 0  }, // III р.
-      { reps: 18, extraKg: 0  }, // II р.
-      { reps: 22, extraKg: 0  }, // I р.
+      { reps: 5,  extraKg: 0  }, // NONE
+      { reps: 8,  extraKg: 0  }, // Юн III
+      { reps: 11, extraKg: 0  }, // Юн II
+      { reps: 14, extraKg: 0  }, // Юн I
+      { reps: 17, extraKg: 0  }, // III р.
+      { reps: 20, extraKg: 0  }, // II р.
+      { reps: 25, extraKg: 0  }, // I р.
       { reps: 30, extraKg: 0  }, // КМС
       { reps: 30, extraKg: 8  }, // МС
       { reps: 30, extraKg: 18 }, // МСМК
@@ -362,7 +362,7 @@ export const BODYWEIGHT_REP_NORMS: Record<
   },
   "Отжимания на брусьях": {
     male: [
-      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 5,  extraKg: 0  }, // NONE
       { reps: 10, extraKg: 0  }, // Юн III
       { reps: 15, extraKg: 0  }, // Юн II
       { reps: 20, extraKg: 0  }, // Юн I
@@ -374,9 +374,9 @@ export const BODYWEIGHT_REP_NORMS: Record<
       { reps: 30, extraKg: 50 }, // МСМК
     ],
     female: [
-      { reps: 1,  extraKg: 0  }, // NONE
-      { reps: 6,  extraKg: 0  }, // Юн III
-      { reps: 10, extraKg: 0  }, // Юн II
+      { reps: 5,  extraKg: 0  }, // NONE
+      { reps: 8,  extraKg: 0  }, // Юн III
+      { reps: 12, extraKg: 0  }, // Юн II
       { reps: 15, extraKg: 0  }, // Юн I
       { reps: 20, extraKg: 0  }, // III р.
       { reps: 25, extraKg: 0  }, // II р.
@@ -388,7 +388,7 @@ export const BODYWEIGHT_REP_NORMS: Record<
   },
   "Отжимания узким хватом": {
     male: [
-      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 5,  extraKg: 0  }, // NONE
       { reps: 12, extraKg: 0  }, // Юн III
       { reps: 18, extraKg: 0  }, // Юн II
       { reps: 22, extraKg: 0  }, // Юн I
@@ -400,7 +400,7 @@ export const BODYWEIGHT_REP_NORMS: Record<
       { reps: 30, extraKg: 45 }, // МСМК
     ],
     female: [
-      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 5,  extraKg: 0  }, // NONE
       { reps: 8,  extraKg: 0  }, // Юн III
       { reps: 13, extraKg: 0  }, // Юн II
       { reps: 17, extraKg: 0  }, // Юн I

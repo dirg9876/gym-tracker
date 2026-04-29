@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePageView } from "@/hooks/usePageView";
 import {
   useGetLevels,
+  useGetExerciseNorms,
   type Level,
   type MainExerciseStat,
   type SportRank,
@@ -420,14 +421,9 @@ export function Levels() {
                               const autoPassed = isTimeBased || belowBar || bwAutoPassed;
                               const passed = autoPassed || (req > 0 && e.maxWeightKg >= req);
                               const short = abbreviateExercise(e.name);
-                              let reqLabel: string | null = null;
-                              if (!autoPassed && req > 0) {
-                                if (isBw) {
-                                  reqLabel = `+${formatNumber(req - bodyWeightKg)} кг доп.`;
-                                } else {
-                                  reqLabel = `${formatNumber(req)} кг`;
-                                }
-                              }
+                              const kgReqLabel = (!autoPassed && req > 0 && !isBw)
+                                ? `${formatNumber(req)} кг`
+                                : null;
                               return (
                                 <span
                                   key={e.exerciseId}
@@ -436,7 +432,8 @@ export function Levels() {
                                   {passed && "✓ "}
                                   {short}
                                   {bwAutoPassed && ": любой подход"}
-                                  {reqLabel && `: ${reqLabel}`}
+                                  {kgReqLabel && `: ${kgReqLabel}`}
+                                  {isBw && !bwAutoPassed && <>: <BwRepCompact exerciseId={e.exerciseId} /></>}
                                 </span>
                               );
                             })}
@@ -520,6 +517,93 @@ function abbreviateExercise(name: string): string {
   });
   const short = words.slice(0, 2).join(" ");
   return short.length > 14 ? short.slice(0, 13) + "…" : short;
+}
+
+function DialogExerciseRow({
+  row,
+  bodyWeightKg,
+}: {
+  row: {
+    ex: MainExerciseStat;
+    required: number;
+    belowBar: boolean;
+    isTimeBased: boolean;
+    isBw: boolean;
+    bwAutoPass: boolean;
+    passed: boolean;
+  };
+  bodyWeightKg: number;
+}) {
+  const { ex, required, belowBar, isTimeBased, isBw, bwAutoPass, passed } = row;
+  const bwRep = useBwRepState(ex.exerciseId, isBw);
+
+  return (
+    <div
+      className={`flex flex-col gap-0.5 px-3 py-2 rounded-md border ${
+        passed ? "border-primary/40 bg-primary/10" : "border-border bg-card/40"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {passed && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+          <span className="text-sm font-medium break-words">{ex.name}</span>
+        </div>
+        <div className="text-xs text-right shrink-0">
+          {isTimeBased ? (
+            <span className="text-primary">Время — засчитано</span>
+          ) : belowBar ? (
+            <span className="text-primary">Ниже грифа — засчитано</span>
+          ) : bwAutoPass ? (
+            <span className="text-primary">Любой подход</span>
+          ) : isBw && bwRep ? (
+            <span className="font-mono text-foreground/80">
+              {bwRep.currentLabel ?? bwRep.nextLabel ?? "—"}
+            </span>
+          ) : isBw ? (
+            <span className="font-mono text-foreground/80">
+              +{formatKg(required - bodyWeightKg)} доп.
+            </span>
+          ) : (
+            <span className="font-mono text-foreground/80">{formatKg(required)}</span>
+          )}
+        </div>
+      </div>
+      {!isTimeBased && ex.mcKg != null && (() => {
+        if (isBw && bwRep) {
+          if (!bwRep.nextEntry) {
+            return <div className="text-[10px] text-primary/70">МСМК достигнут ✓</div>;
+          }
+          return (
+            <div className="text-[10px] text-muted-foreground/70">
+              → {bwRep.nextEntry.rank.shortLabel}: {bwRep.nextLabel}
+            </div>
+          );
+        }
+        if (ex.maxWeightKg === 0) {
+          const yun3Target = Math.ceil(ex.mcKg * 0.10 * 10) / 10;
+          return (
+            <div className="text-[10px] text-muted-foreground/70">
+              Первая цель — Юн III: {formatKg(yun3Target)}
+            </div>
+          );
+        }
+        const nr = nextRankFromStats(ex.maxWeightKg, ex.mcKg);
+        if (nr) {
+          return (
+            <div className="text-[10px] text-muted-foreground/70">
+              {nr.label}: {formatKg(nr.kgTarget)}
+            </div>
+          );
+        }
+        if (ex.maxWeightKg >= ex.mcKg) {
+          return <div className="text-[10px] text-primary/70">МСМК достигнут ✓</div>;
+        }
+        return (
+          <div className="text-[10px] text-muted-foreground/70">МСМК: {formatKg(ex.mcKg)}</div>
+        );
+      })()}
+    </div>
+  );
 }
 
 function LevelDetailDialog({
@@ -653,79 +737,12 @@ function LevelDetailDialog({
                     )}
                     {rows.length > 0 && (
                       <div className="space-y-1.5">
-                        {rows.map(({ ex, required, belowBar, isTimeBased, isBw, bwAutoPass, passed }) => (
-                          <div
-                            key={ex.exerciseId}
-                            className={`flex flex-col gap-0.5 px-3 py-2 rounded-md border ${
-                              passed
-                                ? "border-primary/40 bg-primary/10"
-                                : "border-border bg-card/40"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2 min-w-0">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {passed && (
-                                  <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-                                )}
-                                <span className="text-sm font-medium break-words">
-                                  {ex.name}
-                                </span>
-                              </div>
-                              <div className="text-xs text-right shrink-0">
-                                {isTimeBased ? (
-                                  <span className="text-primary">
-                                    Время — засчитано
-                                  </span>
-                                ) : belowBar ? (
-                                  <span className="text-primary">
-                                    Ниже грифа — засчитано
-                                  </span>
-                                ) : bwAutoPass ? (
-                                  <span className="text-primary">
-                                    Любой подход
-                                  </span>
-                                ) : isBw ? (
-                                  <span className="font-mono text-foreground/80">
-                                    +{formatKg(required - bodyWeightKg)} доп.
-                                  </span>
-                                ) : (
-                                  <span className="font-mono text-foreground/80">
-                                    {formatKg(required)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            {!isTimeBased && ex.mcKg != null && (() => {
-                              if (ex.maxWeightKg === 0) {
-                                const yun3Target = Math.ceil(ex.mcKg * 0.10 * 10) / 10;
-                                return (
-                                  <div className="text-[10px] text-muted-foreground/70">
-                                    Первая цель — Юн III: {formatKg(yun3Target)}
-                                  </div>
-                                );
-                              }
-                              const nr = nextRankFromStats(ex.maxWeightKg, ex.mcKg);
-                              if (nr) {
-                                return (
-                                  <div className="text-[10px] text-muted-foreground/70">
-                                    {nr.label}: {formatKg(nr.kgTarget)}
-                                  </div>
-                                );
-                              }
-                              if (ex.maxWeightKg >= ex.mcKg) {
-                                return (
-                                  <div className="text-[10px] text-primary/70">
-                                    МСМК достигнут ✓
-                                  </div>
-                                );
-                              }
-                              return (
-                                <div className="text-[10px] text-muted-foreground/70">
-                                  МСМК: {formatKg(ex.mcKg)}
-                                </div>
-                              );
-                            })()}
-                          </div>
+                        {rows.map((row) => (
+                          <DialogExerciseRow
+                            key={row.ex.exerciseId}
+                            row={row}
+                            bodyWeightKg={bodyWeightKg}
+                          />
                         ))}
                       </div>
                     )}
@@ -793,6 +810,63 @@ function ProgressRow({
   );
 }
 
+function useBwRepState(exerciseId: number, enabled: boolean) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: norms } = useGetExerciseNorms(exerciseId, { query: { enabled } as any });
+  const repNorms = norms?.repNorms;
+  const userMaxReps = norms?.userMaxRepsAtBodyweight ?? null;
+  const userMaxExtra = norms?.userMaxExtraWeightAt30Reps ?? null;
+
+  if (!repNorms?.length) return null;
+
+  let achievedIdx = -1;
+  for (let i = repNorms.length - 1; i >= 0; i--) {
+    const norm = repNorms[i]!;
+    if (norm.extraKg === 0) {
+      if (userMaxReps !== null && userMaxReps >= norm.reps) { achievedIdx = i; break; }
+    } else {
+      if (userMaxExtra !== null && userMaxExtra >= norm.extraKg) { achievedIdx = i; break; }
+    }
+  }
+
+  const achieved = achievedIdx >= 0 ? repNorms[achievedIdx]! : null;
+  const nextEntry = achievedIdx < repNorms.length - 1 ? repNorms[achievedIdx + 1]! : null;
+
+  const currentLabel =
+    userMaxExtra !== null && userMaxExtra > 0
+      ? `+${formatNumber(userMaxExtra)} кг доп.`
+      : userMaxReps !== null && userMaxReps > 0
+        ? `${userMaxReps} повт.`
+        : null;
+
+  const nextLabel = nextEntry
+    ? nextEntry.extraKg > 0
+      ? `+${formatNumber(nextEntry.extraKg)} кг доп.`
+      : `${nextEntry.reps} повт.`
+    : null;
+
+  const barPct = (() => {
+    if (!nextEntry) return 100;
+    if (nextEntry.extraKg > 0) {
+      const extra = userMaxExtra ?? 0;
+      return Math.min(100, (extra / nextEntry.extraKg) * 100);
+    }
+    const reps = userMaxReps ?? 0;
+    const prev = achieved?.extraKg === 0 ? (achieved.reps) : 0;
+    return Math.min(100, Math.max(0, ((reps - prev) / (nextEntry.reps - prev)) * 100));
+  })();
+
+  return { achieved, nextEntry, currentLabel, nextLabel, barPct, userMaxReps, userMaxExtra };
+}
+
+function BwRepCompact({ exerciseId }: { exerciseId: number }) {
+  const state = useBwRepState(exerciseId, true);
+  if (!state) return null;
+  const text = state.currentLabel ?? state.nextLabel;
+  if (!text) return null;
+  return <span className="text-[10px] text-muted-foreground/70">{text}</span>;
+}
+
 function MainExercisesGrid({
   exercises,
   bodyWeightKg,
@@ -813,108 +887,175 @@ function MainExercisesGrid({
         const rowPenalty = e.requiredKgPenaltyMultiplier ?? 1;
         const showPenaltyHint = rowPenalty > 1;
 
-        // For progress bar: for BW exercises, compare extraWeight vs extraRequired
-        const extraRequired = isBw && required != null ? required - bodyWeightKg : null;
-        const userExtra = isBw ? Math.max(0, e.maxWeightKg - bodyWeightKg) : null;
-        const barPct =
-          required != null && required > 0 && !autoPassed
-            ? isBw && extraRequired != null && extraRequired > 0 && userExtra != null
-              ? Math.min(100, (userExtra / extraRequired) * 100)
-              : Math.min(100, (e.maxWeightKg / required) * 100)
-            : null;
-
-        // Next rank hint
-        const nextRank = e.mcKg != null ? nextRankFromStats(e.maxWeightKg, e.mcKg) : null;
         const currentRankEntry = e.mcKg != null && e.maxWeightKg > 0
           ? exerciseRankFromStats(e.maxWeightKg, e.mcKg)
           : null;
 
         return (
-          <div
+          <BwAwareGridRow
             key={e.exerciseId}
-            className={`flex flex-col gap-1.5 text-xs px-2.5 py-2 rounded-md border ${
-              passed
-                ? "border-primary/40 bg-primary/10 text-foreground"
-                : "border-border bg-card/40 text-muted-foreground"
-            }`}
-          >
-            {/* Row 1: icon + name + rank badge */}
-            <div className="flex items-start gap-2">
-              {passed ? (
-                <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-              ) : (
-                <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0 mt-0.5" />
-              )}
-              <span className="font-medium break-words flex-1">{e.name}</span>
-              {currentRankEntry && currentRankEntry.code !== "NONE" && (
-                <span
-                  className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none ${currentRankEntry.cls}`}
-                  title={currentRankEntry.label}
-                >
-                  {currentRankEntry.shortLabel}
-                </span>
-              )}
-            </div>
-
-            {/* Row 2: auto-passed labels OR weight progress */}
-            <div className="pl-5">
-              {e.autoPassedReason === "time_based_exercise" ? (
-                <span className="text-[11px] text-primary">Время — засчитано</span>
-              ) : e.autoPassedReason === "below_bar_weight" ? (
-                <span className="text-[11px] text-primary">Ниже грифа — засчитано</span>
-              ) : bwAutoPass ? (
-                <span className="text-[11px] text-primary">Любой подход — засчитано</span>
-              ) : required != null && required > 0 ? (
-                <div className="space-y-1">
-                  <div className="flex items-baseline justify-between gap-2 leading-tight">
-                    <span
-                      className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
-                    >
-                      {isBw
-                        ? `+${formatNumber(userExtra ?? 0)} кг доп.`
-                        : `${formatNumber(e.maxWeightKg)} кг`}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/70">
-                      {isBw && extraRequired != null
-                        ? `/ +${formatKg(extraRequired)}`
-                        : `/ ${formatKg(required)}`}
-                    </span>
-                  </div>
-                  {barPct !== null && (
-                    <div className="h-1 rounded-full overflow-hidden bg-border/60">
-                      <div
-                        className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
-                        style={{ width: `${barPct}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <span className="font-mono text-[11px] text-foreground/80">
-                  {isBw
-                    ? `+${formatNumber(Math.max(0, e.maxWeightKg - bodyWeightKg))} кг доп.`
-                    : `${formatNumber(e.maxWeightKg)} кг`}
-                </span>
-              )}
-            </div>
-
-            {/* Row 3: penalty hint or MC norm */}
-            {showPenaltyHint && !autoPassed && required != null && required > 0 && !passed ? (
-              <div className="text-[10px] text-amber-400/80 pl-5">
-                {formatPenaltyPct(rowPenalty)} из-за прыжка через уровни
-              </div>
-            ) : !autoPassed && e.mcKg != null ? (
-              <div className="text-[10px] text-muted-foreground/60 pl-5">
-                {nextRank
-                  ? `до ${nextRank.label}: ${formatKg(nextRank.kgTarget)}`
-                  : e.maxWeightKg >= e.mcKg
-                    ? "МС достигнут ✓"
-                    : `МС: ${formatKg(e.mcKg)}`}
-              </div>
-            ) : null}
-          </div>
+            e={e}
+            bodyWeightKg={bodyWeightKg}
+            isBw={isBw}
+            bwAutoPass={bwAutoPass}
+            autoPassed={autoPassed}
+            passed={passed}
+            required={required}
+            showPenaltyHint={showPenaltyHint}
+            rowPenalty={rowPenalty}
+            currentRankEntry={currentRankEntry}
+          />
         );
       })}
+    </div>
+  );
+}
+
+function BwAwareGridRow({
+  e,
+  bodyWeightKg,
+  isBw,
+  bwAutoPass,
+  autoPassed,
+  passed,
+  required,
+  showPenaltyHint,
+  rowPenalty,
+  currentRankEntry,
+}: {
+  e: MainExerciseStat;
+  bodyWeightKg: number;
+  isBw: boolean;
+  bwAutoPass: boolean;
+  autoPassed: boolean;
+  passed: boolean;
+  required: number | null | undefined;
+  showPenaltyHint: boolean;
+  rowPenalty: number;
+  currentRankEntry: ReturnType<typeof exerciseRankFromStats>;
+}) {
+  const bwRep = useBwRepState(e.exerciseId, isBw);
+  const nextRank = !isBw && e.mcKg != null ? nextRankFromStats(e.maxWeightKg, e.mcKg) : null;
+
+  const extraRequired = isBw && required != null ? required - bodyWeightKg : null;
+  const userExtra = isBw ? Math.max(0, e.maxWeightKg - bodyWeightKg) : null;
+
+  const kgBarPct =
+    required != null && required > 0 && !autoPassed
+      ? isBw && extraRequired != null && extraRequired > 0 && userExtra != null
+        ? Math.min(100, (userExtra / extraRequired) * 100)
+        : Math.min(100, (e.maxWeightKg / required) * 100)
+      : null;
+
+  return (
+    <div
+      className={`flex flex-col gap-1.5 text-xs px-2.5 py-2 rounded-md border ${
+        passed
+          ? "border-primary/40 bg-primary/10 text-foreground"
+          : "border-border bg-card/40 text-muted-foreground"
+      }`}
+    >
+      {/* Row 1: icon + name + rank badge */}
+      <div className="flex items-start gap-2">
+        {passed ? (
+          <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+        ) : (
+          <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0 mt-0.5" />
+        )}
+        <span className="font-medium break-words flex-1">{e.name}</span>
+        {currentRankEntry && currentRankEntry.code !== "NONE" && (
+          <span
+            className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none ${currentRankEntry.cls}`}
+            title={currentRankEntry.label}
+          >
+            {currentRankEntry.shortLabel}
+          </span>
+        )}
+      </div>
+
+      {/* Row 2: auto-passed labels OR progress */}
+      <div className="pl-5">
+        {e.autoPassedReason === "time_based_exercise" ? (
+          <span className="text-[11px] text-primary">Время — засчитано</span>
+        ) : e.autoPassedReason === "below_bar_weight" ? (
+          <span className="text-[11px] text-primary">Ниже грифа — засчитано</span>
+        ) : bwAutoPass ? (
+          <span className="text-[11px] text-primary">Любой подход — засчитано</span>
+        ) : isBw && bwRep ? (
+          <div className="space-y-1">
+            <div className="flex items-baseline justify-between gap-2 leading-tight">
+              <span className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}>
+                {bwRep.currentLabel ?? "—"}
+              </span>
+              {bwRep.nextLabel && (
+                <span className="text-[10px] text-muted-foreground/70">
+                  → {bwRep.nextLabel}
+                </span>
+              )}
+            </div>
+            <div className="h-1 rounded-full overflow-hidden bg-border/60">
+              <div
+                className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
+                style={{ width: `${bwRep.barPct}%` }}
+              />
+            </div>
+          </div>
+        ) : required != null && required > 0 ? (
+          <div className="space-y-1">
+            <div className="flex items-baseline justify-between gap-2 leading-tight">
+              <span
+                className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
+              >
+                {isBw
+                  ? `+${formatNumber(userExtra ?? 0)} кг доп.`
+                  : `${formatNumber(e.maxWeightKg)} кг`}
+              </span>
+              <span className="text-[10px] text-muted-foreground/70">
+                {isBw && extraRequired != null
+                  ? `/ +${formatKg(extraRequired)}`
+                  : `/ ${formatKg(required)}`}
+              </span>
+            </div>
+            {kgBarPct !== null && (
+              <div className="h-1 rounded-full overflow-hidden bg-border/60">
+                <div
+                  className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
+                  style={{ width: `${kgBarPct}%` }}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="font-mono text-[11px] text-foreground/80">
+            {isBw
+              ? `+${formatNumber(Math.max(0, e.maxWeightKg - bodyWeightKg))} кг доп.`
+              : `${formatNumber(e.maxWeightKg)} кг`}
+          </span>
+        )}
+      </div>
+
+      {/* Row 3: penalty hint or rank next hint */}
+      {showPenaltyHint && !autoPassed && required != null && required > 0 && !passed ? (
+        <div className="text-[10px] text-amber-400/80 pl-5">
+          {formatPenaltyPct(rowPenalty)} из-за прыжка через уровни
+        </div>
+      ) : isBw && bwRep && !autoPassed ? (
+        bwRep.nextEntry ? (
+          <div className="text-[10px] text-muted-foreground/60 pl-5">
+            до {bwRep.nextEntry.rank.shortLabel}: {bwRep.nextLabel}
+          </div>
+        ) : (
+          <div className="text-[10px] text-primary/70 pl-5">МСМК достигнут ✓</div>
+        )
+      ) : !autoPassed && !isBw && e.mcKg != null ? (
+        <div className="text-[10px] text-muted-foreground/60 pl-5">
+          {nextRank
+            ? `до ${nextRank.label}: ${formatKg(nextRank.kgTarget)}`
+            : e.maxWeightKg >= e.mcKg
+              ? "МС достигнут ✓"
+              : `МС: ${formatKg(e.mcKg)}`}
+        </div>
+      ) : null}
     </div>
   );
 }
