@@ -28,6 +28,16 @@ import { RestTimer } from "@/components/RestTimer";
 import { PreviousSets } from "@/components/PreviousSets";
 import { ProgramWorkoutView } from "@/components/ProgramWorkoutView";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatKg, formatNumber } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
@@ -55,6 +65,7 @@ export function ActiveWorkout() {
   const [weight, setWeight] = useState(20);
   const [reps, setReps] = useState(10);
   const [restTimerKey, setRestTimerKey] = useState(0);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
   const isBwSelected = isBodyweight(selectedExercise?.equipment);
@@ -164,6 +175,10 @@ export function ActiveWorkout() {
       toast.error("Добавьте хотя бы один подход");
       return;
     }
+    setShowFinishConfirm(true);
+  };
+
+  const confirmFinish = () => {
     finishWorkout.mutate({ workoutId });
   };
 
@@ -229,27 +244,36 @@ export function ActiveWorkout() {
 
   if (programPlan) {
     return (
-      <div className="flex flex-col min-h-[100dvh] bg-background text-foreground">
-        <StatsBar />
-        <div className="flex-1 w-full max-w-md mx-auto p-4">
-          <ProgramWorkoutView
-            plan={programPlan}
-            workoutSets={workout.sets}
-            bodyWeightKg={bodyWeightKg}
-            onLogSet={(exerciseId, repsVal, weightKg) => {
-              addSet.mutate({ workoutId, data: { exerciseId, weightKg, reps: repsVal } });
-            }}
-            onFinish={handleFinish}
-            isLoggingSet={addSet.isPending}
-            isFinishing={finishWorkout.isPending}
-          />
+      <>
+        <div className="flex flex-col min-h-[100dvh] bg-background text-foreground">
+          <StatsBar />
+          <div className="flex-1 w-full max-w-md mx-auto p-4 pb-36">
+            <ProgramWorkoutView
+              plan={programPlan}
+              workoutSets={workout.sets}
+              bodyWeightKg={bodyWeightKg}
+              onLogSet={(exerciseId, repsVal, weightKg) => {
+                addSet.mutate({ workoutId, data: { exerciseId, weightKg, reps: repsVal } });
+              }}
+              onFinish={handleFinish}
+              isLoggingSet={addSet.isPending}
+              isFinishing={finishWorkout.isPending}
+            />
+          </div>
         </div>
-      </div>
+        <FinishConfirmDialog
+          open={showFinishConfirm}
+          onOpenChange={setShowFinishConfirm}
+          onConfirm={confirmFinish}
+          isPending={finishWorkout.isPending}
+        />
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background text-foreground pb-24">
+    <>
+    <div className="flex flex-col min-h-[100dvh] bg-background text-foreground pb-36">
       <StatsBar />
 
       <div className="flex-1 w-full max-w-md mx-auto p-4 space-y-4">
@@ -377,5 +401,43 @@ export function ActiveWorkout() {
         </div>
       </div>
     </div>
+    <FinishConfirmDialog
+      open={showFinishConfirm}
+      onOpenChange={setShowFinishConfirm}
+      onConfirm={confirmFinish}
+      isPending={finishWorkout.isPending}
+    />
+    </>
+  );
+}
+
+function FinishConfirmDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Завершить тренировку?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Тренировка будет зафиксирована и результаты сохранены.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Отмена</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={isPending}>
+            {isPending ? "Завершение..." : "Завершить"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
