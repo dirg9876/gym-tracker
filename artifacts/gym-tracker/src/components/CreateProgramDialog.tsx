@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Reorder, useDragControls } from "framer-motion";
 import {
   Dialog,
@@ -16,7 +16,7 @@ import {
   Exercise,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Trash2, GripVertical, ChevronDown } from "lucide-react";
+import { Plus, Minus, Search, Trash2, GripVertical, ChevronDown } from "lucide-react";
 
 type Intent = "strength" | "hypertrophy" | "accessory";
 
@@ -117,6 +117,69 @@ function ExercisePickerDialog({ exercises, open, onOpenChange, onSelect }: Exerc
   );
 }
 
+function NumericStepper({
+  label,
+  value,
+  onChange,
+  min = 1,
+  max = 30,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+}) {
+  const [raw, setRaw] = useState(String(value));
+
+  useEffect(() => {
+    setRaw(String(value));
+  }, [value]);
+
+  const commit = (s: string) => {
+    const n = parseInt(s, 10);
+    const clamped = isNaN(n) ? min : Math.max(min, Math.min(max, n));
+    setRaw(String(clamped));
+    onChange(clamped);
+  };
+
+  return (
+    <div>
+      <label className="text-[10px] uppercase text-muted-foreground tracking-wide block mb-1">{label}</label>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border border-border bg-muted/50 hover:bg-muted active:scale-95 transition-all disabled:opacity-40"
+          onClick={() => { const next = Math.max(min, value - 1); setRaw(String(next)); onChange(next); }}
+          disabled={value <= min}
+          aria-label="Уменьшить"
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </button>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          className="h-9 flex-1 min-w-0 text-center font-bold rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(raw); }}
+        />
+        <button
+          type="button"
+          className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border border-border bg-muted/50 hover:bg-muted active:scale-95 transition-all disabled:opacity-40"
+          onClick={() => { const next = Math.min(max, value + 1); setRaw(String(next)); onChange(next); }}
+          disabled={value >= max}
+          aria-label="Увеличить"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface ExerciseRowEditorProps {
   row: ProgramExerciseRow;
   onChange: (row: ProgramExerciseRow) => void;
@@ -163,40 +226,27 @@ function ExerciseRowEditor({ row, onChange, onRemove }: ExerciseRowEditorProps) 
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <div>
-          <label className="text-[10px] uppercase text-muted-foreground tracking-wide block mb-1">Подходы</label>
-          <Input
-            type="number"
-            min={1}
-            max={20}
-            value={row.sets}
-            onChange={(e) => onChange({ ...row, sets: Math.max(1, Math.min(20, Number(e.target.value))) })}
-            className="h-9 text-center font-bold rounded-xl"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] uppercase text-muted-foreground tracking-wide block mb-1">Мин повт.</label>
-          <Input
-            type="number"
-            min={1}
-            value={row.repsMin}
-            onChange={(e) => {
-              const v = Math.max(1, Number(e.target.value));
-              onChange({ ...row, repsMin: v, repsMax: Math.max(v, row.repsMax) });
-            }}
-            className="h-9 text-center font-bold rounded-xl"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] uppercase text-muted-foreground tracking-wide block mb-1">Макс повт.</label>
-          <Input
-            type="number"
-            min={row.repsMin}
-            value={row.repsMax}
-            onChange={(e) => onChange({ ...row, repsMax: Math.max(row.repsMin, Number(e.target.value)) })}
-            className="h-9 text-center font-bold rounded-xl"
-          />
-        </div>
+        <NumericStepper
+          label="Подходы"
+          value={row.sets}
+          min={1}
+          max={20}
+          onChange={(v) => onChange({ ...row, sets: v })}
+        />
+        <NumericStepper
+          label="Мин повт."
+          value={row.repsMin}
+          min={1}
+          max={30}
+          onChange={(v) => onChange({ ...row, repsMin: v, repsMax: Math.max(v, row.repsMax) })}
+        />
+        <NumericStepper
+          label="Макс повт."
+          value={row.repsMax}
+          min={row.repsMin}
+          max={30}
+          onChange={(v) => onChange({ ...row, repsMax: v })}
+        />
       </div>
 
       <div className="relative">

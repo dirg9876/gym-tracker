@@ -566,8 +566,9 @@ router.get(
     }
 
     const currentTotals = totalsFromSets(currentSets);
+    // Only count previous sets for exercises that appear in the current workout
     const previousTotals = previous
-      ? totalsFromSets(previous.sets)
+      ? totalsFromSets(previous.sets.filter((s) => currentExerciseIds.has(s.exerciseId)))
       : { totalVolume: 0, totalReps: 0, totalSets: 0 };
 
     type ExAgg = {
@@ -595,7 +596,8 @@ router.get(
     const curAgg = aggByExercise(currentSets);
     const prevAgg = previous ? aggByExercise(previous.sets) : new Map();
 
-    const allIds = new Set<number>([...curAgg.keys(), ...prevAgg.keys()]);
+    // Only include exercises from the current workout
+    const allIds = curAgg.keys();
     const exercises = [...allIds].map((id) => {
       const c = curAgg.get(id) ?? {
         name: prevAgg.get(id)?.name ?? "",
