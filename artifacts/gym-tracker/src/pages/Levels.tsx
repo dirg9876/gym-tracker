@@ -7,6 +7,7 @@ import {
   type Level,
   type MainExerciseStat,
   type SportRank,
+  type BwNormEntry,
 } from "@workspace/api-client-react";
 import { Lock, Trophy, Flame, Check, Dumbbell, Star, AlertTriangle, ChevronRight, Zap, Info } from "lucide-react";
 import { RankBadge, RankDivider } from "@/components/RankBadge";
@@ -434,7 +435,9 @@ export function Levels() {
                                   {short}
                                   {bwAutoPassed && ": любой подход"}
                                   {kgReqLabel && `: ${kgReqLabel}`}
-                                  {isBw && !bwAutoPassed && `: +${formatKg(Math.max(0, req - bodyWeightKg))} кг доп.`}
+                                  {isBw && !bwAutoPassed && (
+                                    <>: <BwCompactReq exerciseId={e.exerciseId} reqExtraKg={Math.max(0, req - bodyWeightKg)} /></>
+                                  )}
                                 </span>
                               );
                             })}
@@ -558,7 +561,9 @@ function DialogExerciseRow({
             <span className="text-primary">Любой подход</span>
           ) : isBw ? (
             <span className="font-mono text-foreground/80">
-              +{formatKg(Math.max(0, required - bodyWeightKg))} кг доп.
+              {bwRep
+                ? bwTierLabel(bwRep.repNorms, Math.max(0, required - bodyWeightKg))
+                : `+${formatKg(Math.max(0, required - bodyWeightKg))} кг доп.`}
             </span>
           ) : (
             <span className="font-mono text-foreground/80">{formatKg(required)}</span>
@@ -862,6 +867,28 @@ function useBwRepState(exerciseId: number, enabled: boolean) {
   return { achieved, nextEntry, currentLabel, nextLabel, barPct, userMaxReps, userMaxExtra, repNorms };
 }
 
+/**
+ * Finds the rep norm tier that the level requirement maps to and returns its
+ * label in BW units: "N повт." for rep-only tiers, "+N кг доп." for extra-weight tiers.
+ * Uses the lowest tier whose extraKg is ≥ reqExtraKg (rank-matched required value).
+ */
+function bwTierLabel(repNorms: BwNormEntry[], reqExtraKg: number): string {
+  if (reqExtraKg <= 0) return "любой подход";
+  const tier = repNorms.find((e) => e.extraKg >= reqExtraKg) ?? repNorms[repNorms.length - 1]!;
+  return tier.extraKg > 0
+    ? `+${formatNumber(tier.extraKg)} кг доп.`
+    : `${tier.reps} повт.`;
+}
+
+/**
+ * Compact BW requirement label for level-card rows.
+ * Fetches repNorms and maps reqExtraKg to the nearest rank tier label.
+ */
+function BwCompactReq({ exerciseId, reqExtraKg }: { exerciseId: number; reqExtraKg: number }) {
+  const bwRep = useBwRepState(exerciseId, true);
+  if (!bwRep) return <>{`+${formatKg(reqExtraKg)} кг доп.`}</>;
+  return <>{bwTierLabel(bwRep.repNorms, reqExtraKg)}</>;
+}
 
 function MainExercisesGrid({
   exercises,
@@ -991,7 +1018,7 @@ function BwAwareGridRow({
               </span>
               <span className="text-[10px] text-muted-foreground/70">
                 {isBw && extraRequired != null
-                  ? `/ +${formatKg(extraRequired)}`
+                  ? `/ ${bwRep ? bwTierLabel(bwRep.repNorms, extraRequired) : `+${formatKg(extraRequired)} кг доп.`}`
                   : `/ ${formatKg(required)}`}
               </span>
             </div>
