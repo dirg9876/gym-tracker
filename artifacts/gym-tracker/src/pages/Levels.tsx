@@ -437,7 +437,7 @@ export function Levels() {
                                   {bwAutoPassed && ": любой подход"}
                                   {kgReqLabel && `: ${kgReqLabel}`}
                                   {isBw && !bwAutoPassed && e.mcKg != null && (
-                                    <>: <BwCompactReq exerciseId={e.exerciseId} required={req} mcKg={e.mcKg} /></>
+                                    <>: <BwCompactReq exerciseId={e.exerciseId} required={req} mcKg={e.mcKg} bodyWeightKg={bodyWeightKg} /></>
                                   )}
                                 </span>
                               );
@@ -904,18 +904,22 @@ function bwTierLabel(repNorms: BwNormEntry[], required: number, mcKg: number): s
 /**
  * Compact BW requirement label for level-card rows.
  * Fetches repNorms and maps the level requirement to its rank-equivalent tier label.
+ * Falls back to "+X кг доп." when repNorms are unavailable (e.g. Планка, loading).
  */
 function BwCompactReq({
   exerciseId,
   required,
   mcKg,
+  bodyWeightKg,
 }: {
   exerciseId: number;
   required: number;
   mcKg: number;
+  bodyWeightKg: number;
 }) {
   const bwRep = useBwRepState(exerciseId, true);
-  if (!bwRep) return null;
+  const fallback = `+${formatNumber(Math.max(0, required - bodyWeightKg))} кг доп.`;
+  if (!bwRep) return <>{fallback}</>;
   return <>{bwTierLabel(bwRep.repNorms, required, mcKg)}</>;
 }
 
