@@ -740,7 +740,7 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
 
   const maxTonnage7dKg = computeMaxRollingTonnage(events, windowMs);
 
-  const levelUpAt = await getLevelUpAt(userId);
+  let levelUpAt = await getLevelUpAt(userId);
   const cutoff = levelUpAt?.getTime() ?? 0;
   let currentTonnageSinceLevelUp = 0;
   for (const e of events) {
@@ -828,9 +828,14 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
 
   // Persist the new floor when the user has earned a higher level.
   if (currentLevel > confirmedLevel) {
+    const newLevelUpAt = new Date();
     await setConfirmedLevel(userId, currentLevel);
-    await setLevelUpAt(userId, new Date());
+    await setLevelUpAt(userId, newLevelUpAt);
     confirmedLevel = currentLevel;
+    // Reset in-memory state so the response reflects the post-level-up state
+    // (tonnage counter starts fresh, levelUpAt shows the new timestamp).
+    currentTonnageSinceLevelUp = 0;
+    levelUpAt = newLevelUpAt;
   }
 
   // Guard: if confirmed > computed (e.g. after norm recalibration), use the
