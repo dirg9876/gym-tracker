@@ -125,6 +125,8 @@ export function ActiveWorkout() {
     ? Math.max(0, (levelsData?.bodyWeightKg ?? 0) + weight)
     : weight;
   const isNewWeightPR =
+    !!selectedExerciseId &&
+    weight > 0 &&
     userMax !== null &&
     userMax > 0 &&
     submittedWeightPreview > userMax;
