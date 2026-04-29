@@ -568,7 +568,12 @@ export const GetExerciseNormsResponse = zod.object({
     .describe(
       "Full 10-entry rank ladder from Б\/Р to МСМК with kg thresholds.",
     ),
-  bwNorms: zod
+  isBodyweight: zod
+    .boolean()
+    .describe(
+      "True when this exercise uses rep-based norms (bodyweight exercises: pull-ups, dips, etc.). False for all weight-based exercises.",
+    ),
+  repNorms: zod
     .array(
       zod
         .object({
@@ -625,13 +630,13 @@ export const GetExerciseNormsResponse = zod.object({
     )
     .nullish()
     .describe(
-      "Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК). Null for non-bodyweight exercises.",
+      "Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК). Reps cap at 30; higher ranks add extra load (extraKg > 0). Null for non-bodyweight exercises.",
     ),
   userMaxRepsAtBodyweight: zod
     .number()
     .nullish()
     .describe(
-      "User's all-time best rep count in a set performed at bodyweight only (no extra load). For bodyweight exercises only; null otherwise or if no sets logged.",
+      "User's all-time best rep count in a set performed at bodyweight only (no extra load, weightKg ≈ bodyWeightKg ± 2). For bodyweight exercises only.",
     ),
   userMaxExtraWeightAt30Reps: zod
     .number()

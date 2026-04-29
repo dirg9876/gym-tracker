@@ -24,9 +24,11 @@ export interface ExerciseRankNorms {
   kgToNextRank: number | null;
   /** Full 10-entry rank ladder from Б/Р to МСМК with kg thresholds. */
   rankNorms: RankNormEntry[];
-  /** Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК). Null for non-bodyweight exercises. */
-  bwNorms?: BwNormEntry[] | null;
-  /** User's all-time best rep count in a set performed at bodyweight only (no extra load). For bodyweight exercises only; null otherwise or if no sets logged. */
+  /** True when this exercise uses rep-based norms (bodyweight exercises: pull-ups, dips, etc.). False for all weight-based exercises. */
+  isBodyweight: boolean;
+  /** Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК). Reps cap at 30; higher ranks add extra load (extraKg > 0). Null for non-bodyweight exercises. */
+  repNorms?: BwNormEntry[] | null;
+  /** User's all-time best rep count in a set performed at bodyweight only (no extra load, weightKg ≈ bodyWeightKg ± 2). For bodyweight exercises only. */
   userMaxRepsAtBodyweight?: number | null;
   /** User's highest extra load (kg beyond bodyweight) recorded in any set with 30 or more reps. For bodyweight exercises only; null otherwise. */
   userMaxExtraWeightAt30Reps?: number | null;

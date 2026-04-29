@@ -24,7 +24,7 @@ import {
   getMcKgForExercise,
   getRankNormsForExercise,
   rankForMcPercent,
-  BODYWEIGHT_NORMS,
+  BODYWEIGHT_REP_NORMS,
   RANK_LADDER,
   type SportRank,
 } from "../lib/sport-norms";
@@ -338,12 +338,13 @@ router.get(
       res.json({
         mcKg: null,
         mcSource: mcResult.source,
+        isBodyweight: false,
         userMaxWeightKg,
         currentRank: null,
         nextRank: null,
         kgToNextRank: null,
         rankNorms: [],
-        bwNorms: null,
+        repNorms: null,
         userMaxRepsAtBodyweight: null,
         userMaxExtraWeightAt30Reps: null,
       });
@@ -372,15 +373,16 @@ router.get(
           ? nextEntry.kgTarget
           : null;
 
-    // Bodyweight rep norms — only for exercises in BODYWEIGHT_NORMS
-    let bwNorms: Array<{ rank: SportRank; reps: number; extraKg: number }> | null = null;
+    // Bodyweight rep norms — only for exercises in BODYWEIGHT_REP_NORMS
+    const isBodyweight = mcResult.source === "bodyweight";
+    let repNorms: Array<{ rank: SportRank; reps: number; extraKg: number }> | null = null;
     let userMaxRepsAtBodyweight: number | null = null;
     let userMaxExtraWeightAt30Reps: number | null = null;
 
-    if (mcResult.source === "bodyweight") {
-      const bwDef = BODYWEIGHT_NORMS[exRow.name]?.[sex];
+    if (isBodyweight) {
+      const bwDef = BODYWEIGHT_REP_NORMS[exRow.name]?.[sex];
       if (bwDef) {
-        bwNorms = bwDef.map((entry, i) => ({
+        repNorms = bwDef.map((entry, i) => ({
           rank: RANK_LADDER[i]!,
           reps: entry.reps,
           extraKg: entry.extraKg,
@@ -431,12 +433,13 @@ router.get(
     res.json({
       mcKg: mcResult.kg,
       mcSource: mcResult.source,
+      isBodyweight,
       userMaxWeightKg,
       currentRank,
       nextRank,
       kgToNextRank,
       rankNorms,
-      bwNorms,
+      repNorms,
       userMaxRepsAtBodyweight,
       userMaxExtraWeightAt30Reps,
     });

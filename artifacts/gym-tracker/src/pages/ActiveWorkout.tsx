@@ -93,7 +93,7 @@ export function ActiveWorkout() {
 
   const repHint = useMemo(() => {
     if (!isBwSelected) return null;
-    const bwNorms = exerciseNorms?.bwNorms;
+    const bwNorms = exerciseNorms?.repNorms;
     if (!bwNorms?.length) return null;
     const userMaxReps = exerciseNorms?.userMaxRepsAtBodyweight ?? null;
     const userMaxExtra = exerciseNorms?.userMaxExtraWeightAt30Reps ?? null;

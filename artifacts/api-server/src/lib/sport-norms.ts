@@ -330,7 +330,7 @@ export interface BwNormEntry {
  *
  * Design rule: reps cap at 30; ranks beyond 30 require additional weight.
  */
-export const BODYWEIGHT_NORMS: Record<
+export const BODYWEIGHT_REP_NORMS: Record<
   string,
   { male: BwNormEntry[]; female: BwNormEntry[] }
 > = {
