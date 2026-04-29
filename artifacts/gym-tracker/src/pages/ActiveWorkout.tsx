@@ -20,7 +20,7 @@ import {
 import { RankBadge } from "@/components/RankBadge";
 import { isBodyweight } from "@/lib/equipment";
 import { Link } from "wouter";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Star } from "lucide-react";
 import { Stepper } from "@/components/Stepper";
 import { ExercisePicker } from "@/components/ExercisePicker";
 import { SetCard } from "@/components/SetCard";
@@ -72,7 +72,7 @@ export function ActiveWorkout() {
 
   const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
     query: {
-      enabled: !!selectedExerciseId && selectedExercise?.mcKg != null,
+      enabled: !!selectedExerciseId,
       staleTime: 5 * 60 * 1000,
     },
   });
@@ -119,6 +119,15 @@ export function ActiveWorkout() {
     }
     return { achieved, next: nextEntry, hint };
   }, [exerciseNorms, isBwSelected]);
+
+  const userMax = exerciseNorms?.userMaxWeightKg ?? null;
+  const submittedWeightPreview = isBwSelected
+    ? Math.max(0, (levelsData?.bodyWeightKg ?? 0) + weight)
+    : weight;
+  const isNewWeightPR =
+    userMax !== null &&
+    userMax > 0 &&
+    submittedWeightPreview > userMax;
 
   const prevBwRef = useRef<boolean | null>(null);
   useEffect(() => {
@@ -339,6 +348,21 @@ export function ActiveWorkout() {
                     · до {rankHint.next.rank.shortLabel}: +{rankHint.delta} кг
                   </span>
                 )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isNewWeightPR && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                className="-mt-3 flex items-center gap-1 text-[11px] font-bold text-amber-400"
+              >
+                <Star className="h-3 w-3 fill-amber-400" />
+                Новый вес!
               </motion.div>
             )}
           </AnimatePresence>
