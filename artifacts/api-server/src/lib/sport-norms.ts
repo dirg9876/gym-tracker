@@ -162,6 +162,8 @@ const EXERCISE_NORMS: Record<string, NormConfig> = {
   "Подъёмы на носки":               { kind: "coefficient",  anchor: "squat",    ratio: 0.60 },
 
   // Bodyweight — total weight (bodyweight + extra load) ratio at МСМК
+  // Rep-based norms are in BODYWEIGHT_NORMS below; these ratios are kept for
+  // tonnage / level-requirement calculations only.
   "Подтягивания":                   { kind: "bodyweight_ratio", ratio: 1.65 },
   "Отжимания узким хватом":         { kind: "bodyweight_ratio", ratio: 1.00 },
   "Отжимания на брусьях":           { kind: "bodyweight_ratio", ratio: 1.30 },
@@ -305,6 +307,112 @@ export function getRankNormsForExercise(
     kgTarget: Math.round((mcKg * pct) / 2.5) * 2.5,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Bodyweight exercise rep norms
+// ---------------------------------------------------------------------------
+
+/**
+ * A single rank threshold for a bodyweight exercise.
+ * Reps ≤ 30. When extraKg > 0, reps is always 30 (the athlete must do 30 reps
+ * AND hold the given extra weight).
+ */
+export interface BwNormEntry {
+  /** Minimum reps required in one set (at bodyweight, no extra). Max 30. */
+  reps: number;
+  /** Extra load (kg) beyond bodyweight. 0 for rep-only tiers. */
+  extraKg: number;
+}
+
+/**
+ * Rep/weight thresholds for bodyweight exercises, indexed by RANK_LADDER
+ * (0 = NONE … 9 = МСМК). Ten entries per sex.
+ *
+ * Design rule: reps cap at 30; ranks beyond 30 require additional weight.
+ */
+export const BODYWEIGHT_NORMS: Record<
+  string,
+  { male: BwNormEntry[]; female: BwNormEntry[] }
+> = {
+  "Подтягивания": {
+    male: [
+      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 6,  extraKg: 0  }, // Юн III
+      { reps: 10, extraKg: 0  }, // Юн II
+      { reps: 15, extraKg: 0  }, // Юн I
+      { reps: 20, extraKg: 0  }, // III р.
+      { reps: 25, extraKg: 0  }, // II р.
+      { reps: 30, extraKg: 0  }, // I р.
+      { reps: 30, extraKg: 10 }, // КМС
+      { reps: 30, extraKg: 22 }, // МС
+      { reps: 30, extraKg: 38 }, // МСМК
+    ],
+    female: [
+      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 3,  extraKg: 0  }, // Юн III
+      { reps: 6,  extraKg: 0  }, // Юн II
+      { reps: 10, extraKg: 0  }, // Юн I
+      { reps: 14, extraKg: 0  }, // III р.
+      { reps: 18, extraKg: 0  }, // II р.
+      { reps: 22, extraKg: 0  }, // I р.
+      { reps: 30, extraKg: 0  }, // КМС
+      { reps: 30, extraKg: 8  }, // МС
+      { reps: 30, extraKg: 18 }, // МСМК
+    ],
+  },
+  "Отжимания на брусьях": {
+    male: [
+      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 10, extraKg: 0  }, // Юн III
+      { reps: 15, extraKg: 0  }, // Юн II
+      { reps: 20, extraKg: 0  }, // Юн I
+      { reps: 25, extraKg: 0  }, // III р.
+      { reps: 30, extraKg: 0  }, // II р.
+      { reps: 30, extraKg: 10 }, // I р.
+      { reps: 30, extraKg: 20 }, // КМС
+      { reps: 30, extraKg: 35 }, // МС
+      { reps: 30, extraKg: 50 }, // МСМК
+    ],
+    female: [
+      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 6,  extraKg: 0  }, // Юн III
+      { reps: 10, extraKg: 0  }, // Юн II
+      { reps: 15, extraKg: 0  }, // Юн I
+      { reps: 20, extraKg: 0  }, // III р.
+      { reps: 25, extraKg: 0  }, // II р.
+      { reps: 30, extraKg: 0  }, // I р.
+      { reps: 30, extraKg: 8  }, // КМС
+      { reps: 30, extraKg: 18 }, // МС
+      { reps: 30, extraKg: 28 }, // МСМК
+    ],
+  },
+  "Отжимания узким хватом": {
+    male: [
+      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 12, extraKg: 0  }, // Юн III
+      { reps: 18, extraKg: 0  }, // Юн II
+      { reps: 22, extraKg: 0  }, // Юн I
+      { reps: 26, extraKg: 0  }, // III р.
+      { reps: 30, extraKg: 0  }, // II р.
+      { reps: 30, extraKg: 8  }, // I р.
+      { reps: 30, extraKg: 18 }, // КМС
+      { reps: 30, extraKg: 30 }, // МС
+      { reps: 30, extraKg: 45 }, // МСМК
+    ],
+    female: [
+      { reps: 1,  extraKg: 0  }, // NONE
+      { reps: 8,  extraKg: 0  }, // Юн III
+      { reps: 13, extraKg: 0  }, // Юн II
+      { reps: 17, extraKg: 0  }, // Юн I
+      { reps: 21, extraKg: 0  }, // III р.
+      { reps: 25, extraKg: 0  }, // II р.
+      { reps: 30, extraKg: 0  }, // I р.
+      { reps: 30, extraKg: 6  }, // КМС
+      { reps: 30, extraKg: 14 }, // МС
+      { reps: 30, extraKg: 22 }, // МСМК
+    ],
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Sport rank system

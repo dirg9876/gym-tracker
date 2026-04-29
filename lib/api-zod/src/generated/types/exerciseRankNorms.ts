@@ -5,6 +5,7 @@
  * Gym workout tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { BwNormEntry } from "./bwNormEntry";
 import type { McSource } from "./mcSource";
 import type { RankNormEntry } from "./rankNormEntry";
 import type { SportRank } from "./sportRank";
@@ -21,6 +22,12 @@ export interface ExerciseRankNorms {
   nextRank: SportRank | null;
   /** kg still needed on top of userMaxWeightKg to reach nextRank. Null if no data or at МС. */
   kgToNextRank: number | null;
-  /** Full 9-entry rank ladder from Б/Р to МС with kg thresholds. */
+  /** Full 10-entry rank ladder from Б/Р to МСМК with kg thresholds. */
   rankNorms: RankNormEntry[];
+  /** Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК). Null for non-bodyweight exercises. */
+  bwNorms?: BwNormEntry[] | null;
+  /** User's all-time best rep count in a set performed at bodyweight only (no extra load). For bodyweight exercises only; null otherwise or if no sets logged. */
+  userMaxRepsAtBodyweight?: number | null;
+  /** User's highest extra load (kg beyond bodyweight) recorded in any set with 30 or more reps. For bodyweight exercises only; null otherwise. */
+  userMaxExtraWeightAt30Reps?: number | null;
 }

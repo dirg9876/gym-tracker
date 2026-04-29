@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNotNull, isNull, max, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lte, max, or, sql } from "drizzle-orm";
 import {
   db,
   exercisesTable,
@@ -24,6 +24,8 @@ import {
   getMcKgForExercise,
   getRankNormsForExercise,
   rankForMcPercent,
+  BODYWEIGHT_NORMS,
+  RANK_LADDER,
   type SportRank,
 } from "../lib/sport-norms";
 import type { Equipment } from "@workspace/db";
@@ -341,6 +343,9 @@ router.get(
         nextRank: null,
         kgToNextRank: null,
         rankNorms: [],
+        bwNorms: null,
+        userMaxRepsAtBodyweight: null,
+        userMaxExtraWeightAt30Reps: null,
       });
       return;
     }
@@ -367,6 +372,62 @@ router.get(
           ? nextEntry.kgTarget
           : null;
 
+    // Bodyweight rep norms — only for exercises in BODYWEIGHT_NORMS
+    let bwNorms: Array<{ rank: SportRank; reps: number; extraKg: number }> | null = null;
+    let userMaxRepsAtBodyweight: number | null = null;
+    let userMaxExtraWeightAt30Reps: number | null = null;
+
+    if (mcResult.source === "bodyweight") {
+      const bwDef = BODYWEIGHT_NORMS[exRow.name]?.[sex];
+      if (bwDef) {
+        bwNorms = bwDef.map((entry, i) => ({
+          rank: RANK_LADDER[i]!,
+          reps: entry.reps,
+          extraKg: entry.extraKg,
+        }));
+
+        const bwLo = String(bodyWeightKg - 2);
+        const bwHi = String(bodyWeightKg + 2);
+
+        const [repsRow, extraRow] = await Promise.all([
+          // Max reps in sets logged at bodyweight (no meaningful extra load)
+          db
+            .select({ maxReps: max(workoutSetsTable.reps) })
+            .from(workoutSetsTable)
+            .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
+            .where(
+              and(
+                eq(workoutSetsTable.exerciseId, exerciseId),
+                isNotNull(workoutsTable.finishedAt),
+                eq(workoutsTable.userId, req.userId),
+                gte(workoutSetsTable.weightKg, bwLo),
+                lte(workoutSetsTable.weightKg, bwHi),
+              ),
+            ),
+          // Max extra weight in sets with 30+ reps
+          db
+            .select({
+              maxExtraKg: sql<string | null>`max(${workoutSetsTable.weightKg}::numeric - ${bodyWeightKg})`,
+            })
+            .from(workoutSetsTable)
+            .innerJoin(workoutsTable, eq(workoutSetsTable.workoutId, workoutsTable.id))
+            .where(
+              and(
+                eq(workoutSetsTable.exerciseId, exerciseId),
+                isNotNull(workoutsTable.finishedAt),
+                eq(workoutsTable.userId, req.userId),
+                gte(workoutSetsTable.reps, 30),
+                gte(workoutSetsTable.weightKg, String(bodyWeightKg + 0.1)),
+              ),
+            ),
+        ]);
+
+        userMaxRepsAtBodyweight = repsRow[0]?.maxReps ?? null;
+        const rawExtra = extraRow[0]?.maxExtraKg;
+        userMaxExtraWeightAt30Reps = rawExtra != null ? Math.max(0, Number(rawExtra)) : null;
+      }
+    }
+
     res.json({
       mcKg: mcResult.kg,
       mcSource: mcResult.source,
@@ -375,6 +436,9 @@ router.get(
       nextRank,
       kgToNextRank,
       rankNorms,
+      bwNorms,
+      userMaxRepsAtBodyweight,
+      userMaxExtraWeightAt30Reps,
     });
   },
 );

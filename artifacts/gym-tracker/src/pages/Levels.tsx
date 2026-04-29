@@ -318,7 +318,7 @@ export function Levels() {
                   progress={exerciseProgress}
                 />
 
-                <MainExercisesGrid exercises={stats.mainExercises} />
+                <MainExercisesGrid exercises={stats.mainExercises} bodyWeightKg={bodyWeightKg} />
 
                 <ProgressRow
                   icon={<Flame className="h-4 w-4" />}
@@ -429,13 +429,23 @@ export function Levels() {
                           <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                             {stats.mainExercises.slice(0, 3).map((e) => {
                               const isTimeBased = e.autoPassedReason === "time_based_exercise";
+                              const isBw = e.mcSource === "bodyweight";
                               const req = isTimeBased
                                 ? 0
                                 : requiredKgFor(lvl.level, bodyWeightKg, e.multiplier, levelFactorAnchor);
-                              const belowBar = !isTimeBased && e.equipment === "barbell" && req > 0 && req < barWeightKg;
-                              const autoPassed = isTimeBased || belowBar;
+                              const belowBar = !isTimeBased && !isBw && e.equipment === "barbell" && req > 0 && req < barWeightKg;
+                              const bwAutoPassed = isBw && req > 0 && req <= bodyWeightKg;
+                              const autoPassed = isTimeBased || belowBar || bwAutoPassed;
                               const passed = autoPassed || (req > 0 && e.maxWeightKg >= req);
                               const short = abbreviateExercise(e.name);
+                              let reqLabel: string | null = null;
+                              if (!autoPassed && req > 0) {
+                                if (isBw) {
+                                  reqLabel = `+${formatNumber(req - bodyWeightKg)} кг доп.`;
+                                } else {
+                                  reqLabel = `${formatNumber(req)} кг`;
+                                }
+                              }
                               return (
                                 <span
                                   key={e.exerciseId}
@@ -443,7 +453,8 @@ export function Levels() {
                                 >
                                   {passed && "✓ "}
                                   {short}
-                                  {!autoPassed && req > 0 && `: ${formatNumber(req)} кг`}
+                                  {bwAutoPassed && ": любой подход"}
+                                  {reqLabel && `: ${reqLabel}`}
                                 </span>
                               );
                             })}
@@ -557,14 +568,16 @@ function LevelDetailDialog({
     if (!lvl) return [];
     return mainExercises.map((ex) => {
       const isTimeBased = ex.autoPassedReason === "time_based_exercise";
+      const isBw = ex.mcSource === "bodyweight";
       const required = !isTimeBased
         ? requiredKgFor(lvl.level, bodyWeightKg, ex.multiplier, levelFactorAnchor)
         : 0;
       const belowBar =
-        !isTimeBased && ex.equipment === "barbell" && required > 0 && required < barWeightKg;
+        !isTimeBased && !isBw && ex.equipment === "barbell" && required > 0 && required < barWeightKg;
+      const bwAutoPass = isBw && required > 0 && required <= bodyWeightKg;
       const passed =
-        belowBar || isTimeBased || (required > 0 && ex.maxWeightKg >= required);
-      return { ex, required, belowBar, isTimeBased, passed };
+        belowBar || bwAutoPass || isTimeBased || (required > 0 && ex.maxWeightKg >= required);
+      return { ex, required, belowBar, isTimeBased, isBw, bwAutoPass, passed };
     });
   }, [lvl, mainExercises, bodyWeightKg, barWeightKg, levelFactorAnchor]);
 
@@ -658,7 +671,7 @@ function LevelDetailDialog({
                     )}
                     {rows.length > 0 && (
                       <div className="space-y-1.5">
-                        {rows.map(({ ex, required, belowBar, isTimeBased, passed }) => (
+                        {rows.map(({ ex, required, belowBar, isTimeBased, isBw, bwAutoPass, passed }) => (
                           <div
                             key={ex.exerciseId}
                             className={`flex flex-col gap-0.5 px-3 py-2 rounded-md border ${
@@ -684,6 +697,14 @@ function LevelDetailDialog({
                                 ) : belowBar ? (
                                   <span className="text-primary">
                                     Ниже грифа — засчитано
+                                  </span>
+                                ) : bwAutoPass ? (
+                                  <span className="text-primary">
+                                    Любой подход
+                                  </span>
+                                ) : isBw ? (
+                                  <span className="font-mono text-foreground/80">
+                                    +{formatKg(required - bodyWeightKg)} доп.
                                   </span>
                                 ) : (
                                   <span className="font-mono text-foreground/80">
@@ -800,24 +821,32 @@ function ProgressRow({
 
 function MainExercisesGrid({
   exercises,
+  bodyWeightKg,
 }: {
   exercises: MainExerciseStat[];
+  bodyWeightKg: number;
 }) {
   return (
     <div className="grid grid-cols-1 gap-1.5">
       {exercises.map((e) => {
         const required = e.requiredKgForNextLevel;
-        const autoPassed = e.autoPassedReason != null;
+        const isBw = e.mcSource === "bodyweight";
+        const bwAutoPass = isBw && required != null && required > 0 && required <= bodyWeightKg;
+        const autoPassed = e.autoPassedReason != null || bwAutoPass;
         const passedByLift =
-          required != null && required > 0 && e.maxWeightKg >= required;
+          !autoPassed && required != null && required > 0 && e.maxWeightKg >= required;
         const passed = autoPassed || passedByLift;
         const rowPenalty = e.requiredKgPenaltyMultiplier ?? 1;
         const showPenaltyHint = rowPenalty > 1;
 
-        // Progress bar: 0–100% of required weight
+        // For progress bar: for BW exercises, compare extraWeight vs extraRequired
+        const extraRequired = isBw && required != null ? required - bodyWeightKg : null;
+        const userExtra = isBw ? Math.max(0, e.maxWeightKg - bodyWeightKg) : null;
         const barPct =
           required != null && required > 0 && !autoPassed
-            ? Math.min(100, (e.maxWeightKg / required) * 100)
+            ? isBw && extraRequired != null && extraRequired > 0 && userExtra != null
+              ? Math.min(100, (userExtra / extraRequired) * 100)
+              : Math.min(100, (e.maxWeightKg / required) * 100)
             : null;
 
         // Next rank hint
@@ -859,16 +888,22 @@ function MainExercisesGrid({
                 <span className="text-[11px] text-primary">Время — засчитано</span>
               ) : e.autoPassedReason === "below_bar_weight" ? (
                 <span className="text-[11px] text-primary">Ниже грифа — засчитано</span>
+              ) : bwAutoPass ? (
+                <span className="text-[11px] text-primary">Любой подход — засчитано</span>
               ) : required != null && required > 0 ? (
                 <div className="space-y-1">
                   <div className="flex items-baseline justify-between gap-2 leading-tight">
                     <span
                       className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
                     >
-                      {formatNumber(e.maxWeightKg)} кг
+                      {isBw
+                        ? `+${formatNumber(userExtra ?? 0)} кг доп.`
+                        : `${formatNumber(e.maxWeightKg)} кг`}
                     </span>
                     <span className="text-[10px] text-muted-foreground/70">
-                      / {formatKg(required)}
+                      {isBw && extraRequired != null
+                        ? `/ +${formatKg(extraRequired)}`
+                        : `/ ${formatKg(required)}`}
                     </span>
                   </div>
                   {barPct !== null && (
@@ -882,7 +917,9 @@ function MainExercisesGrid({
                 </div>
               ) : (
                 <span className="font-mono text-[11px] text-foreground/80">
-                  {formatNumber(e.maxWeightKg)} кг
+                  {isBw
+                    ? `+${formatNumber(Math.max(0, e.maxWeightKg - bodyWeightKg))} кг доп.`
+                    : `${formatNumber(e.maxWeightKg)} кг`}
                 </span>
               )}
             </div>

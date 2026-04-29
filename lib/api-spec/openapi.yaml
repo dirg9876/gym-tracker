@@ -1097,6 +1097,22 @@ components:
           description: Minimum kg lift required to reach this rank for this exercise.
       required: [rank, kgTarget]
 
+    BwNormEntry:
+      type: object
+      description: >-
+        A single rank threshold for a bodyweight exercise.
+        Reps cap at 30; ranks beyond that require additional weight (extraKg > 0).
+      properties:
+        rank:
+          $ref: "#/components/schemas/SportRank"
+        reps:
+          type: integer
+          description: Minimum reps required in one set (at bodyweight with no extra load). At most 30.
+        extraKg:
+          type: number
+          description: Additional load beyond bodyweight required. 0 for rep-only tiers.
+      required: [rank, reps, extraKg]
+
     ExerciseRankNorms:
       type: object
       properties:
@@ -1128,7 +1144,27 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RankNormEntry"
-          description: Full 9-entry rank ladder from Б/Р to МС with kg thresholds.
+          description: Full 10-entry rank ladder from Б/Р to МСМК with kg thresholds.
+        bwNorms:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/BwNormEntry"
+          description: >-
+            Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК).
+            Null for non-bodyweight exercises.
+        userMaxRepsAtBodyweight:
+          type: integer
+          nullable: true
+          description: >-
+            User's all-time best rep count in a set performed at bodyweight only
+            (no extra load). For bodyweight exercises only; null otherwise or if no sets logged.
+        userMaxExtraWeightAt30Reps:
+          type: number
+          nullable: true
+          description: >-
+            User's highest extra load (kg beyond bodyweight) recorded in any set
+            with 30 or more reps. For bodyweight exercises only; null otherwise.
       required: [mcKg, mcSource, userMaxWeightKg, currentRank, nextRank, kgToNextRank, rankNorms]
 
     AutoPassedReason:

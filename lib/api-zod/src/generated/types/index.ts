@@ -10,6 +10,7 @@ export * from "./activeWorkoutResponse";
 export * from "./addSetInput";
 export * from "./autoPassedReason";
 export * from "./bMICategory";
+export * from "./bwNormEntry";
 export * from "./createCustomProgramExerciseInput";
 export * from "./createCustomProgramExerciseInputIntent";
 export * from "./createCustomProgramInput";

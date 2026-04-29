@@ -72,7 +72,7 @@ export function ActiveWorkout() {
 
   const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
     query: {
-      enabled: !!selectedExerciseId && !isBwSelected && selectedExercise?.mcKg != null,
+      enabled: !!selectedExerciseId && selectedExercise?.mcKg != null,
       staleTime: 5 * 60 * 1000,
     },
   });
@@ -90,6 +90,35 @@ export function ActiveWorkout() {
     const showNext = delta !== null && delta > 0 && delta <= 15;
     return { achieved, next: showNext ? nextEntry : null, delta: showNext ? delta : null };
   }, [exerciseNorms, weight, isBwSelected]);
+
+  const repHint = useMemo(() => {
+    if (!isBwSelected) return null;
+    const bwNorms = exerciseNorms?.bwNorms;
+    if (!bwNorms?.length) return null;
+    const userMaxReps = exerciseNorms?.userMaxRepsAtBodyweight ?? null;
+    const userMaxExtra = exerciseNorms?.userMaxExtraWeightAt30Reps ?? null;
+    let achievedIdx = -1;
+    for (let i = bwNorms.length - 1; i >= 0; i--) {
+      const norm = bwNorms[i]!;
+      if (norm.extraKg === 0) {
+        if (userMaxReps !== null && userMaxReps >= norm.reps) { achievedIdx = i; break; }
+      } else {
+        if (userMaxExtra !== null && userMaxExtra >= norm.extraKg) { achievedIdx = i; break; }
+      }
+    }
+    const achieved = achievedIdx >= 0 ? bwNorms[achievedIdx]! : null;
+    const nextEntry = achievedIdx < bwNorms.length - 1 ? bwNorms[achievedIdx + 1]! : null;
+    if (!nextEntry) return { achieved, next: null, hint: null };
+    let hint: string | null = null;
+    if (nextEntry.extraKg === 0) {
+      const delta = nextEntry.reps - (userMaxReps ?? 0);
+      if (delta > 0) hint = `ещё ${delta} повт.`;
+    } else {
+      const delta = Math.ceil(nextEntry.extraKg - (userMaxExtra ?? 0));
+      if (delta > 0) hint = `+${delta} кг доп.`;
+    }
+    return { achieved, next: nextEntry, hint };
+  }, [exerciseNorms, isBwSelected]);
 
   const prevBwRef = useRef<boolean | null>(null);
   useEffect(() => {
@@ -340,6 +369,26 @@ export function ActiveWorkout() {
             min={1}
             chips={[1, 5, 8, 10, 12]}
           />
+
+          <AnimatePresence mode="wait">
+            {repHint?.achieved && (
+              <motion.div
+                key={repHint.achieved.rank.code}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="-mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              >
+                <RankBadge rank={repHint.achieved.rank} variant="compact" />
+                {repHint.next && repHint.hint && (
+                  <span className="text-muted-foreground/60">
+                    · до {repHint.next.rank.shortLabel}: {repHint.hint}
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <Button
             className="w-full min-h-16 h-auto py-3 text-lg font-bold rounded-2xl"

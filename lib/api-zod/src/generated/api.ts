@@ -565,7 +565,80 @@ export const GetExerciseNormsResponse = zod.object({
           ),
       }),
     )
-    .describe("Full 9-entry rank ladder from Б\/Р to МС with kg thresholds."),
+    .describe(
+      "Full 10-entry rank ladder from Б\/Р to МСМК with kg thresholds.",
+    ),
+  bwNorms: zod
+    .array(
+      zod
+        .object({
+          rank: zod.object({
+            code: zod
+              .enum([
+                "NONE",
+                "YOUTH_III",
+                "YOUTH_II",
+                "YOUTH_I",
+                "III_RAZRYAD",
+                "II_RAZRYAD",
+                "I_RAZRYAD",
+                "KMS",
+                "MS",
+                "MSMC",
+              ])
+              .describe(
+                "Sport rank classification code. Ordered from NONE (beginner, LVL 0) to MSMC (МСМК — Мастер спорта международного класса, LVL 78+). Maps to Russian powerlifting rank system.",
+              ),
+            label: zod
+              .string()
+              .describe(
+                'Full Russian label, e.g. \"III юн. разряд\", \"КМС\", \"МС\", \"МСМК\".',
+              ),
+            shortLabel: zod
+              .string()
+              .describe(
+                'Short label for compact UI, e.g. \"Юн III\", \"I р.\", \"КМС\", \"МСМК\".',
+              ),
+            tier: zod
+              .number()
+              .describe(
+                "0 (lowest, NONE) to 9 (highest, МСМК) — for ordering and colour mapping.",
+              ),
+            minLevel: zod
+              .number()
+              .describe("Minimum level to display this rank on the ladder."),
+          }),
+          reps: zod
+            .number()
+            .describe(
+              "Minimum reps required in one set (at bodyweight with no extra load). At most 30.",
+            ),
+          extraKg: zod
+            .number()
+            .describe(
+              "Additional load beyond bodyweight required. 0 for rep-only tiers.",
+            ),
+        })
+        .describe(
+          "A single rank threshold for a bodyweight exercise. Reps cap at 30; ranks beyond that require additional weight (extraKg > 0).",
+        ),
+    )
+    .nullish()
+    .describe(
+      "Rep+weight norms for bodyweight exercises (10 entries, NONE → МСМК). Null for non-bodyweight exercises.",
+    ),
+  userMaxRepsAtBodyweight: zod
+    .number()
+    .nullish()
+    .describe(
+      "User's all-time best rep count in a set performed at bodyweight only (no extra load). For bodyweight exercises only; null otherwise or if no sets logged.",
+    ),
+  userMaxExtraWeightAt30Reps: zod
+    .number()
+    .nullish()
+    .describe(
+      "User's highest extra load (kg beyond bodyweight) recorded in any set with 30 or more reps. For bodyweight exercises only; null otherwise.",
+    ),
 });
 
 /**
