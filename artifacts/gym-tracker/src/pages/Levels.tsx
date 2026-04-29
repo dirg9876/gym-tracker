@@ -513,11 +513,11 @@ function requiredKgFor(
 
 // Produce a compact label for an exercise name.
 // Barbell is the default → remove "штанги"/"штангой" (no info added).
-// Dumbbell is distinctive → replace "гантелей"/"гантели" with "ганд.".
+// Dumbbell is distinctive → replace "гантелей"/"гантели" with "гант.".
 // Prepositions/service words → remove.
 // Positional words (лёжа, стоя, сидя …) → keep, they differentiate variants.
 const ABBREV_REMOVE = new Set(["штанги", "штангой", "со", "в", "на", "по", "с", "одной"]);
-const ABBREV_REPLACE: Record<string, string> = { гантелей: "ганд.", гантели: "ганд." };
+const ABBREV_REPLACE: Record<string, string> = { гантелей: "гант.", гантели: "гант." };
 function abbreviateExercise(name: string): string {
   const words = name.split(/\s+/).flatMap((w) => {
     const lower = w.toLowerCase();
