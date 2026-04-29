@@ -6,7 +6,7 @@ import {
   type MainExerciseStat,
   type SportRank,
 } from "@workspace/api-client-react";
-import { Lock, Trophy, Flame, Check, Dumbbell, Hourglass, Star, AlertTriangle, ChevronRight, Zap, Info } from "lucide-react";
+import { Lock, Trophy, Flame, Check, Dumbbell, Star, AlertTriangle, ChevronRight, Zap, Info } from "lucide-react";
 import { RankBadge, RankDivider } from "@/components/RankBadge";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -62,8 +62,6 @@ function nextRankFromStats(maxWeightKg: number, mcKg: number | null): { label: s
   return { label: nextEntry.shortLabel, kgTarget };
 }
 
-const TONNAGE_WINDOW_DAYS = 7;
-const TONNAGE_WINDOW_MS = TONNAGE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 function formatPenaltyPct(mul: number): string {
   return `+${Math.round((mul - 1) * 100)}%`;
@@ -131,21 +129,18 @@ export function Levels() {
     : 100;
   const tonnageProgress =
     next && nextTonnageTarget > 0
-      ? Math.min(100, (stats.currentTonnage7dKg / nextTonnageTarget) * 100)
+      ? Math.min(100, (stats.currentTonnageSinceLevelUp / nextTonnageTarget) * 100)
       : 100;
 
-  const oldestSetMs = stats.oldestSetInWindowAt
-    ? new Date(stats.oldestSetInWindowAt).getTime()
-    : null;
-  const daysUntilOldestExpires = oldestSetMs
-    ? Math.max(
-        0,
-        Math.ceil(
-          (oldestSetMs + TONNAGE_WINDOW_MS - Date.now()) /
-            (24 * 60 * 60 * 1000),
-        ),
-      )
-    : null;
+  const tonnageLabel = stats.levelUpAt
+    ? (() => {
+        const d = new Date(stats.levelUpAt);
+        const day = d.getDate();
+        const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+        const mon = months[d.getMonth()];
+        return `Тоннаж с ${day} ${mon}`;
+      })()
+    : "Тоннаж за всё время";
   const droppedFromBest = bestLevelEver > currentLevel;
   const jumpLevels = next ? next.level - confirmedLevel : 0;
   const showNextLevelPenalty = next && nextLevelPenaltyMultiplier > 1;
@@ -322,25 +317,12 @@ export function Levels() {
 
                 <ProgressRow
                   icon={<Flame className="h-4 w-4" />}
-                  label="Тоннаж за последние 7 дней"
-                  value={stats.currentTonnage7dKg}
+                  label={tonnageLabel}
+                  value={stats.currentTonnageSinceLevelUp}
                   target={nextTonnageTarget}
                   unit="кг"
                   progress={tonnageProgress}
                 />
-
-                {daysUntilOldestExpires !== null &&
-                  stats.currentTonnage7dKg > 0 &&
-                  stats.currentTonnage7dKg < nextTonnageTarget && (
-                    <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-2">
-                      <Hourglass className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                      <span>
-                        Окно тоннажа — последние 7 дней. Самые ранние подходы «сгорят»
-                        через {daysUntilOldestExpires}{" "}
-                        {pluralizeDays(daysUntilOldestExpires)}, если не успеешь добрать норму.
-                      </span>
-                    </div>
-                  )}
               </div>
             </>
           ) : (
@@ -760,14 +742,6 @@ function LevelDetailDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-function pluralizeDays(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "день";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "дня";
-  return "дней";
 }
 
 function pluralizeLevels(n: number): string {

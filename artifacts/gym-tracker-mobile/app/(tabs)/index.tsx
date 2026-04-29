@@ -65,7 +65,7 @@ export default function HomeScreen() {
   const nxtTarget = levelsData?.nextLevelTonnage7dKgRequired ?? 0;
   const tonProg =
     nxt && nxtTarget > 0 && levelsData
-      ? Math.min(100, (levelsData.stats.currentTonnage7dKg / nxtTarget) * 100)
+      ? Math.min(100, (levelsData.stats.currentTonnageSinceLevelUp / nxtTarget) * 100)
       : 100;
 
   return (
@@ -120,7 +120,7 @@ export default function HomeScreen() {
                     style={[styles.lvlMeta, { color: colors.mutedForeground }]}
                     numberOfLines={1}
                   >
-                    До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnage7dKg)} /{" "}
+                    До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnageSinceLevelUp)} /{" "}
                     {formatNumber(nxtTarget)} кг
                   </Text>
                   <View

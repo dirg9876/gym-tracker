@@ -326,7 +326,7 @@ router.get("/stats/forecast", async (req, res): Promise<void> => {
     info.nextLevelTonnage7dKgRequired ?? nextDef.tonnage7dKgRequired;
   const tonnageNeeded = Math.max(
     0,
-    effectiveTarget - info.stats.currentTonnage7dKg,
+    effectiveTarget - info.stats.currentTonnageSinceLevelUp,
   );
 
   let estimatedDays: number | null = null;

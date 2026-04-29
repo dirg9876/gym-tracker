@@ -4,6 +4,8 @@ import {
   getProfile,
   getConfirmedLevel,
   setConfirmedLevel,
+  getLevelUpAt,
+  setLevelUpAt,
   FALLBACK_BODY_WEIGHT_KG,
   FALLBACK_SEX,
 } from "./profile";
@@ -585,9 +587,9 @@ export type MainExerciseStat = {
 };
 
 export type LevelStats = {
-  currentTonnage7dKg: number;
+  currentTonnageSinceLevelUp: number;
   maxTonnage7dKg: number;
-  oldestSetInWindowAt: string | null;
+  levelUpAt: string | null;
   mainExercises: MainExerciseStat[];
 };
 
@@ -735,21 +737,17 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
   }));
 
   const windowMs = 7 * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  const windowStart = now - windowMs;
-
-  let currentTonnage7dKg = 0;
-  let oldestSetInWindowTs: number | null = null;
-  for (const e of events) {
-    if (e.ts >= windowStart && e.ts <= now) {
-      currentTonnage7dKg += e.volume;
-      if (oldestSetInWindowTs === null || e.ts < oldestSetInWindowTs) {
-        oldestSetInWindowTs = e.ts;
-      }
-    }
-  }
 
   const maxTonnage7dKg = computeMaxRollingTonnage(events, windowMs);
+
+  const levelUpAt = await getLevelUpAt(userId);
+  const cutoff = levelUpAt?.getTime() ?? 0;
+  let currentTonnageSinceLevelUp = 0;
+  for (const e of events) {
+    if (e.ts > cutoff) {
+      currentTonnageSinceLevelUp += e.volume;
+    }
+  }
 
   // Pass-check helpers. `penaltyMul` allows a candidate level beyond
   // `confirmed + 1` to charge an extra fee on both tonnage and per-exercise
@@ -821,7 +819,7 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
   let currentLevel = 0;
   for (const lvl of levels) {
     const penaltyMul = jumpPenaltyMultiplier(lvl.level, confirmedLevel);
-    if (levelPasses(lvl, currentTonnage7dKg, penaltyMul)) {
+    if (levelPasses(lvl, currentTonnageSinceLevelUp, penaltyMul)) {
       currentLevel = lvl.level;
     } else {
       break;
@@ -831,6 +829,7 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
   // Persist the new floor when the user has earned a higher level.
   if (currentLevel > confirmedLevel) {
     await setConfirmedLevel(userId, currentLevel);
+    await setLevelUpAt(userId, new Date());
     confirmedLevel = currentLevel;
   }
 
@@ -938,12 +937,9 @@ export async function computeCurrentLevel(userId: string): Promise<CurrentLevelI
     confirmedLevelMigrationNeeded,
     levels,
     stats: {
-      currentTonnage7dKg: round(currentTonnage7dKg),
+      currentTonnageSinceLevelUp: round(currentTonnageSinceLevelUp),
       maxTonnage7dKg: round(maxTonnage7dKg),
-      oldestSetInWindowAt:
-        oldestSetInWindowTs !== null
-          ? new Date(oldestSetInWindowTs).toISOString()
-          : null,
+      levelUpAt: levelUpAt?.toISOString() ?? null,
       mainExercises,
     },
   };

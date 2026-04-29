@@ -374,12 +374,12 @@ export interface MainExerciseStat {
 }
 
 export interface LevelStats {
-  /** Total tonnage (kg) lifted in the last 7 days. */
-  currentTonnage7dKg: number;
-  /** Best rolling 7-day tonnage (kg) ever achieved. */
+  /** Total tonnage (kg) accumulated since the last level-up. Resets to 0 whenever the user advances to a new level. When no level-up has ever been recorded, counts all tonnage since the beginning of time. */
+  currentTonnageSinceLevelUp: number;
+  /** Best rolling 7-day tonnage (kg) ever achieved. Used for bestLevelEver. */
   maxTonnage7dKg: number;
-  /** Timestamp of the oldest set inside the current 7-day window. */
-  oldestSetInWindowAt: string | null;
+  /** ISO timestamp of the most recent level-up event. Null when the user has never levelled up (tonnage counted from the beginning). */
+  levelUpAt: string | null;
   mainExercises: MainExerciseStat[];
 }
 

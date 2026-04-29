@@ -154,3 +154,24 @@ export async function getConfirmedLevel(userId: string): Promise<number | null> 
 export async function setConfirmedLevel(userId: string, level: number): Promise<void> {
   await writeMetaNumber(userId, CONFIRMED_LEVEL_KEY, Math.max(0, Math.floor(level)));
 }
+
+export const LEVEL_UP_AT_KEY = "level_up_at_v1";
+
+export async function getLevelUpAt(userId: string): Promise<Date | null> {
+  const rows = await db
+    .select({ value: appMetaTable.value })
+    .from(appMetaTable)
+    .where(and(eq(appMetaTable.userId, userId), eq(appMetaTable.key, LEVEL_UP_AT_KEY)))
+    .limit(1);
+  return rows.length > 0 && rows[0]!.value ? new Date(rows[0]!.value) : null;
+}
+
+export async function setLevelUpAt(userId: string, ts: Date): Promise<void> {
+  await db
+    .insert(appMetaTable)
+    .values({ userId, key: LEVEL_UP_AT_KEY, value: ts.toISOString(), updatedAt: ts })
+    .onConflictDoUpdate({
+      target: [appMetaTable.userId, appMetaTable.key],
+      set: { value: ts.toISOString(), updatedAt: ts },
+    });
+}

@@ -1249,25 +1249,30 @@ components:
     LevelStats:
       type: object
       properties:
-        currentTonnage7dKg:
+        currentTonnageSinceLevelUp:
           type: number
-          description: Total tonnage (kg) lifted in the last 7 days.
+          description: >-
+            Total tonnage (kg) accumulated since the last level-up. Resets to 0
+            whenever the user advances to a new level. When no level-up has ever
+            been recorded, counts all tonnage since the beginning of time.
         maxTonnage7dKg:
           type: number
-          description: Best rolling 7-day tonnage (kg) ever achieved.
-        oldestSetInWindowAt:
+          description: Best rolling 7-day tonnage (kg) ever achieved. Used for bestLevelEver.
+        levelUpAt:
           type: string
           format: date-time
           nullable: true
-          description: Timestamp of the oldest set inside the current 7-day window.
+          description: >-
+            ISO timestamp of the most recent level-up event. Null when the user
+            has never levelled up (tonnage counted from the beginning).
         mainExercises:
           type: array
           items:
             $ref: "#/components/schemas/MainExerciseStat"
       required:
-        - currentTonnage7dKg
+        - currentTonnageSinceLevelUp
         - maxTonnage7dKg
-        - oldestSetInWindowAt
+        - levelUpAt
         - mainExercises
 
     LevelsResponse:

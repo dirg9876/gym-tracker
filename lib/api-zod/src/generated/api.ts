@@ -1106,16 +1106,22 @@ export const GetLevelsResponse = zod.object({
       "True when the user's confirmed level (saved in DB) is higher than the freshly computed current level. Indicates the norms were recalibrated or the user's data no longer qualifies; the UI should show a hint to re-verify personal records.",
     ),
   stats: zod.object({
-    currentTonnage7dKg: zod
+    currentTonnageSinceLevelUp: zod
       .number()
-      .describe("Total tonnage (kg) lifted in the last 7 days."),
+      .describe(
+        "Total tonnage (kg) accumulated since the last level-up. Resets to 0 whenever the user advances to a new level. When no level-up has ever been recorded, counts all tonnage since the beginning of time.",
+      ),
     maxTonnage7dKg: zod
       .number()
-      .describe("Best rolling 7-day tonnage (kg) ever achieved."),
-    oldestSetInWindowAt: zod.coerce
+      .describe(
+        "Best rolling 7-day tonnage (kg) ever achieved. Used for bestLevelEver.",
+      ),
+    levelUpAt: zod.coerce
       .date()
       .nullable()
-      .describe("Timestamp of the oldest set inside the current 7-day window."),
+      .describe(
+        "ISO timestamp of the most recent level-up event. Null when the user has never levelled up (tonnage counted from the beginning).",
+      ),
     mainExercises: zod.array(
       zod.object({
         exerciseId: zod.number(),
