@@ -40,7 +40,9 @@ if (apiOrigin) {
   setBaseUrl(apiOrigin);
 }
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const fallbackPublishableKey = "pk_test_bG92ZWQtbWFudGlzLTkzLmNsZXJrLmFjY291bnRzLmRldiQ";
+const publishableKey =
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() || fallbackPublishableKey;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});

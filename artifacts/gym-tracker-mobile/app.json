@@ -4,12 +4,12 @@
     "slug": "gym-tracker-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/gymbeam_logo_512x512.png",
     "scheme": "gymbeam",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/gymbeam_logo_512x512.png",
       "resizeMode": "contain",
       "backgroundColor": "#0a0a0a"
     },
@@ -19,16 +19,18 @@
     },
     "android": {
       "package": "com.dirg9876.gymbeam",
-      "versionCode": 7,
+      "versionCode": 10,
       "backgroundColor": "#0a0a0a",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/gymbeam_logo_512x512.png",
         "backgroundColor": "#0a0a0a"
       },
-      "permissions": []
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/gymbeam_logo_512x512.png"
     },
     "plugins": [
       [
