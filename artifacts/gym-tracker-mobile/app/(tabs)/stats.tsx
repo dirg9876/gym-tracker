@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BarChart } from "@/components/BarChart";
 import { Card } from "@/components/Card";
+import { HeatmapCalendar } from "@/components/HeatmapCalendar";
 import { LineChart } from "@/components/LineChart";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
@@ -88,6 +89,8 @@ export default function StatsScreen() {
           </Card>
         ))}
       </View>
+
+      <HeatmapCalendar />
 
       {progress.points.length > 0 ? (
         <View style={{ gap: 14 }}>

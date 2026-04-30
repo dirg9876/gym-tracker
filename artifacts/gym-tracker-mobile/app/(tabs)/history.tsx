@@ -1,7 +1,15 @@
-import { useListWorkouts } from "@workspace/api-client-react";
+import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getGetLevelsQueryKey,
+  getGetStatsOverviewQueryKey,
+  getListWorkoutsQueryKey,
+  useDeleteWorkout,
+  useListWorkouts,
+} from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
 import React from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
@@ -12,7 +20,32 @@ export default function HistoryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: workouts, isLoading } = useListWorkouts({ limit: 50 });
+  const deleteWorkout = useDeleteWorkout({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetStatsOverviewQueryKey() });
+      },
+    },
+  });
+
+  const confirmDelete = (workoutId: number) => {
+    Alert.alert(
+      "Удалить тренировку?",
+      "Тренировка и все ее подходы будут удалены безвозвратно.",
+      [
+        { text: "Отмена", style: "cancel" },
+        {
+          text: "Удалить",
+          style: "destructive",
+          onPress: () => deleteWorkout.mutate({ workoutId }),
+        },
+      ],
+    );
+  };
 
   if (isLoading) {
     return (
@@ -75,6 +108,23 @@ export default function HistoryScreen() {
                 >
                   {w.name || "Тренировка"}
                 </Text>
+                <Pressable
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    confirmDelete(w.id);
+                  }}
+                  disabled={deleteWorkout.isPending}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.deleteButton,
+                    {
+                      backgroundColor: pressed ? colors.destructiveSoft : "transparent",
+                      opacity: deleteWorkout.isPending ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <Feather name="trash-2" size={15} color={colors.destructive} />
+                </Pressable>
                 <View
                   style={{
                     backgroundColor: colors.muted,
@@ -134,6 +184,13 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   h1: { fontSize: 30, fontFamily: "Inter_700Bold", letterSpacing: -0.5, marginTop: 8 },
   title: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  deleteButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   statLabel: {
     fontSize: 9,
     fontFamily: "Inter_700Bold",

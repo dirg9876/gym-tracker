@@ -1,0 +1,36 @@
+# Keep the EAS archive focused on the mobile app and shared API client.
+
+# Dependencies and generated output
+**/node_modules/
+**/.expo/
+**/.expo-shared/
+**/.metro-cache/
+**/static-build/
+**/dist/
+**/build/
+**/coverage/
+**/*.tsbuildinfo
+
+# Local and editor files
+/.git/
+/.github/
+/.agents/
+/scripts/
+**/.eas-archive-check/
+**/.env*
+!.env.example
+**/.DS_Store
+**/Thumbs.db
+**/.cache/
+**/.local/
+**/.replit-artifact/
+
+# Other workspace artifacts are not needed for the native mobile build.
+/artifacts/*
+!/artifacts/gym-tracker-mobile
+!/artifacts/gym-tracker-mobile/**
+
+# Keep the generated API client workspace package.
+/lib/*
+!/lib/api-client-react
+!/lib/api-client-react/**

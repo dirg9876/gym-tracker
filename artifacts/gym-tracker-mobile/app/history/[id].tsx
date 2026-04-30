@@ -1,14 +1,23 @@
 import {
+  getGetLevelsQueryKey,
+  getGetStatsOverviewQueryKey,
+  getGetWorkoutExerciseBreakdownQueryKey,
   getGetWorkoutQueryKey,
+  getListWorkoutsQueryKey,
   type WorkoutSet,
+  useDeleteWorkout,
   useGetWorkout,
+  useGetWorkoutExerciseBreakdown,
 } from "@workspace/api-client-react";
+import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
+import { ExerciseProgressCard } from "@/components/ExerciseProgressCard";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { formatDate, formatKg, formatNumber } from "@/lib/format";
@@ -17,12 +26,45 @@ export default function HistoryDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ id: string }>();
   const id = parseInt(params.id || "0", 10);
 
   const { data: workout, isLoading } = useGetWorkout(id, {
     query: { enabled: !!id, queryKey: getGetWorkoutQueryKey(id) },
   });
+  const { data: breakdown } = useGetWorkoutExerciseBreakdown(id, {
+    query: {
+      enabled: !!id,
+      queryKey: getGetWorkoutExerciseBreakdownQueryKey(id),
+    },
+  });
+
+  const deleteWorkout = useDeleteWorkout({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetStatsOverviewQueryKey() });
+        router.replace("/history");
+      },
+    },
+  });
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Удалить тренировку?",
+      "Тренировка и все ее подходы будут удалены безвозвратно.",
+      [
+        { text: "Отмена", style: "cancel" },
+        {
+          text: "Удалить",
+          style: "destructive",
+          onPress: () => deleteWorkout.mutate({ workoutId: id }),
+        },
+      ],
+    );
+  };
 
   const setsByExercise = useMemo<
     { exerciseId: number; name: string; sets: WorkoutSet[] }[]
@@ -70,6 +112,22 @@ export default function HistoryDetailScreen() {
         title={workout.name || "Тренировка"}
         subtitle={formatDate(workout.startedAt)}
         onBack={() => router.replace("/history")}
+        right={
+          <Pressable
+            onPress={confirmDelete}
+            disabled={deleteWorkout.isPending}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              {
+                backgroundColor: colors.destructiveSoft,
+                opacity: pressed || deleteWorkout.isPending ? 0.65 : 1,
+              },
+            ]}
+          >
+            <Feather name="trash-2" size={18} color={colors.destructive} />
+          </Pressable>
+        }
       />
       <ScrollView
         contentContainerStyle={{
@@ -93,6 +151,17 @@ export default function HistoryDetailScreen() {
             </Text>
           </Card>
         </View>
+
+        {breakdown && breakdown.items.length > 0 ? (
+          <View style={{ gap: 10 }}>
+            <Text style={[styles.section, { color: colors.foreground }]}>
+              Сводка по упражнениям
+            </Text>
+            {breakdown.items.map((item) => (
+              <ExerciseProgressCard key={item.exerciseId} item={item} />
+            ))}
+          </View>
+        ) : null}
 
         <View style={{ gap: 14 }}>
           {setsByExercise.map((group) => {
@@ -173,4 +242,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   value: { fontSize: 22, fontFamily: "Inter_700Bold", marginTop: 4 },
+  section: { fontSize: 18, fontFamily: "Inter_700Bold", paddingHorizontal: 4 },
+  deleteButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

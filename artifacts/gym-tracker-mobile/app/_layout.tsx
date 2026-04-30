@@ -13,7 +13,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -21,12 +21,26 @@ import { ToastProvider } from "@/components/Toast";
 import colors from "@/constants/colors";
 import { queryClient } from "@/lib/queryClient";
 
-const domain = process.env.EXPO_PUBLIC_DOMAIN;
-if (domain) {
-  setBaseUrl(`https://${domain}`);
+function normalizeApiOrigin(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  return withProtocol.replace(/\/+$/, "");
 }
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const apiOrigin =
+  normalizeApiOrigin(process.env.EXPO_PUBLIC_API_ORIGIN) ??
+  normalizeApiOrigin(process.env.EXPO_PUBLIC_DOMAIN);
+
+if (apiOrigin) {
+  setBaseUrl(apiOrigin);
+}
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -47,6 +61,42 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: colors.dark.background }} />;
+  }
+
+  if (!publishableKey) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          padding: 24,
+          backgroundColor: colors.dark.background,
+        }}
+      >
+        <StatusBar style="light" backgroundColor={colors.dark.background} />
+        <Text
+          style={{
+            color: colors.dark.foreground,
+            fontFamily: "Inter_700Bold",
+            fontSize: 22,
+            marginBottom: 8,
+          }}
+        >
+          Настройка входа не завершена
+        </Text>
+        <Text
+          style={{
+            color: colors.dark.mutedForeground,
+            fontFamily: "Inter_400Regular",
+            fontSize: 15,
+            lineHeight: 22,
+          }}
+        >
+          Для production-сборки укажи EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY в EAS
+          Environment.
+        </Text>
+      </View>
+    );
   }
 
   return (
@@ -71,6 +121,7 @@ export default function RootLayout() {
                   <Stack.Screen name="programs/[id]" />
                   <Stack.Screen name="history/[id]" />
                   <Stack.Screen name="exercises/[id]" />
+                  <Stack.Screen name="profile" />
                 </Stack>
               </ToastProvider>
             </SafeAreaProvider>

@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Тренировки (Android)",
+    "name": "Gym-Beam",
     "slug": "gym-tracker-mobile",
-    "version": "1.0.0",
+    "version": "0.1.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "gym-tracker-mobile",
+    "icon": "./assets/images/gymbeam_logo_512x512.png",
+    "scheme": "gymbeam",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/gymbeam_logo_512x512.png",
       "resizeMode": "contain",
       "backgroundColor": "#0a0a0a"
     },
@@ -18,24 +18,51 @@
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#0a0a0a"
+      "package": "com.dirg9876.gymbeam",
+      "versionCode": 11,
+      "backgroundColor": "#0a0a0a",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/gymbeam_logo_512x512.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/gymbeam_logo_512x512.png"
     },
     "plugins": [
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://gym-beam.ru/"
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "exclude": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
+            }
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "dabd3128-415f-4a2f-8c73-3b0a52585149"
+      }
+    },
+    "owner": "dirg9508"
   }
 }

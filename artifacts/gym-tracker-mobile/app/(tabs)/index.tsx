@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { HomeStrengthCard } from "@/components/HomeStrengthCard";
 import { useColors } from "@/hooks/useColors";
 import { formatDate, formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/levelImages";
@@ -178,6 +179,8 @@ export default function HomeScreen() {
           </Card>
         </View>
       ) : null}
+
+      <HomeStrengthCard />
 
       {/* Recent workouts */}
       {recentWorkouts && recentWorkouts.length > 0 ? (

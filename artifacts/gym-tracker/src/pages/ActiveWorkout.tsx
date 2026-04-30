@@ -11,6 +11,7 @@ import {
   useCreateExercise,
   getGetWorkoutQueryKey,
   getGetActiveWorkoutQueryKey,
+  getGetExerciseNormsQueryKey,
   getListWorkoutsQueryKey,
   getGetStatsOverviewQueryKey,
   getGetProgressQueryKey,
@@ -73,6 +74,7 @@ export function ActiveWorkout() {
   const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
     query: {
       enabled: !!selectedExerciseId,
+      queryKey: getGetExerciseNormsQueryKey(selectedExerciseId ?? 0),
       staleTime: 5 * 60 * 1000,
     },
   });

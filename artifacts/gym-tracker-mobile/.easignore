@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+.expo-shared/
+.metro-cache/
+.eas-archive-check/
+static-build/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.replit-artifact/
+.env*
+!.env.example
+npm-debug.*
+yarn-debug.*
+yarn-error.*

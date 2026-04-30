@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { LevelForecastCard } from "@/components/LevelForecastCard";
+import { ProfileCard } from "@/components/ProfileCard";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/levelImages";
@@ -66,15 +68,6 @@ export default function LevelsScreen() {
       ? Math.min(100, (stats.currentTonnageSinceLevelUp / nextTonnageTarget) * 100)
       : 100;
 
-  const tonnageLabel = stats.levelUpAt
-    ? (() => {
-        const d = new Date(stats.levelUpAt);
-        const day = d.getDate();
-        const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-        const mon = months[d.getMonth()];
-        return `Тоннаж с ${day} ${mon}`;
-      })()
-    : "Тоннаж за всё время";
   const droppedFromBest = bestLevelEver > currentLevel;
 
   return (
@@ -95,6 +88,10 @@ export default function LevelsScreen() {
           borderBottomColor: colors.cardBorder,
         }}
       >
+        <View style={{ marginBottom: 16 }}>
+          <ProfileCard />
+        </View>
+
         <Text
           style={{
             color: colors.mutedForeground,
@@ -175,17 +172,18 @@ export default function LevelsScreen() {
         </View>
 
         {next ? (
-          <View
-            style={{
-              marginTop: 22,
-              backgroundColor: colors.card,
-              borderColor: colors.cardBorder,
-              borderWidth: 1,
-              borderRadius: 18,
-              padding: 14,
-              gap: 14,
-            }}
-          >
+          <View style={{ marginTop: 22, gap: 12 }}>
+            <LevelForecastCard />
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+                borderWidth: 1,
+                borderRadius: 18,
+                padding: 14,
+                gap: 14,
+              }}
+            >
             <Text
               style={{
                 color: colors.mutedForeground,
@@ -209,11 +207,13 @@ export default function LevelsScreen() {
 
             <ProgressRow
               icon={<Feather name="zap" size={14} color={colors.mutedForeground} />}
-              label={tonnageLabel}
+              label="Тоннаж за 7 дней"
               valueText={`${formatNumber(stats.currentTonnageSinceLevelUp)} / ${formatNumber(nextTonnageTarget)} кг`}
               progress={tonnageProgress}
               reached={stats.currentTonnageSinceLevelUp >= nextTonnageTarget}
             />
+
+            </View>
           </View>
         ) : (
           <View
