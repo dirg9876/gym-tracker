@@ -13,7 +13,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -40,9 +40,7 @@ if (apiOrigin) {
   setBaseUrl(apiOrigin);
 }
 
-const fallbackPublishableKey = "pk_test_bG92ZWQtbWFudGlzLTkzLmNsZXJrLmFjY291bnRzLmRldiQ";
-const publishableKey =
-  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() || fallbackPublishableKey;
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -63,6 +61,42 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: colors.dark.background }} />;
+  }
+
+  if (!publishableKey) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          padding: 24,
+          backgroundColor: colors.dark.background,
+        }}
+      >
+        <StatusBar style="light" backgroundColor={colors.dark.background} />
+        <Text
+          style={{
+            color: colors.dark.foreground,
+            fontFamily: "Inter_700Bold",
+            fontSize: 22,
+            marginBottom: 8,
+          }}
+        >
+          Настройка входа не завершена
+        </Text>
+        <Text
+          style={{
+            color: colors.dark.mutedForeground,
+            fontFamily: "Inter_400Regular",
+            fontSize: 15,
+            lineHeight: 22,
+          }}
+        >
+          Для production-сборки укажи EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY в EAS
+          Environment.
+        </Text>
+      </View>
+    );
   }
 
   return (
