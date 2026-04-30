@@ -6,7 +6,7 @@ Use this file when submitting Gym-Beam to RuStore or Google Play.
 
 - App name: Gym-Beam
 - Android package: `com.dirg9876.gymbeam`
-- Production API: `https://gym-progress-tracker--dirg9876.replit.app`
+- Production API: `https://gym-beam.ru`
 
 ## Reviewer Test Account
 
@@ -35,7 +35,7 @@ Email: <reviewer email>
 
 ## Production Build Checklist
 
-- `EXPO_PUBLIC_API_ORIGIN` in EAS production environment points to `https://gym-progress-tracker--dirg9876.replit.app`.
+- `EXPO_PUBLIC_API_ORIGIN` in EAS production environment points to `https://gym-beam.ru`.
 - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` in EAS production environment is a live Clerk publishable key that starts with `pk_live`.
 - The API server uses the matching live Clerk secret key that starts with `sk_live`.
 - The APK/AAB is rebuilt after changing EAS environment variables.

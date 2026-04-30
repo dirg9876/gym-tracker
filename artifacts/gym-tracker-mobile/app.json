@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gym-Beam",
     "slug": "gym-tracker-mobile",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/gymbeam_logo_512x512.png",
     "scheme": "gymbeam",
@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.dirg9876.gymbeam",
-      "versionCode": 10,
+      "versionCode": 11,
       "backgroundColor": "#0a0a0a",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/gymbeam_logo_512x512.png",
@@ -36,7 +36,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://gym-beam.ru/"
         }
       ],
       "expo-font",
