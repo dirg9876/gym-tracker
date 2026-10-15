@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetActiveWorkoutQueryKey,
@@ -15,8 +15,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { SavedWorkoutPlan } from "@/components/SavedWorkoutPlan";
+import type { TemplatePlan } from "@/lib/workoutTemplates";
 import { useColors } from "@/hooks/useColors";
-import { savePlan } from "@/lib/programPlanStash";
+import { isTimedExercise } from "@/lib/workoutMeasurement";
+import { formatKg } from "@/lib/format";
 
 const intentLabel: Record<string, string> = {
   strength: "Сила",
@@ -35,7 +38,7 @@ export default function ProgramDetailScreen() {
   const { data: plan, isLoading, isError } = useGetProgramPlan(programId, {
     query: {
       queryKey: getGetProgramPlanQueryKey(programId),
-      enabled: Boolean(programId),
+      enabled: Boolean(programId) && programId !== "new",
     },
   });
 
@@ -45,15 +48,13 @@ export default function ProgramDetailScreen() {
   const createWorkout = useCreateWorkout({
     mutation: {
       onSuccess: async (newWorkout) => {
-        if (plan) {
-          await savePlan(newWorkout.id, plan);
-        }
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
         router.replace(`/workout/${newWorkout.id}`);
       },
     },
   });
 
+  if (programId === "new") return <SavedWorkoutPlan key="new" plan={{ id: "new", name: "", description: "", emoji: "", isCustom: true, basedOnLevel: 0, basedOnLevelName: "", benchmarkKg: 0, exercises: [] }} />;
   if (isLoading) {
     return (
       <View
@@ -82,8 +83,12 @@ export default function ProgramDetailScreen() {
       router.replace(`/workout/${activeWorkout.id}`);
       return;
     }
-    createWorkout.mutate({ data: { name: plan.name } });
+    const data = { name: plan.name, programId: plan.id };
+    createWorkout.mutate({ data });
   };
+
+  const template = plan as TemplatePlan;
+  if (template.isCustom) return <SavedWorkoutPlan key={plan.id} plan={template} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -127,16 +132,17 @@ export default function ProgramDetailScreen() {
             <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold" }}>
               {plan.basedOnLevelName}
             </Text>{" "}
-            · веса подобраны под твой уровень.
+            · стартовые веса или личные результаты
           </Text>
         </Card>
 
         <View style={{ gap: 10 }}>
           {plan.exercises.map((ex, idx) => {
+            const timed = isTimedExercise(ex.name);
             const reps =
               ex.repsMin === ex.repsMax ? `${ex.repsMin}` : `${ex.repsMin}–${ex.repsMax}`;
             const weight = ex.isBodyweight
-              ? "Свой вес"
+              ? ex.suggestedWeightKg > 0 ? `+${formatKg(ex.suggestedWeightKg)}` : "Свой вес"
               : ex.suggestedWeightKg > 0
                 ? `${ex.suggestedWeightKg} кг`
                 : "—";
@@ -199,8 +205,8 @@ export default function ProgramDetailScreen() {
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
                   {[
                     { l: "Подходы", v: String(ex.sets) },
-                    { l: "Повторы", v: reps },
-                    { l: "Вес", v: weight },
+                    { l: timed ? "Секунды" : "Повторы", v: reps },
+                    ...(!timed ? [{ l: ex.equipment === "dumbbell" ? "1 гантель" : ex.isBodyweight ? "Доп. вес" : ex.equipment === "barbell" ? "Вес с грифом" : "Вес", v: weight }] : []),
                   ].map((s) => (
                     <View key={s.l} style={{ flex: 1 }}>
                       <Text

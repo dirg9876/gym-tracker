@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import * as Haptics from "expo-haptics";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
@@ -6,7 +6,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import type { WorkoutSet } from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";
-import { formatKg } from "@/lib/format";
+import { formatSetResult, formatSetContext } from "@/lib/workoutMeasurement";
 
 type Props = {
   set: WorkoutSet;
@@ -21,22 +21,23 @@ export function SetCard({ set, index, onDelete }: Props) {
     <View
       style={[
         styles.row,
-        { backgroundColor: colors.muted, borderColor: colors.cardBorder },
+        { backgroundColor: colors.successSoft, borderColor: colors.successBorder },
       ]}
     >
       <View style={[styles.indexBadge, { backgroundColor: colors.card }]}>
-        <Text style={[styles.indexText, { color: colors.mutedForeground }]}>{index}</Text>
+        <Text style={[styles.indexText, { color: colors.success }]}>{index}</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.value, { color: colors.foreground }]}>
-          {formatKg(set.weightKg)}{" "}
-          <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>×</Text> {set.reps}
+        <Text style={[styles.value, { color: colors.success }]}>
+          {formatSetResult(set)}
         </Text>
-        <Text style={[styles.volume, { color: colors.mutedForeground }]}>
-          {formatKg(set.volume)} объёма
-        </Text>
+        {formatSetContext(set) ? <Text style={[styles.volume, { color: colors.mutedForeground }]}>
+          {formatSetContext(set)}
+        </Text> : null}
       </View>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Удалить подход ${index}: ${formatSetResult(set)}`}
         onPress={() => {
           if (Platform.OS !== "web") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     gap: 12,
   },
@@ -88,9 +89,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   deleteBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },

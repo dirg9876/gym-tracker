@@ -1105,6 +1105,12 @@ export const GetLevelsResponse = zod.object({
     .describe(
       "True when the user's confirmed level (saved in DB) is higher than the freshly computed current level. Indicates the norms were recalibrated or the user's data no longer qualifies; the UI should show a hint to re-verify personal records.",
     ),
+  maxClaimableLevel: zod
+    .number()
+    .nullable()
+    .describe(
+      "Highest level above confirmedLevel where the user has ≥ 10 main exercises and every exercise passes the weight requirement (no tonnage check, no jump penalty). Null when fewer than 10 exercises are marked as main or no such level exists.",
+    ),
   stats: zod.object({
     currentTonnageSinceLevelUp: zod
       .number()
@@ -1182,6 +1188,17 @@ export const GetLevelsResponse = zod.object({
       }),
     ),
   }),
+});
+
+/**
+ * @summary Claim a level earned by meeting all weight requirements (≥10 main exercises, no tonnage check)
+ */
+export const ClaimLevelParams = zod.object({
+  level: zod.coerce.number(),
+});
+
+export const ClaimLevelResponse = zod.object({
+  confirmedLevel: zod.number(),
 });
 
 /**

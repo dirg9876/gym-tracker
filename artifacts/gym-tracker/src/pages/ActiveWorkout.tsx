@@ -8,19 +8,24 @@ import {
   useAddSet,
   useDeleteSet,
   useFinishWorkout,
+  useDeleteWorkout,
   useCreateExercise,
+  useCreateCustomProgram,
+  useUpdateCustomProgram,
   getGetWorkoutQueryKey,
   getGetActiveWorkoutQueryKey,
+  getGetExerciseNormsQueryKey,
   getListWorkoutsQueryKey,
   getGetStatsOverviewQueryKey,
   getGetProgressQueryKey,
+  getListProgramsQueryKey,
   type WorkoutSet,
   type ProgramPlan,
 } from "@workspace/api-client-react";
 import { RankBadge } from "@/components/RankBadge";
 import { isBodyweight } from "@/lib/equipment";
 import { Link } from "wouter";
-import { AlertTriangle, Star } from "lucide-react";
+import { AlertTriangle, Star, X } from "lucide-react";
 import { Stepper } from "@/components/Stepper";
 import { ExercisePicker } from "@/components/ExercisePicker";
 import { SetCard } from "@/components/SetCard";
@@ -43,7 +48,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { clearPlan, loadPlan } from "@/lib/programPlanStash";
+import { clearPlan, loadPlan, saveAdaptivePlan, savePlan } from "@/lib/programPlanStash";
 
 export function ActiveWorkout() {
   const params = useParams();
@@ -61,11 +66,14 @@ export function ActiveWorkout() {
   const bodyWeightIsFallback = levelsData?.bodyWeightIsFallback ?? false;
 
   const [programPlan, setProgramPlan] = useState<ProgramPlan | null>(null);
+  const [planModified, setPlanModified] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | undefined>();
   const [weight, setWeight] = useState(20);
   const [reps, setReps] = useState(10);
   const [restTimerKey, setRestTimerKey] = useState(0);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showSaveProgramDialog, setShowSaveProgramDialog] = useState(false);
 
   const selectedExercise = exercises?.find((e) => e.id === selectedExerciseId);
   const isBwSelected = isBodyweight(selectedExercise?.equipment);
@@ -73,6 +81,7 @@ export function ActiveWorkout() {
   const { data: exerciseNorms } = useGetExerciseNorms(selectedExerciseId ?? 0, {
     query: {
       enabled: !!selectedExerciseId,
+      queryKey: getGetExerciseNormsQueryKey(selectedExerciseId ?? 0),
       staleTime: 5 * 60 * 1000,
     },
   });
@@ -156,8 +165,8 @@ export function ActiveWorkout() {
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
         if (!programPlan) {
           toast.success("Подход добавлен", { icon: <Check className="h-4 w-4" /> });
-          setRestTimerKey((k) => k + 1);
         }
+        setRestTimerKey((k) => k + 1);
       },
     },
   });
@@ -174,6 +183,16 @@ export function ActiveWorkout() {
   const finishWorkout = useFinishWorkout({
     mutation: {
       onSuccess: (report) => {
+        if (programPlan) {
+          const finalSets = report.workout.sets;
+          const updatedExercises = programPlan.exercises.map((ex) => {
+            const loggedSets = finalSets.filter((s) => s.exerciseId === ex.exerciseId);
+            if (loggedSets.length === 0) return ex;
+            const maxWeight = Math.max(...loggedSets.map((s) => s.weightKg));
+            return { ...ex, suggestedWeightKg: maxWeight, sets: loggedSets.length };
+          });
+          saveAdaptivePlan(programPlan.id, { ...programPlan, exercises: updatedExercises });
+        }
         queryClient.setQueryData(["finish-report", workoutId], report);
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
@@ -181,6 +200,18 @@ export function ActiveWorkout() {
         queryClient.invalidateQueries({ queryKey: getGetProgressQueryKey() });
         clearPlan(workoutId);
         setLocation(`/workout/${workoutId}/report`);
+      },
+    },
+  });
+
+  const discardWorkout = useDeleteWorkout({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetStatsOverviewQueryKey() });
+        clearPlan(workoutId);
+        setLocation("/");
       },
     },
   });
@@ -194,6 +225,38 @@ export function ActiveWorkout() {
       },
     },
   });
+
+  const updateCustomProgram = useUpdateCustomProgram({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListProgramsQueryKey() });
+        toast.success("Программа обновлена");
+        finishWorkout.mutate({ workoutId });
+      },
+      onError: () => {
+        toast.error("Не удалось сохранить программу — попробуйте ещё раз или завершите без сохранения");
+      },
+    },
+  });
+
+  const createCustomProgram = useCreateCustomProgram({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListProgramsQueryKey() });
+        toast.success("Программа сохранена");
+        finishWorkout.mutate({ workoutId });
+      },
+      onError: () => {
+        toast.error("Не удалось сохранить программу — попробуйте ещё раз или завершите без сохранения");
+      },
+    },
+  });
+
+  const handlePlanChange = (newPlan: ProgramPlan) => {
+    setProgramPlan(newPlan);
+    setPlanModified(true);
+    savePlan(workoutId, newPlan);
+  };
 
   const handleAddSet = () => {
     if (!selectedExerciseId) {
@@ -215,11 +278,48 @@ export function ActiveWorkout() {
       toast.error("Добавьте хотя бы один подход");
       return;
     }
-    setShowFinishConfirm(true);
+    if (planModified && programPlan) {
+      setShowSaveProgramDialog(true);
+    } else {
+      setShowFinishConfirm(true);
+    }
   };
 
   const confirmFinish = () => {
     finishWorkout.mutate({ workoutId });
+  };
+
+  const handleSaveProgramAndFinish = () => {
+    if (!programPlan) {
+      finishWorkout.mutate({ workoutId });
+      return;
+    }
+    const exercises = programPlan.exercises.map((ex) => ({
+      exerciseId: ex.exerciseId,
+      sets: ex.sets,
+      repsMin: ex.repsMin,
+      repsMax: ex.repsMax,
+      intent: ex.intent,
+      note: null as string | null,
+    }));
+    if (programPlan.isCustom) {
+      updateCustomProgram.mutate({
+        programId: programPlan.id,
+        data: {
+          name: programPlan.name,
+          description: programPlan.description ?? "",
+          exercises,
+        },
+      });
+    } else {
+      createCustomProgram.mutate({
+        data: {
+          name: `${programPlan.name} (изм.)`,
+          description: programPlan.description ?? "",
+          exercises,
+        },
+      });
+    }
   };
 
   const handleRepeatLast = (w: number, r: number) => {
@@ -245,7 +345,7 @@ export function ActiveWorkout() {
   const uniqueExercises = Object.keys(setsByExercise).length;
 
   const StatsBar = () => (
-    <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3 shadow-sm">
+    <div className="sticky top-14 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3 shadow-sm">
       <div className="max-w-md mx-auto flex justify-between items-center text-sm">
         <motion.div
           key={`vol-${workout.totalVolume}`}
@@ -254,7 +354,7 @@ export function ActiveWorkout() {
           className="flex flex-col items-center"
         >
           <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Тоннаж</span>
-          <span className="font-mono font-bold">{formatKg(workout.totalVolume)}</span>
+          <span className="glitch-num font-mono font-bold">{formatKg(workout.totalVolume)}</span>
         </motion.div>
         <motion.div
           key={`reps-${workout.totalReps}`}
@@ -263,7 +363,7 @@ export function ActiveWorkout() {
           className="flex flex-col items-center"
         >
           <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Повторы</span>
-          <span className="font-mono font-bold">{formatNumber(workout.totalReps)}</span>
+          <span className="glitch-num font-mono font-bold">{formatNumber(workout.totalReps)}</span>
         </motion.div>
         <motion.div
           key={`sets-${workout.totalSets}`}
@@ -272,12 +372,20 @@ export function ActiveWorkout() {
           className="flex flex-col items-center"
         >
           <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Подходы</span>
-          <span className="font-mono font-bold">{workout.totalSets}</span>
+          <span className="glitch-num font-mono font-bold">{workout.totalSets}</span>
         </motion.div>
         <div className="flex flex-col items-center">
           <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-normal">Упражнения</span>
           <span className="font-mono font-bold">{uniqueExercises}</span>
         </div>
+        <button
+          onClick={() => setShowDiscardConfirm(true)}
+          className="flex flex-col items-center gap-0.5 text-muted-foreground/40 hover:text-destructive active:text-destructive transition-colors"
+          aria-label="Отменить тренировку"
+        >
+          <X className="h-4 w-4" />
+          <span className="text-[9px] font-bold uppercase tracking-normal">Отмена</span>
+        </button>
       </div>
     </div>
   );
@@ -285,27 +393,43 @@ export function ActiveWorkout() {
   if (programPlan) {
     return (
       <>
-        <div className="flex flex-col min-h-[100dvh] bg-background text-foreground">
-          <StatsBar />
-          <div className="flex-1 w-full max-w-md mx-auto p-4 pb-36">
-            <ProgramWorkoutView
-              plan={programPlan}
-              workoutSets={workout.sets}
-              bodyWeightKg={bodyWeightKg}
-              onLogSet={(exerciseId, repsVal, weightKg) => {
-                addSet.mutate({ workoutId, data: { exerciseId, weightKg, reps: repsVal } });
-              }}
-              onFinish={handleFinish}
-              isLoggingSet={addSet.isPending}
-              isFinishing={finishWorkout.isPending}
-            />
-          </div>
+        <StatsBar />
+        <div className="w-full max-w-md mx-auto p-4 pb-36">
+          <ProgramWorkoutView
+            plan={programPlan}
+            workoutSets={workout.sets}
+            bodyWeightKg={bodyWeightKg}
+            exercises={exercises ?? []}
+            onPlanChange={handlePlanChange}
+            onLogSet={(exerciseId, repsVal, weightKg) => {
+              addSet.mutate({ workoutId, data: { exerciseId, weightKg, reps: repsVal } });
+            }}
+            onDeleteSet={(setId) => deleteSet.mutate({ setId })}
+            onFinish={handleFinish}
+            isLoggingSet={addSet.isPending}
+            isFinishing={finishWorkout.isPending}
+          />
+          <RestTimer key={restTimerKey} />
         </div>
+        <SaveProgramDialog
+          open={showSaveProgramDialog}
+          onOpenChange={setShowSaveProgramDialog}
+          isCustom={programPlan.isCustom}
+          isPending={updateCustomProgram.isPending || createCustomProgram.isPending || finishWorkout.isPending}
+          onSave={handleSaveProgramAndFinish}
+          onSkip={() => { setShowSaveProgramDialog(false); finishWorkout.mutate({ workoutId }); }}
+        />
         <FinishConfirmDialog
           open={showFinishConfirm}
           onOpenChange={setShowFinishConfirm}
           onConfirm={confirmFinish}
           isPending={finishWorkout.isPending}
+        />
+        <DiscardConfirmDialog
+          open={showDiscardConfirm}
+          onOpenChange={setShowDiscardConfirm}
+          onConfirm={() => discardWorkout.mutate({ workoutId })}
+          isPending={discardWorkout.isPending}
         />
       </>
     );
@@ -313,16 +437,17 @@ export function ActiveWorkout() {
 
   return (
     <>
-    <div className="flex flex-col min-h-[100dvh] bg-background text-foreground pb-36">
+    <div className="pb-36">
       <StatsBar />
 
-      <div className="flex-1 w-full max-w-md mx-auto p-4 space-y-4">
+      <div className="w-full max-w-md mx-auto p-4 space-y-4">
         <div className="bg-card p-4 rounded-3xl border border-border shadow-sm space-y-6">
           <ExercisePicker
             exercises={exercises || []}
             selectedId={selectedExerciseId}
             onSelect={setSelectedExerciseId}
             onCreate={(name, muscleGroup) => createExercise.mutate({ data: { name, muscleGroup } })}
+            onNavigateToCreate={() => setLocation("/exercises")}
           />
 
           <Stepper
@@ -443,7 +568,7 @@ export function ActiveWorkout() {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-2"
                 >
-                  <h3 className="font-bold text-lg sticky top-16 bg-background/80 backdrop-blur py-2 z-0">
+                  <h3 className="font-bold text-lg sticky top-[108px] bg-background/80 backdrop-blur py-2 z-0">
                     {exName}
                   </h3>
                   <div className="space-y-2">
@@ -463,11 +588,11 @@ export function ActiveWorkout() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pb-8">
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pb-4">
         <div className="max-w-md mx-auto">
           <Button
             variant="default"
-            className="w-full min-h-16 h-auto py-3 text-lg font-black rounded-2xl shadow-xl shadow-primary/20"
+            className="glitch-hover w-full min-h-16 h-auto py-3 text-lg font-black rounded-2xl shadow-xl shadow-primary/20"
             onClick={handleFinish}
             disabled={finishWorkout.isPending || workout.sets.length === 0}
           >
@@ -481,6 +606,12 @@ export function ActiveWorkout() {
       onOpenChange={setShowFinishConfirm}
       onConfirm={confirmFinish}
       isPending={finishWorkout.isPending}
+    />
+    <DiscardConfirmDialog
+      open={showDiscardConfirm}
+      onOpenChange={setShowDiscardConfirm}
+      onConfirm={() => discardWorkout.mutate({ workoutId })}
+      isPending={discardWorkout.isPending}
     />
     </>
   );
@@ -511,6 +642,88 @@ function FinishConfirmDialog({
           <AlertDialogAction onClick={onConfirm} disabled={isPending}>
             {isPending ? "Завершение..." : "Завершить"}
           </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function DiscardConfirmDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Отменить тренировку?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Тренировка и все добавленные подходы будут удалены без сохранения.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Назад</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {isPending ? "Удаление..." : "Отменить тренировку"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function SaveProgramDialog({
+  open,
+  onOpenChange,
+  isCustom,
+  isPending,
+  onSave,
+  onSkip,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  isCustom: boolean;
+  isPending: boolean;
+  onSave: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Сохранить изменения в программе?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {isCustom
+              ? "Вы изменили состав упражнений. Обновить программу, чтобы в следующий раз начать с новым составом?"
+              : "Вы изменили состав упражнений. Создать копию программы с вашими изменениями?"}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+          <AlertDialogAction onClick={onSave} disabled={isPending} className="w-full">
+            {isPending
+              ? "Сохранение..."
+              : isCustom
+                ? "Обновить программу и завершить"
+                : "Создать копию и завершить"}
+          </AlertDialogAction>
+          <AlertDialogCancel
+            onClick={onSkip}
+            disabled={isPending}
+            className="w-full mt-0"
+          >
+            Завершить без сохранения
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -86,7 +86,7 @@ export function Programs() {
       <div className="p-4 space-y-6 pb-24">
         <div className="mt-4 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-black tracking-tight">Программы</h1>
+            <h1 className="text-3xl font-black tracking-tight">Тренировки</h1>
             <p className="text-sm text-muted-foreground mt-1">Готовые тренировки на силу и массу. Вес подстроен под твой уровень.</p>
           </div>
           <button

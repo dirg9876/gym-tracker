@@ -1,0 +1,23 @@
+artifacts/android-avd/
+artifacts/android-downloads/
+artifacts/android-sdk/
+artifacts/android-tools/
+artifacts/apk/
+gym-tracker-current.patch
+
+# .easignore replaces .gitignore for cloud archives; exclude credentials explicitly.
+**/.env*
+!**/.env.example
+**/.coach-data/**
+**/.cloud-deploy/**
+**/.wrangler/**
+**/.dev.vars*
+**/node_modules/**
+.cache/**
+**/android/**
+**/ios/**
+**/*.keystore
+**/*.jks
+**/credentials.json
+**/.expo-export-test/**
+attached_assets/**

@@ -3,10 +3,15 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
   "include": ["src"],
   "references": [
+    { "path": "../../lib/ai-coach" },
+    {
+      "path": "../../lib/level-data"
+    },
     {
       "path": "../../lib/db"
     },

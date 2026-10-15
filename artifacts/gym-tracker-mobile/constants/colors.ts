@@ -31,6 +31,9 @@ const dark = {
   input: "#1f1f1f",
 
   amber: "#fbbf24",
+  success: "#62C995",
+  successSoft: "rgba(98,201,149,0.12)",
+  successBorder: "rgba(98,201,149,0.4)",
   amberSoft: "rgba(251,191,36,0.12)",
   chart1: "#ff3d1a",
   chart2: "#fbbf24",

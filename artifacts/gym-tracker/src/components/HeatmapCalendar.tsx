@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetHeatmap, type HeatmapDay } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { CalendarDays } from "lucide-react";
@@ -37,6 +37,7 @@ const MONTH_NAMES = [
 export function HeatmapCalendar() {
   const { data, isLoading } = useGetHeatmap({ days: 365 });
   const [hovered, setHovered] = useState<HeatmapDay | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const grid = useMemo(() => {
     if (!data) return null;
@@ -54,6 +55,13 @@ export function HeatmapCalendar() {
     for (let i = 0; i < padded.length; i += 7) cols.push(padded.slice(i, i + 7));
     return cols;
   }, [data]);
+
+  // Scroll to the right (most recent week) once the grid is ready.
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [grid]);
 
   if (isLoading || !data || !grid) return null;
 
@@ -85,7 +93,7 @@ export function HeatmapCalendar() {
         </span>
       </div>
 
-      <div className="overflow-x-auto -mx-2 px-2">
+      <div ref={scrollRef} className="overflow-x-auto -mx-2 px-2">
         <svg width={width} height={height} className="block">
           {monthLabels.map((m, i) => (
             <text

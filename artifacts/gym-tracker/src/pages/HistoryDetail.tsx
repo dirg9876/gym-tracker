@@ -93,11 +93,11 @@ export function HistoryDetail() {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-card p-4 rounded-2xl border border-border">
             <div className="text-xs font-bold uppercase text-muted-foreground mb-1">Тоннаж</div>
-            <div className="font-mono text-2xl font-black">{formatKg(workout.totalVolume)}</div>
+            <div className="glitch-num font-mono text-2xl font-black">{formatKg(workout.totalVolume)}</div>
           </div>
           <div className="bg-card p-4 rounded-2xl border border-border">
             <div className="text-xs font-bold uppercase text-muted-foreground mb-1">Повторы</div>
-            <div className="font-mono text-2xl font-black">{formatNumber(workout.totalReps)}</div>
+            <div className="glitch-num font-mono text-2xl font-black">{formatNumber(workout.totalReps)}</div>
           </div>
         </div>
 

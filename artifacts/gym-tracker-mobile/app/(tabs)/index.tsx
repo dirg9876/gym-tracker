@@ -1,282 +1,105 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  getGetActiveWorkoutQueryKey,
-  useCreateWorkout,
-  useGetActiveWorkout,
-  useGetLevels,
-  useGetStatsOverview,
-  useListWorkouts,
-} from "@workspace/api-client-react";
+import { getGetActiveWorkoutQueryKey, getListWorkoutsQueryKey, useCreateWorkout, useGetActiveWorkout } from "@workspace/api-client-react";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import React from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button } from "@/components/Button";
-import { Card } from "@/components/Card";
 import { useColors } from "@/hooks/useColors";
-import { formatDate, formatKg, formatNumber } from "@/lib/format";
-import { levelImage } from "@/lib/levelImages";
+import { useAiConnection } from "@/hooks/useAiCoach";
+import { Button } from "@/components/Button";
+import { useToast } from "@/components/Toast";
+import { ProgressRecoveryRequired } from "@/lib/progressStorage";
 
-export default function HomeScreen() {
+// Repacked APKs store new artwork as a raw asset; EAS bundles it normally.
+const logo = process.env.EXPO_PUBLIC_GYM_REPACK_ASSETS === "1"
+  ? { uri: "file:///android_asset/branding/gymbeam-logo.png" }
+  : require("../../../gym-tracker/src/assets/gymbeam-logo.png");
+
+export default function BrandScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const [artworkSize, setArtworkSize] = useState(0);
   const queryClient = useQueryClient();
-
-  const { data: activeWorkoutResponse, isLoading: isLoadingActive } = useGetActiveWorkout();
-  const activeWorkout = activeWorkoutResponse?.workout;
-
-  const { data: stats, isLoading: isLoadingStats } = useGetStatsOverview();
-  const { data: recentWorkouts, isLoading: isLoadingWorkouts } = useListWorkouts({ limit: 3 });
-  const { data: levelsData } = useGetLevels();
-
+  const toast = useToast();
+  const active = useGetActiveWorkout();
+  const connection = useAiConnection();
+  const aiEnabled = !!connection.data?.enabled;
+  const workout = active.data?.workout;
   const createWorkout = useCreateWorkout({
     mutation: {
-      onSuccess: (newWorkout) => {
-        queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
-        router.push(`/workout/${newWorkout.id}`);
+      onSuccess: (created) => {
+        queryClient.setQueryData(getGetActiveWorkoutQueryKey(), { workout: created });
+        void queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+        router.push(`/workout/${created.id}`);
       },
+      onError: () => toast.show("error", "Не удалось начать тренировку", "Попробуйте ещё раз"),
     },
   });
 
-  const handleStart = () => {
-    if (activeWorkout) {
-      router.push(`/workout/${activeWorkout.id}`);
-    } else {
-      createWorkout.mutate({ data: {} });
-    }
+  const start = () => {
+    if (active.isPending || active.isError || createWorkout.isPending) return;
+    if (workout) router.push(`/workout/${workout.id}`);
+    else createWorkout.mutate({ data: {} });
   };
 
-  const isLoading = isLoadingActive || isLoadingStats || isLoadingWorkouts;
-
-  if (isLoading) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-
-  const cur = levelsData ? levelsData.levels[levelsData.currentLevel] : null;
-  const nxt = levelsData ? levelsData.levels[levelsData.currentLevel + 1] : null;
-  const nxtTarget = levelsData?.nextLevelTonnage7dKgRequired ?? 0;
-  const tonProg =
-    nxt && nxtTarget > 0 && levelsData
-      ? Math.min(100, (levelsData.stats.currentTonnageSinceLevelUp / nxtTarget) * 100)
-      : 100;
-
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{
-        paddingTop: insets.top + 16,
-        paddingHorizontal: 16,
-        paddingBottom: insets.bottom + 24,
-        gap: 24,
-      }}
-    >
-      {/* Hero */}
-      <View style={{ marginTop: 8 }}>
-        <Text style={[styles.h1, { color: colors.foreground }]}>Готов к работе?</Text>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.toolbar}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`ИИ-тренер: ${aiEnabled ? "включён" : "выключен"}`} onPress={() => router.push("/coach")} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name="zap" size={23} color={aiEnabled ? colors.success : colors.mutedForeground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Обновления приложения" onPress={() => router.push("/updates")} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name="download-cloud" size={23} color={colors.mutedForeground} /></Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Резервная копия"
+          onPress={() => router.push("/backup")}
+          style={({ pressed }) => [styles.backup, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Feather name="hard-drive" size={23} color={colors.mutedForeground} />
+        </Pressable>
+      </View>
+      <View style={styles.artwork} onLayout={({ nativeEvent: { layout } }) => {
+        setArtworkSize(Math.max(0, Math.min(layout.width - 32, (layout.height - 100) * 1254 / 880, 480)));
+      }}>
+        <View style={{ width: artworkSize, height: artworkSize * 880 / 1254, overflow: "hidden" }}>
+          <Image
+            source={logo}
+            accessibilityLabel="Стакан со штангой"
+            accessible
+            contentFit="contain"
+            style={{ width: artworkSize, height: artworkSize }}
+          />
+        </View>
+        <Text accessibilityLabel="Gym-Beam" style={styles.wordmark} adjustsFontSizeToFit numberOfLines={1}>
+          GYM-<Text style={{ color: "#FF8A1F" }}>BEAM</Text>
+        </Text>
+      </View>
+      <View style={styles.commands}>
+        {aiEnabled ? <Button title={workout ? "Продолжить с ИИ-тренером" : "Начать тренировку с ИИ"} size="lg" variant="secondary" icon={<Feather name="zap" size={21} color={colors.success} />} disabled={active.isPending || active.isError || createWorkout.isPending} onPress={() => router.push(workout ? `/coach-session?workoutId=${workout.id}` : "/coach-session")} /> : null}
         <Button
-          size="xl"
-          fullWidth
-          onPress={handleStart}
-          loading={createWorkout.isPending}
-          icon={
-            <Feather
-              name={activeWorkout ? "activity" : "zap"}
-              size={22}
-              color={colors.primaryForeground}
-            />
-          }
-          title={activeWorkout ? "Продолжить тренировку" : "Начать тренировку"}
-          style={{ marginTop: 18, height: 76 }}
+          title={workout ? "Продолжить тренировку" : "Начать тренировку"}
+          size="lg"
+          loading={active.isPending || createWorkout.isPending}
+          disabled={active.isError}
+          icon={<Feather name={workout ? "activity" : "play"} size={21} color={colors.primaryForeground} />}
+          onPress={start}
         />
+        {workout ? <Text style={[styles.activeCaption, { color: colors.mutedForeground }]} numberOfLines={2}>{workout.name || "Текущая тренировка"} · {workout.totalSets} подх.</Text> : null}
+        {active.isError ? active.error instanceof ProgressRecoveryRequired ? <Button title="Восстановить прогресс" variant="secondary" icon={<Feather name="hard-drive" size={18} color={colors.foreground} />} onPress={() => router.push("/backup")} /> : <Button title="Повторить загрузку тренировки" variant="secondary" icon={<Feather name="refresh-cw" size={18} color={colors.foreground} />} onPress={() => { void active.refetch(); }} /> : null}
       </View>
-
-      {/* Level card */}
-      {cur && levelsData ? (
-        <Card onPress={() => router.push("/levels")} padding={14}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-            <Image
-              source={levelImage(cur.level, cur.tier)}
-              style={{ width: 56, height: 56 }}
-              contentFit="contain"
-            />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
-                <Text style={[styles.lvlBadge, { color: colors.primary }]}>LVL {cur.level}</Text>
-                <Text style={[styles.lvlName, { color: colors.foreground }]} numberOfLines={1}>
-                  {cur.name}
-                </Text>
-              </View>
-              {nxt ? (
-                <>
-                  <Text
-                    style={[styles.lvlMeta, { color: colors.mutedForeground }]}
-                    numberOfLines={1}
-                  >
-                    До «{nxt.name}»: {formatNumber(levelsData.stats.currentTonnageSinceLevelUp)} /{" "}
-                    {formatNumber(nxtTarget)} кг
-                  </Text>
-                  <View
-                    style={{
-                      height: 6,
-                      backgroundColor: colors.muted,
-                      borderRadius: 3,
-                      marginTop: 6,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <View
-                      style={{
-                        height: "100%",
-                        width: `${tonProg}%`,
-                        backgroundColor: colors.primary,
-                      }}
-                    />
-                  </View>
-                </>
-              ) : (
-                <Text
-                  style={[styles.lvlMeta, { color: colors.mutedForeground, marginTop: 2 }]}
-                >
-                  Максимальный уровень
-                </Text>
-              )}
-            </View>
-            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-          </View>
-        </Card>
-      ) : null}
-
-      {/* Stats */}
-      {stats ? (
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <Card style={{ flex: 1 }} padding={14}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <Feather name="zap" size={14} color={colors.amber} />
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Серия</Text>
-            </View>
-            <Text style={[styles.statValue, { color: colors.foreground }]}>
-              {stats.currentStreakDays}{" "}
-              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>дн.</Text>
-            </Text>
-          </Card>
-          <Card style={{ flex: 1 }} padding={14}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <Feather name="activity" size={14} color={colors.primary} />
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Тоннаж</Text>
-            </View>
-            <Text style={[styles.statValue, { color: colors.foreground }]}>
-              {formatKg(stats.totalVolume)}
-            </Text>
-          </Card>
-        </View>
-      ) : null}
-
-      {/* Recent workouts */}
-      {recentWorkouts && recentWorkouts.length > 0 ? (
-        <View style={{ gap: 12 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={[styles.h2, { color: colors.foreground }]}>Последние тренировки</Text>
-            <Pressable onPress={() => router.push("/history")} hitSlop={10}>
-              <Text style={[styles.linkAll, { color: colors.primary }]}>Все</Text>
-            </Pressable>
-          </View>
-          <View style={{ gap: 10 }}>
-            {recentWorkouts.map((w) => (
-              <Card key={w.id} onPress={() => router.push(`/history/${w.id}`)}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 10,
-                  }}
-                >
-                  <Text
-                    style={[styles.wkTitle, { color: colors.foreground }]}
-                    numberOfLines={1}
-                  >
-                    {w.name || "Тренировка"}
-                  </Text>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-                    {formatDate(w.startedAt)}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 16 }}>
-                  <Stat label="Объем" value={formatKg(w.totalVolume)} colors={colors} />
-                  <Stat
-                    label="Повторы"
-                    value={formatNumber(w.totalReps)}
-                    colors={colors}
-                  />
-                  <Stat label="Упражнения" value={String(w.exerciseCount)} colors={colors} />
-                </View>
-              </Card>
-            ))}
-          </View>
-        </View>
-      ) : null}
-    </ScrollView>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  colors,
-}: {
-  label: string;
-  value: string;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View>
-      <Text
-        style={{
-          color: colors.mutedForeground,
-          fontSize: 10,
-          fontFamily: "Inter_700Bold",
-          textTransform: "uppercase",
-          letterSpacing: 0.6,
-          marginBottom: 2,
-        }}
-      >
-        {label}
-      </Text>
-      <Text style={{ color: colors.foreground, fontFamily: "Inter_700Bold", fontSize: 14 }}>
-        {value}
-      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  h1: { fontSize: 30, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
-  h2: { fontSize: 17, fontFamily: "Inter_700Bold" },
-  lvlBadge: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.8 },
-  lvlName: { fontSize: 14, fontFamily: "Inter_700Bold", flexShrink: 1 },
-  lvlMeta: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 4 },
-  statLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  statValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  wkTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", flexShrink: 1, marginRight: 8 },
-  linkAll: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  screen: { flex: 1, backgroundColor: "#000000" },
+  toolbar: { height: 56, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backup: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  artwork: { flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 24, gap: 16 },
+  commands: { width: "100%", maxWidth: 480, alignSelf: "center", paddingHorizontal: 16, paddingBottom: 20, gap: 10 },
+  activeCaption: { fontSize: 12, lineHeight: 17, fontFamily: "Inter_400Regular", textAlign: "center" },
+  wordmark: { color: "#FFFFFF", fontSize: 36, lineHeight: 46, fontFamily: "Inter_700Bold", fontStyle: "italic", textAlign: "center", maxWidth: "90%" },
 });

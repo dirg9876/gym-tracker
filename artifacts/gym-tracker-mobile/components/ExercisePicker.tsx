@@ -1,8 +1,12 @@
-import { Feather } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import Feather from "@expo/vector-icons/Feather";
+import React, { useMemo, useRef, useState } from "react";
 import {
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   Pressable,
   StyleSheet,
   Text,
@@ -11,19 +15,24 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { Exercise } from "@workspace/api-client-react";
+import type { Exercise, Profile } from "@workspace/api-client-react";
+import { exerciseRankHint } from "@/lib/rankHint";
+import { formatStandard } from "@/lib/exerciseStandards";
 
 import { useColors } from "@/hooks/useColors";
 import { Button } from "@/components/Button";
+import { MuscleGroupPicker } from "@/components/MuscleGroupPicker";
 
 type Props = {
   exercises: Exercise[];
   selectedId: number | undefined;
   onSelect: (id: number) => void;
-  onCreate: (name: string, muscleGroup: string) => void;
+  onCreate?: (name: string, muscleGroup: string) => Promise<unknown>;
+  profile?: Profile;
+  disabled?: boolean;
 };
 
-export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Props) {
+export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, profile, disabled = false }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -31,6 +40,9 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newGroup, setNewGroup] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const submitting = useRef(false);
 
   const selected = exercises.find((e) => e.id === selectedId);
 
@@ -65,21 +77,32 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
     return rows;
   }, [grouped]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const name = newName.trim();
     const group = newGroup.trim();
-    if (!name || !group) return;
-    onCreate(name, group);
-    setNewName("");
-    setNewGroup("");
-    setCreating(false);
-    setOpen(false);
+    if (!name || !group || !onCreate || submitting.current) return;
+    submitting.current = true;
+    setSaving(true);
+    setCreateError(null);
+    try {
+      await onCreate(name, group);
+      setNewName("");
+      setNewGroup("");
+      setCreating(false);
+      Keyboard.dismiss();
+      setOpen(false);
+    } catch (error) { setCreateError(error instanceof Error ? error.message : "Не удалось создать упражнение."); }
+    finally { submitting.current = false; setSaving(false); }
   };
 
   return (
     <>
       <Pressable
-        onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={selected ? `Упражнение: ${selected.name}` : "Выбрать упражнение"}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        onPress={() => { Keyboard.dismiss(); setOpen(true); }}
         style={({ pressed }) => [
           styles.trigger,
           {
@@ -92,8 +115,8 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
         <View style={{ flex: 1 }}>
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Упражнение</Text>
           {selected ? (
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
-              <Text style={[styles.value, { color: colors.foreground }]} numberOfLines={1}>
+            <View style={{ gap: 2 }}>
+              <Text style={[styles.value, { color: colors.foreground }]}>
                 {selected.name}
               </Text>
               <Text style={[styles.muscle, { color: colors.primary }]}>
@@ -111,10 +134,10 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
         visible={open}
         animationType="slide"
         transparent
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={() => { if (!submitting.current) setOpen(false); }}
       >
-        <View style={styles.modalRoot}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
+        <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <Pressable style={styles.backdrop} disabled={saving} onPress={() => setOpen(false)} />
           <View
             style={[
               styles.sheet,
@@ -132,55 +155,56 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
                 {creating ? "Новое упражнение" : "Упражнения"}
               </Text>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Закрыть выбор упражнения"
+                disabled={saving}
                 onPress={() => setOpen(false)}
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 6 })}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, width: 44, height: 44, alignItems: "center", justifyContent: "center" })}
               >
                 <Feather name="x" size={22} color={colors.mutedForeground} />
               </Pressable>
             </View>
 
             {creating ? (
-              <View style={{ gap: 12 }}>
+              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: 12 }}>
                 <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
                   <TextInput
                     placeholder="Название"
                     placeholderTextColor={colors.mutedForeground}
                     value={newName}
-                    onChangeText={setNewName}
+                    onChangeText={value => { setNewName(value); setCreateError(null); }}
+                    maxLength={120}
+                    editable={!saving}
                     style={[styles.input, { color: colors.foreground }]}
                   />
                 </View>
-                <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
-                  <TextInput
-                    placeholder="Группа мышц"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={newGroup}
-                    onChangeText={setNewGroup}
-                    style={[styles.input, { color: colors.foreground }]}
-                  />
-                </View>
+                <MuscleGroupPicker value={newGroup} onChange={value => { setNewGroup(value); setCreateError(null); }} groups={exercises.map(ex => ex.muscleGroup)} disabled={saving} />
+                {createError ? <Text accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 13 }}>{createError}</Text> : null}
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <Button
                     variant="secondary"
                     title="Отмена"
                     size="md"
                     style={{ flex: 1 }}
+                    disabled={saving}
                     onPress={() => setCreating(false)}
                   />
                   <Button
                     title="Добавить"
                     size="md"
                     style={{ flex: 2 }}
-                    disabled={!newName.trim() || !newGroup.trim()}
+                    disabled={!newName.trim() || !newGroup.trim() || saving}
+                    loading={saving}
                     onPress={handleCreate}
                   />
                 </View>
-              </View>
+              </ScrollView>
             ) : (
               <>
                 <View style={[styles.searchWrap, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
                   <Feather name="search" size={16} color={colors.mutedForeground} />
                   <TextInput
+                    accessibilityLabel="Поиск упражнения"
                     placeholder="Поиск..."
                     placeholderTextColor={colors.mutedForeground}
                     value={search}
@@ -204,10 +228,14 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
                     }
                     const ex = item.ex;
                     const active = ex.id === selectedId;
+                    const hint = exerciseRankHint(ex, profile);
                     return (
                       <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
                         onPress={() => {
                           onSelect(ex.id);
+                          Keyboard.dismiss();
                           setOpen(false);
                         }}
                         style={({ pressed }) => [
@@ -218,7 +246,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
                           },
                         ]}
                       >
-                        <Text
+                        <View style={{ flex: 1, gap: 4 }}><Text
                           style={[
                             styles.exName,
                             { color: active ? colors.primary : colors.foreground },
@@ -226,33 +254,37 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate }: Pr
                         >
                           {ex.name}
                         </Text>
+                        {hint?.current ? <Text style={{ color: colors.success, fontSize: 12 }}>{hint.standard.official ? "Выполнен" : "Достигнут ориентир"}: {hint.current.rank.label}</Text> : null}
+                        {hint ? <Text style={{ color: hint.atMaximum ? colors.success : colors.mutedForeground, fontSize: 12 }}>{hint.standard.official ? hint.rank.label : `Ориентир ${hint.rank.shortLabel}`}: {formatStandard(hint.target, hint.standard.unit)}{hint.atMaximum ? "" : ` · осталось ${formatStandard(hint.remaining, hint.standard.unit)}`}</Text> : null}
+                        </View>
                         {active ? (
                           <Feather name="check" size={18} color={colors.primary} />
                         ) : null}
                       </Pressable>
                     );
                   }}
-                  style={{ flexGrow: 0, maxHeight: 380 }}
+                  style={{ flexGrow: 0, flexShrink: 1, maxHeight: 380, minHeight: 80 }}
                   ListEmptyComponent={
                     <Text style={{ color: colors.mutedForeground, textAlign: "center", paddingVertical: 24 }}>
                       Ничего не найдено
                     </Text>
                   }
                   keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
                 />
 
-                <Button
+                {onCreate ? <Button
                   variant="secondary"
                   title="Создать своё"
                   icon={<Feather name="plus" size={16} color={colors.foreground} />}
                   onPress={() => setCreating(true)}
                   fullWidth
                   style={{ marginTop: 12 }}
-                />
+                /> : null}
               </>
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
@@ -262,9 +294,10 @@ const styles = StyleSheet.create({
   trigger: {
     flexDirection: "row",
     alignItems: "center",
-    height: 64,
+    minHeight: 56,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 18,
+    borderRadius: 8,
     borderWidth: 1,
     gap: 8,
   },
@@ -272,7 +305,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_700Bold",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 0,
     marginBottom: 2,
   },
   value: {
@@ -283,7 +316,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
   modalRoot: {
     flex: 1,
@@ -294,8 +327,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
   },
   sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    flexShrink: 1,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    maxHeight: "90%",
     borderTopWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -321,7 +356,7 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 44,
     paddingHorizontal: 12,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     marginBottom: 8,
   },
@@ -329,7 +364,7 @@ const styles = StyleSheet.create({
   groupHeader: {
     fontSize: 11,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 1,
+    letterSpacing: 0,
     paddingHorizontal: 4,
     paddingTop: 12,
     paddingBottom: 6,
@@ -340,13 +375,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   exName: { fontSize: 16, fontFamily: "Inter_500Medium" },
   inputWrap: {
     height: 48,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     justifyContent: "center",
   },

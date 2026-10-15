@@ -1,15 +1,22 @@
 {
   "expo": {
-    "name": "Тренировки (Android)",
+    "name": "Gym-Beam",
     "slug": "gym-tracker-mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": {
+      "url": "https://u.expo.dev/dabd3128-415f-4a2f-8c73-3b0a52585149",
+      "requestHeaders": { "expo-channel-name": "production" },
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/gymbeam-icon.png",
     "scheme": "gym-tracker-mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/gymbeam-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0a0a0a"
     },
@@ -18,10 +25,16 @@
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#0a0a0a"
+      "package": "com.dirg9876.gymtracker",
+      "versionCode": 6,
+      "backgroundColor": "#0a0a0a",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/gymbeam-adaptive.png",
+        "backgroundColor": "#000000"
+      }
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/gymbeam-icon.png"
     },
     "plugins": [
       [
@@ -31,11 +44,20 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      ["expo-secure-store", { "configureAndroidBackup": false }],
+      "./plugins/withCoachSecureStorage.cjs",
+      "./plugins/withCoachNetworkSecurity.cjs",
+      "./plugins/withWindowsNativePaths.cjs"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "dabd3128-415f-4a2f-8c73-3b0a52585149"
+      }
+    },
+    "owner": "dirg9508"
   }
 }

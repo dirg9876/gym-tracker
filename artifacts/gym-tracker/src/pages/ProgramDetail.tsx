@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import {
   useGetProgramPlan,
@@ -8,11 +8,12 @@ import {
   useGetActiveWorkout,
   useDeleteCustomProgram,
   getListProgramsQueryKey,
+  type ProgramPlan,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { savePlan } from "@/lib/programPlanStash";
+import { savePlan, loadAdaptivePlan } from "@/lib/programPlanStash";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,8 +37,21 @@ import {
   ArrowDown,
   Trash2,
   Pencil,
+  History,
   type LucideIcon,
 } from "lucide-react";
+
+function applyAdaptivePlan(serverPlan: ProgramPlan, adaptivePlan: ProgramPlan): ProgramPlan {
+  const adaptiveMap = new Map(adaptivePlan.exercises.map((ex) => [ex.exerciseId, ex]));
+  return {
+    ...serverPlan,
+    exercises: serverPlan.exercises.map((ex) => {
+      const adaptive = adaptiveMap.get(ex.exerciseId);
+      if (!adaptive) return ex;
+      return { ...ex, suggestedWeightKg: adaptive.suggestedWeightKg, sets: adaptive.sets };
+    }),
+  };
+}
 
 const PROGRAM_ICON: Record<string, LucideIcon> = {
   chest: Dumbbell,
@@ -80,11 +94,22 @@ export function ProgramDetail() {
   const { data: activeWorkoutResponse } = useGetActiveWorkout();
   const activeWorkout = activeWorkoutResponse?.workout;
 
+  const effectivePlan = useMemo(() => {
+    if (!plan) return null;
+    const adaptive = loadAdaptivePlan(programId);
+    if (!adaptive) return plan;
+    return applyAdaptivePlan(plan, adaptive);
+  }, [plan, programId]);
+
+  const hasAdaptivePlan = useMemo(() => {
+    return Boolean(loadAdaptivePlan(programId));
+  }, [programId]);
+
   const createWorkout = useCreateWorkout({
     mutation: {
       onSuccess: (newWorkout) => {
-        if (plan) {
-          savePlan(newWorkout.id, plan);
+        if (effectivePlan) {
+          savePlan(newWorkout.id, effectivePlan);
         }
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
         setLocation(`/workout/${newWorkout.id}`);
@@ -109,7 +134,7 @@ export function ProgramDetail() {
     );
   }
 
-  if (isError || !plan) {
+  if (isError || !plan || !effectivePlan) {
     return (
       <AppShell>
         <div className="p-4 pt-8">
@@ -124,7 +149,7 @@ export function ProgramDetail() {
 
   const handleStart = () => {
     if (activeWorkout) {
-      if (plan) savePlan(activeWorkout.id, plan);
+      if (effectivePlan) savePlan(activeWorkout.id, effectivePlan);
       setLocation(`/workout/${activeWorkout.id}`);
       return;
     }
@@ -176,13 +201,25 @@ export function ProgramDetail() {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-3 text-xs text-muted-foreground">
-          <span className="font-mono text-primary">LVL {plan.basedOnLevel}</span>{" "}
-          <span className="font-semibold text-foreground">{plan.basedOnLevelName}</span> · веса
-          подобраны под твой уровень и личные рекорды.
+          {hasAdaptivePlan ? (
+            <div className="flex items-center gap-1.5">
+              <History className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>
+                Веса и подходы скорректированы по{" "}
+                <span className="font-semibold text-foreground">предыдущей тренировке</span>.
+              </span>
+            </div>
+          ) : (
+            <>
+              <span className="font-mono text-primary">LVL {plan.basedOnLevel}</span>{" "}
+              <span className="font-semibold text-foreground">{plan.basedOnLevelName}</span> · веса
+              подобраны под твой уровень и личные рекорды.
+            </>
+          )}
         </div>
 
         <div className="space-y-3">
-          {plan.exercises.map((ex, idx) => {
+          {effectivePlan.exercises.map((ex, idx) => {
             const intent = intentLabel[ex.intent] ?? intentLabel.accessory;
             const reps = ex.repsMin === ex.repsMax ? `${ex.repsMin}` : `${ex.repsMin}–${ex.repsMax}`;
             const weight = ex.isBodyweight

@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "postgresql-16", "python-3.11"]
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -53,6 +53,6 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-VITE_CLERK_PUBLISHABLE_KEY = "pk_test_bG92ZWQtbWFudGlzLTkzLmNsZXJrLmFjY291bnRzLmRldiQ"
-EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_bG92ZWQtbWFudGlzLTkzLmNsZXJrLmFjY291bnRzLmRldiQ"
-ADMIN_USER_ID = "user_3CtGEBE9BbJHCtWlcUi1jo0WuXK"
+VITE_CLERK_PUBLISHABLE_KEY = "pk_test_a2V5LXdhbGxhYnktNzkuY2xlcmsuYWNjb3VudHMuZGV2JA"
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_a2V5LXdhbGxhYnktNzkuY2xlcmsuYWNjb3VudHMuZGV2JA"
+ADMIN_USER_ID = "user_3D72CXBvge7YPe5TpZSjznPhVvC"

@@ -53,3 +53,23 @@ Thumbs.db
 # .env.production, …) and only allow the committed template through.
 .env*
 !.env.example
+
+# Private AI gateway ledger and owner credentials.
+.coach-data/
+.wrangler/
+.dev.vars*
+.cloud-deploy/
+
+# Local native builds, signing material and test exports are not source.
+.expo-export-test/
+*.keystore
+*.jks
+credentials.json
+/attached_assets/*.tar.gz.part-*
+/artifacts/android-avd/
+/artifacts/android-downloads/
+/artifacts/android-sdk/
+/artifacts/android-tools/
+/artifacts/apk/
+/artifacts/gym-tracker-mobile/android/
+/artifacts/gym-tracker-mobile/ios/

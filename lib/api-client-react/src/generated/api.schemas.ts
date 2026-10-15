@@ -421,7 +421,13 @@ export interface LevelsResponse {
   sex: LevelsResponseSex;
   /** True when the user's confirmed level (saved in DB) is higher than the freshly computed current level. Indicates the norms were recalibrated or the user's data no longer qualifies; the UI should show a hint to re-verify personal records. */
   confirmedLevelMigrationNeeded: boolean;
+  /** Highest level above confirmedLevel where the user has ≥ 10 main exercises and every exercise passes the weight requirement (no tonnage check, no jump penalty). Null when fewer than 10 exercises are marked as main or no such level exists. */
+  maxClaimableLevel: number | null;
   stats: LevelStats;
+}
+
+export interface ClaimLevelResult {
+  confirmedLevel: number;
 }
 
 export type BMICategory = (typeof BMICategory)[keyof typeof BMICategory];

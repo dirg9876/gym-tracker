@@ -46,7 +46,7 @@ export function History() {
 
   return (
     <AppShell>
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6 pb-20">
         <h1 className="text-3xl font-black mt-4 mb-6">История</h1>
 
         {!workouts || workouts.length === 0 ? (
@@ -59,7 +59,7 @@ export function History() {
             {workouts.map((workout) => (
               <div
                 key={workout.id}
-                className="bg-card p-5 rounded-2xl border border-border cursor-pointer hover:border-primary/50 transition-colors"
+                className="glitch-hover bg-card p-5 rounded-2xl border border-border cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => setLocation(`/history/${workout.id}`)}
               >
                 <div className="flex justify-between items-start mb-4 gap-2">
@@ -86,15 +86,15 @@ export function History() {
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="bg-background rounded-lg p-2 text-center">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Тоннаж</div>
-                    <div className="font-mono font-bold text-sm">{formatKg(workout.totalVolume)}</div>
+                    <div className="glitch-num font-mono font-bold text-sm">{formatKg(workout.totalVolume)}</div>
                   </div>
                   <div className="bg-background rounded-lg p-2 text-center">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Повторы</div>
-                    <div className="font-mono font-bold text-sm">{formatNumber(workout.totalReps)}</div>
+                    <div className="glitch-num font-mono font-bold text-sm">{formatNumber(workout.totalReps)}</div>
                   </div>
                   <div className="bg-background rounded-lg p-2 text-center">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Подходы</div>
-                    <div className="font-mono font-bold text-sm">{workout.totalSets}</div>
+                    <div className="glitch-num font-mono font-bold text-sm">{workout.totalSets}</div>
                   </div>
                 </div>
 

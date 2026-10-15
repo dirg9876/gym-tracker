@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
-import Svg, { Rect } from "react-native-svg";
+import React from "react";
+import { Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 import { formatKg } from "@/lib/format";
@@ -16,9 +15,6 @@ type Props = {
 export function BarChart({ bars, height = 220, color }: Props) {
   const colors = useColors();
   const fill = color ?? colors.primary;
-  const [width, setWidth] = useState(0);
-
-  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
   if (bars.length === 0) {
     return (
@@ -28,73 +24,21 @@ export function BarChart({ bars, height = 220, color }: Props) {
     );
   }
 
-  const max = Math.max(...bars.map((b) => b.value), 1);
-  const labelW = 96;
-  const rowH = 28;
-  const gap = 6;
-  const totalH = bars.length * (rowH + gap);
+  const max = Math.max(...bars.map(bar => bar.value), 1);
 
   return (
-    <View onLayout={onLayout} style={{ minHeight: totalH }}>
-      {width > 0 ? (
-        <Svg width={width} height={totalH}>
-          {bars.map((b, i) => {
-            const y = i * (rowH + gap);
-            const trackW = width - labelW - 8;
-            const barW = (b.value / max) * trackW;
-            return (
-              <React.Fragment key={`${b.label}-${i}`}>
-                <Rect
-                  x={labelW}
-                  y={y + 8}
-                  width={trackW}
-                  height={12}
-                  rx={6}
-                  ry={6}
-                  fill={colors.muted}
-                />
-                <Rect
-                  x={labelW}
-                  y={y + 8}
-                  width={Math.max(2, barW)}
-                  height={12}
-                  rx={6}
-                  ry={6}
-                  fill={fill}
-                />
-              </React.Fragment>
-            );
-          })}
-        </Svg>
-      ) : null}
-
-      {/* Text labels overlaid */}
-      <View style={[StyleSheet.absoluteFill, { gap }]}>
-        {bars.map((b, i) => (
-          <View key={`l-${b.label}-${i}`} style={[styles.row, { height: rowH }]}>
-            <Text
-              style={[styles.label, { color: colors.foreground, width: labelW - 8 }]}
-              numberOfLines={1}
-            >
-              {b.label}
-            </Text>
-            <View style={{ flex: 1 }} />
-            <Text style={[styles.value, { color: colors.mutedForeground }]}>
-              {formatKg(b.value)}
-            </Text>
+    <View style={{ gap: 16 }}>
+      {bars.map((bar, index) => (
+        <View key={`${bar.label}-${index}`} accessible accessibilityLabel={`${bar.label}: ${formatKg(bar.value)}`} style={{ gap: 6 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+            <Text style={{ flex: 1, color: colors.foreground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>{bar.label}</Text>
+            <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: "Inter_500Medium", flexShrink: 1 }}>{formatKg(bar.value)}</Text>
           </View>
-        ))}
-      </View>
+          <View style={{ height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.muted }}>
+            <View style={{ height: 8, width: `${Math.max(0, Math.min(100, bar.value / max * 100))}%`, backgroundColor: fill }} />
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  label: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  value: { fontSize: 12, fontFamily: "Inter_500Medium" },
-});

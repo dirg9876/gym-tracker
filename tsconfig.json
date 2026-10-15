@@ -3,6 +3,10 @@
   "compileOnSave": false,
   "files": [],
   "references": [
+    { "path": "./lib/ai-coach" },
+    {
+      "path": "./lib/level-data"
+    },
     {
       "path": "./lib/db"
     },

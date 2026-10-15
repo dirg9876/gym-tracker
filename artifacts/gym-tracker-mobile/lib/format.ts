@@ -1,9 +1,9 @@
 export function formatKg(weight: number): string {
-  return `${new Intl.NumberFormat("ru-RU").format(Math.round(weight))} кг`;
+  return `${formatNumber(weight)} кг`;
 }
 
 export function formatNumber(num: number): string {
-  return new Intl.NumberFormat("ru-RU").format(Math.round(num));
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(num);
 }
 
 export function formatDate(dateStr: string): string {

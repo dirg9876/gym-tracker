@@ -9,9 +9,13 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-nat
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
+import { AiCoachPanel } from "@/components/AiCoachPanel";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { SaveWorkoutTemplate } from "@/components/SaveWorkoutTemplate";
+import { DeleteWorkoutButton } from "@/components/DeleteWorkoutButton";
 import { useColors } from "@/hooks/useColors";
 import { formatDate, formatKg, formatNumber } from "@/lib/format";
+import { durationOf, formatSeconds, formatSetResult, formatSetContext, isTimedExercise } from "@/lib/workoutMeasurement";
 
 export default function HistoryDetailScreen() {
   const colors = useColors();
@@ -70,6 +74,7 @@ export default function HistoryDetailScreen() {
         title={workout.name || "Тренировка"}
         subtitle={formatDate(workout.startedAt)}
         onBack={() => router.replace("/history")}
+        right={<DeleteWorkoutButton workoutId={id} name={workout.name || "Тренировка"} onDeleted={() => router.replace("/history")} />}
       />
       <ScrollView
         contentContainerStyle={{
@@ -79,6 +84,9 @@ export default function HistoryDetailScreen() {
           gap: 16,
         }}
       >
+        <SaveWorkoutTemplate workout={workout} />
+        <AiCoachPanel task="review" workoutId={workout.id} />
+        <AiCoachPanel task="next_workout" workoutId={workout.id} />
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Card style={{ flex: 1 }} padding={14}>
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Тоннаж</Text>
@@ -94,6 +102,7 @@ export default function HistoryDetailScreen() {
           </Card>
         </View>
 
+        {durationOf(workout) > 0 ? <Text style={{ color: colors.foreground, fontSize: 16 }}>Удержания: {formatSeconds(durationOf(workout))}</Text> : null}
         <View style={{ gap: 14 }}>
           {setsByExercise.map((group) => {
             const exVolume = group.sets.reduce((sum, s) => sum + s.volume, 0);
@@ -116,7 +125,7 @@ export default function HistoryDetailScreen() {
                     {group.name}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: "Inter_500Medium" }}>
-                    {formatKg(exVolume)}
+                    {isTimedExercise(group.name) ? formatSeconds(group.sets.reduce((sum, set) => sum + durationOf(set), 0)) : formatKg(exVolume)}
                   </Text>
                 </View>
                 <View style={{ paddingVertical: 6 }}>
@@ -140,19 +149,16 @@ export default function HistoryDetailScreen() {
                       >
                         {idx + 1}
                       </Text>
-                      <Text
+                      <View style={{ flex: 1, gap: 4, alignItems: "flex-end" }}><Text
                         style={{
                           color: colors.foreground,
                           fontSize: 14,
                           fontFamily: "Inter_700Bold",
                         }}
                       >
-                        {formatKg(set.weightKg)}{" "}
-                        <Text style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: "Inter_400Regular" }}>
-                          ×
-                        </Text>{" "}
-                        {set.reps}
+                        {formatSetResult(set)}
                       </Text>
+                      {formatSetContext(set) ? <Text style={{ color: colors.mutedForeground, fontSize: 11, textAlign: "right" }}>{formatSetContext(set)}</Text> : null}</View>
                     </View>
                   ))}
                 </View>

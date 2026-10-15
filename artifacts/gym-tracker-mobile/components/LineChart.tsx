@@ -3,6 +3,7 @@ import { LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
 
 import { useColors } from "@/hooks/useColors";
+import { formatShortDate } from "@/lib/format";
 
 type Point = { date: string; value: number };
 
@@ -32,8 +33,9 @@ export function LineChart({ points, color, height = 160, formatValue }: Props) {
 
   const padX = 8;
   const padY = 12;
+  const chartHeight = points.length === 1 ? 64 : height;
   const w = width - padX * 2;
-  const h = height - padY * 2;
+  const h = chartHeight - padY * 2;
 
   const values = points.map((p) => p.value);
   const max = Math.max(...values);
@@ -61,14 +63,14 @@ export function LineChart({ points, color, height = 160, formatValue }: Props) {
     <View onLayout={onLayout}>
       <View style={styles.headerRow}>
         <Text style={[styles.label, { color: colors.mutedForeground }]}>
-          {points.length} {points.length === 1 ? "точка" : "точек"}
+          {formatShortDate(last.date)}
         </Text>
         <Text style={[styles.lastValue, { color: stroke }]}>
           {formatValue ? formatValue(last.value) : last.value}
         </Text>
       </View>
       {width > 0 ? (
-        <Svg width={width} height={height}>
+        <Svg width={width} height={chartHeight}>
           <Defs>
             <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={stroke} stopOpacity={0.35} />
@@ -92,7 +94,7 @@ export function LineChart({ points, color, height = 160, formatValue }: Props) {
           ))}
         </Svg>
       ) : (
-        <View style={{ height }} />
+        <View style={{ height: chartHeight }} />
       )}
     </View>
   );

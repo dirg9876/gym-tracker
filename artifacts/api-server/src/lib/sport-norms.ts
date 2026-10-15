@@ -142,15 +142,17 @@ const EXERCISE_NORMS: Record<string, NormConfig> = {
   "Французский жим":                { kind: "coefficient",  anchor: "bench",    ratio: 0.55 },
 
   // Dumbbell — per-dumbbell target, coefficient of bench/squat МСМК
-  "Жим гантелей лёжа":              { kind: "coefficient",  anchor: "bench",    ratio: 0.40 },
-  "Жим гантелей сидя":              { kind: "coefficient",  anchor: "bench",    ratio: 0.30 },
-  "Тяга гантели одной рукой":       { kind: "coefficient",  anchor: "bench",    ratio: 0.45 },
-  "Разводка гантелей":              { kind: "coefficient",  anchor: "bench",    ratio: 0.25 },
-  "Махи гантелями в стороны":       { kind: "coefficient",  anchor: "bench",    ratio: 0.12 },
-  "Махи в наклоне":                 { kind: "coefficient",  anchor: "bench",    ratio: 0.12 },
-  "Сгибания с гантелями":           { kind: "coefficient",  anchor: "bench",    ratio: 0.28 },
-  "Молотки с гантелями":            { kind: "coefficient",  anchor: "bench",    ratio: 0.28 },
-  "Выпады с гантелями":             { kind: "coefficient",  anchor: "squat",    ratio: 0.25 },
+  // Ratios calibrated to Strength Level Elite tier (≈ МСМК equivalent).
+  // All values reflect the weight of ONE dumbbell.
+  "Жим гантелей лёжа":              { kind: "coefficient",  anchor: "bench",    ratio: 0.28 },
+  "Жим гантелей сидя":              { kind: "coefficient",  anchor: "bench",    ratio: 0.22 },
+  "Тяга гантели одной рукой":       { kind: "coefficient",  anchor: "bench",    ratio: 0.37 },
+  "Разводка гантелей":              { kind: "coefficient",  anchor: "bench",    ratio: 0.18 },
+  "Махи гантелями в стороны":       { kind: "coefficient",  anchor: "bench",    ratio: 0.10 },
+  "Махи в наклоне":                 { kind: "coefficient",  anchor: "bench",    ratio: 0.10 },
+  "Сгибания с гантелями":           { kind: "coefficient",  anchor: "bench",    ratio: 0.20 },
+  "Молотки с гантелями":            { kind: "coefficient",  anchor: "bench",    ratio: 0.20 },
+  "Выпады с гантелями":             { kind: "coefficient",  anchor: "squat",    ratio: 0.20 },
 
   // Machine / cable — coefficient of bench or squat МСМК
   "Тяга верхнего блока":            { kind: "coefficient",  anchor: "bench",    ratio: 0.75 },

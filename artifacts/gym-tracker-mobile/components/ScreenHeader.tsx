@@ -1,26 +1,30 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { returnToBrand } from "@/lib/navigation";
 
 type Props = {
   title?: string;
   subtitle?: string;
   onBack?: () => void;
+  onHome?: () => void;
   right?: React.ReactNode;
   variant?: "default" | "transparent";
+  showBack?: boolean;
 };
 
-export function ScreenHeader({ title, subtitle, onBack, right, variant = "default" }: Props) {
+export function ScreenHeader({ title, subtitle, onBack, onHome, right, variant = "default", showBack = true }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const goBack = onBack ?? (() => {
     if (router.canGoBack()) router.back();
+    else returnToBrand();
   });
 
   return (
@@ -35,7 +39,9 @@ export function ScreenHeader({ title, subtitle, onBack, right, variant = "defaul
         },
       ]}
     >
-      <Pressable
+      {showBack ? <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Назад"
         onPress={goBack}
         hitSlop={12}
         style={({ pressed }) => [
@@ -44,10 +50,10 @@ export function ScreenHeader({ title, subtitle, onBack, right, variant = "defaul
         ]}
       >
         <Feather name="chevron-left" size={22} color={colors.foreground} />
-      </Pressable>
-      <View style={{ flex: 1 }}>
+      </Pressable> : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
         {title ? (
-          <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>
+          <Text style={[styles.title, { color: colors.foreground, fontSize: showBack ? 16 : 20 }]} numberOfLines={1}>
             {title}
           </Text>
         ) : null}
@@ -57,7 +63,15 @@ export function ScreenHeader({ title, subtitle, onBack, right, variant = "defaul
           </Text>
         ) : null}
       </View>
-      {right ?? <View style={{ width: 38 }} />}
+      {right}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="На стартовый экран Gym-Beam"
+        onPress={onHome ?? returnToBrand}
+        style={({ pressed }) => [styles.back, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        <Feather name="home" size={23} color={colors.primary} />
+      </Pressable>
     </View>
   );
 }
@@ -71,8 +85,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   back: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { AppShell } from "@/components/layout/AppShell";
 import { Home } from "@/pages/Home";
 import { ActiveWorkout } from "@/pages/ActiveWorkout";
 import { WorkoutReport } from "@/pages/WorkoutReport";
@@ -24,10 +25,7 @@ import NotFound from "@/pages/not-found";
 const queryClient = new QueryClient();
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-// Proxy URL is only needed in production — in dev preview Clerk authenticates directly
-const clerkProxyUrl = import.meta.env.PROD
-  ? import.meta.env.VITE_CLERK_PROXY_URL
-  : undefined;
+const clerkProxyUrl = undefined;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 if (!clerkPubKey) {
@@ -58,12 +56,12 @@ const clerkAppearance = {
     colorInput: "#1c1c1c",
     colorInputForeground: "#fafafa",
     colorNeutral: "#27272a",
-    fontFamily: "'Inter', sans-serif",
-    borderRadius: "0.75rem",
+    fontFamily: "'Tektur', monospace",
+    borderRadius: "0px",
   },
   elements: {
     rootBox: "w-full",
-    cardBox: "bg-[#111111] rounded-2xl w-[440px] max-w-full overflow-hidden border border-[#27272a]",
+    cardBox: "bg-[#111111] rounded-none w-[440px] max-w-full overflow-hidden border border-[#27272a]",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
     headerTitle: "text-[#fafafa]",
@@ -181,10 +179,10 @@ function AppRouter() {
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route path="/workout/:id">
-        {() => <Protected><ActiveWorkout /></Protected>}
+        {() => <Protected><AppShell><ActiveWorkout /></AppShell></Protected>}
       </Route>
       <Route path="/workout/:id/report">
-        {() => <Protected><WorkoutReport /></Protected>}
+        {() => <Protected><AppShell><WorkoutReport /></AppShell></Protected>}
       </Route>
       <Route path="/history">
         {() => <Protected><History /></Protected>}

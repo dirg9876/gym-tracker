@@ -122,7 +122,7 @@ export function Exercises() {
 
   return (
     <AppShell>
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6 pb-20">
         <h1 className="text-3xl font-black mt-4">Упражнения</h1>
 
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-3 flex items-start gap-3 text-sm">
@@ -133,6 +133,13 @@ export function Exercises() {
               Отметь звёздочкой те упражнения, по которым растёт твой уровень.
               Сейчас отмечено: <span className="font-mono font-bold text-foreground">{mainCount}</span>.
             </div>
+            {mainCount < 10 && (
+              <div className="text-xs text-amber-400/90 mt-1.5">
+                Отметь ещё {10 - mainCount}{" "}
+                {(10 - mainCount) === 1 ? "упражнение" : (10 - mainCount) <= 4 ? "упражнения" : "упражнений"}{" "}
+                (всего 10), чтобы разблокировать перепрыжку уровней.
+              </div>
+            )}
           </div>
         </div>
 

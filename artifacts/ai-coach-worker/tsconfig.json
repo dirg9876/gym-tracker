@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "types": ["@cloudflare/workers-types", "node"], "allowImportingTsExtensions": true },
+  "include": ["src"],
+  "references": [{ "path": "../../lib/ai-coach" }]
+}

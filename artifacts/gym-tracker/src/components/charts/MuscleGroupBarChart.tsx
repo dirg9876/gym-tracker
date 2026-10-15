@@ -1,5 +1,4 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { formatKg } from "@/lib/format";
 
 interface MuscleGroupVolumeItem {
   muscleGroup: string;
@@ -8,6 +7,12 @@ interface MuscleGroupVolumeItem {
 
 interface MuscleGroupBarChartProps {
   data: MuscleGroupVolumeItem[];
+}
+
+function formatTons(val: number): string {
+  if (val === 0) return "0";
+  if (val >= 1000) return `${(val / 1000).toFixed(1)} т`;
+  return `${val} кг`;
 }
 
 export function MuscleGroupBarChart({ data }: MuscleGroupBarChartProps) {
@@ -25,33 +30,37 @@ export function MuscleGroupBarChart({ data }: MuscleGroupBarChartProps) {
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ top: 10, right: 30, left: 40, bottom: 0 }}
+          margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
-          <XAxis 
-            type="number" 
-            tickFormatter={(val) => `${val/1000}k`}
+          <XAxis
+            type="number"
+            tickFormatter={formatTons}
             stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
+            fontSize={11}
             tickLine={false}
             axisLine={false}
           />
-          <YAxis 
-            dataKey="muscleGroup" 
-            type="category" 
+          <YAxis
+            dataKey="muscleGroup"
+            type="category"
             stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
+            fontSize={11}
             tickLine={false}
             axisLine={false}
-            dx={-10}
+            width={72}
           />
           <Tooltip
             cursor={{ fill: "hsl(var(--muted)/0.5)" }}
-            contentStyle={{ backgroundColor: "hsl(var(--popover))", borderColor: "hsl(var(--border))", borderRadius: "0.5rem" }}
-            formatter={(value: number) => [formatKg(value), "Тоннаж"]}
+            contentStyle={{
+              backgroundColor: "hsl(var(--popover))",
+              borderColor: "hsl(var(--border))",
+              borderRadius: "0.5rem",
+            }}
+            formatter={(value: number) => [formatTons(value), "Тоннаж"]}
           />
           <Bar dataKey="volume" radius={[0, 4, 4, 0]}>
-            {data.map((entry, index) => (
+            {data.map((_, index) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
             ))}
           </Bar>

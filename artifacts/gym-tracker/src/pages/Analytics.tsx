@@ -93,7 +93,7 @@ export function Analytics() {
 
   return (
     <AppShell>
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-md mx-auto px-4 py-6 space-y-6 pb-20">
         <h1 className="text-2xl font-bold">Аналитика посещений</h1>
 
         <div className="grid grid-cols-2 gap-3">

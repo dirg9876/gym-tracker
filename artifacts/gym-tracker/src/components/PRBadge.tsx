@@ -32,7 +32,7 @@ export function PRBadge({ kind, value, delta, formatFn, delay = 0 }: PRBadgeProp
       <div>
         <div className="text-sm font-medium text-primary mb-0.5">{labels[kind] || "Новый рекорд!"}</div>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-black">{formatFn(value)}</span>
+          <span className="glitch-on-change text-2xl font-black">{formatFn(value)}</span>
           <span className="text-sm font-bold text-emerald-500">+{formatFn(delta)}</span>
         </div>
       </div>

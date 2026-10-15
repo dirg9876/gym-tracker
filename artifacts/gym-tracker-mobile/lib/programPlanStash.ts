@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { ProgramPlan } from "@workspace/api-client-react";
+import { PLAN_PREFIX, withProgressLock } from "./progressStorage";
 
-const PREFIX = "gym-tracker:program-plan:";
+const PREFIX = PLAN_PREFIX;
 
 export async function savePlan(workoutId: number, plan: ProgramPlan): Promise<void> {
   try {
-    await AsyncStorage.setItem(`${PREFIX}${workoutId}`, JSON.stringify(plan));
+    await withProgressLock(() => AsyncStorage.setItem(`${PREFIX}${workoutId}`, JSON.stringify(plan)));
   } catch {
     // Storage may be unavailable; not fatal.
   }
@@ -13,7 +14,7 @@ export async function savePlan(workoutId: number, plan: ProgramPlan): Promise<vo
 
 export async function loadPlan(workoutId: number): Promise<ProgramPlan | null> {
   try {
-    const raw = await AsyncStorage.getItem(`${PREFIX}${workoutId}`);
+    const raw = await withProgressLock(() => AsyncStorage.getItem(`${PREFIX}${workoutId}`));
     if (!raw) return null;
     return JSON.parse(raw) as ProgramPlan;
   } catch {
@@ -23,7 +24,7 @@ export async function loadPlan(workoutId: number): Promise<ProgramPlan | null> {
 
 export async function clearPlan(workoutId: number): Promise<void> {
   try {
-    await AsyncStorage.removeItem(`${PREFIX}${workoutId}`);
+    await withProgressLock(() => AsyncStorage.removeItem(`${PREFIX}${workoutId}`));
   } catch {
     // ignore
   }

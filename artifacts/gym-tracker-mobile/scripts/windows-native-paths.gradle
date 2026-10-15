@@ -1,0 +1,8 @@
+// Keep CMake output out of pnpm's long virtual-store paths on Windows.
+allprojects { project ->
+    ["com.android.application", "com.android.library"].each { plugin ->
+        project.plugins.withId(plugin) {
+            project.android.externalNativeBuild.cmake.buildStagingDirectory = new File(rootProject.projectDir, "../../../.cache/native-cxx/${project.name}")
+        }
+    }
+}

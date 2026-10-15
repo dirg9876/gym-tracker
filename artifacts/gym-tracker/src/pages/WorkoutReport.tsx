@@ -45,9 +45,9 @@ export function WorkoutReport() {
   const breakdown = report?.exerciseBreakdown ?? standaloneBreakdown?.items ?? [];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="pb-24">
       {/* Hero Celebration */}
-      <div className="bg-card border-b border-border pt-16 pb-10 px-4 rounded-b-[3rem] shadow-sm">
+      <div className="bg-card border-b border-border pt-4 pb-10 px-4 rounded-b-[3rem] shadow-sm">
         <div className="max-w-md mx-auto text-center space-y-4">
           <motion.div 
             initial={{ scale: 0, rotate: -180 }}
@@ -73,19 +73,19 @@ export function WorkoutReport() {
           >
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Тоннаж</div>
-              <div className="break-words text-2xl font-black leading-tight">{formatKg(w.totalVolume)}</div>
+              <div className="glitch-on-change break-words text-2xl font-black leading-tight">{formatKg(w.totalVolume)}</div>
             </div>
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Время</div>
-              <div className="break-words text-2xl font-black leading-tight">{report ? formatDuration(report.durationMinutes) : "-"}</div>
+              <div className="glitch-on-change break-words text-2xl font-black leading-tight">{report ? formatDuration(report.durationMinutes) : "-"}</div>
             </div>
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Повторы</div>
-              <div className="break-words text-2xl font-black leading-tight">{formatNumber(w.totalReps)}</div>
+              <div className="glitch-on-change break-words text-2xl font-black leading-tight">{formatNumber(w.totalReps)}</div>
             </div>
             <div className="bg-background/50 rounded-2xl p-4 border border-border">
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-normal mb-1">Подходы</div>
-              <div className="break-words text-2xl font-black leading-tight">{w.totalSets}</div>
+              <div className="glitch-on-change break-words text-2xl font-black leading-tight">{w.totalSets}</div>
             </div>
           </motion.div>
         </div>
@@ -146,7 +146,7 @@ export function WorkoutReport() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pb-8">
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pb-4">
         <div className="max-w-md mx-auto">
           <Button 
             className="w-full min-h-16 h-auto py-3 text-lg font-bold rounded-2xl"

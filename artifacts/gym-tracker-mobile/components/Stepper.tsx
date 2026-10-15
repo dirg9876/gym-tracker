@@ -1,9 +1,10 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import * as Haptics from "expo-haptics";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { formatNumber } from "@/lib/format";
 
 type Props = {
   label: string;
@@ -14,6 +15,7 @@ type Props = {
   max?: number;
   chips?: number[];
   unit?: string;
+  disabled?: boolean;
 };
 
 export function Stepper({
@@ -25,6 +27,7 @@ export function Stepper({
   max = Number.POSITIVE_INFINITY,
   chips = [],
   unit,
+  disabled = false,
 }: Props) {
   const colors = useColors();
 
@@ -43,10 +46,14 @@ export function Stepper({
       <Text style={[styles.label, { color: colors.mutedForeground }]}>{label}</Text>
       <View style={[styles.row, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Уменьшить: ${label}`}
+          accessibilityState={{ disabled: value <= min }}
+          disabled={disabled || value <= min}
           onPress={() => tick(-step)}
           style={({ pressed }) => [
             styles.btn,
-            { backgroundColor: colors.card, opacity: pressed ? 0.6 : 1 },
+            { backgroundColor: colors.card, opacity: value <= min ? 0.35 : pressed ? 0.6 : 1 },
           ]}
         >
           <Feather name="minus" size={22} color={colors.foreground} />
@@ -58,17 +65,21 @@ export function Stepper({
             numberOfLines={1}
             style={[styles.value, { color: colors.foreground }]}
           >
-            {Number.isInteger(value) ? value : value.toFixed(1)}
+            {formatNumber(value)}
           </Text>
           {unit ? (
             <Text style={[styles.unit, { color: colors.mutedForeground }]}>{unit}</Text>
           ) : null}
         </View>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Увеличить: ${label}`}
+          accessibilityState={{ disabled: value >= max }}
+          disabled={disabled || value >= max}
           onPress={() => tick(step)}
           style={({ pressed }) => [
             styles.btn,
-            { backgroundColor: colors.card, opacity: pressed ? 0.6 : 1 },
+            { backgroundColor: colors.card, opacity: value >= max ? 0.35 : pressed ? 0.6 : 1 },
           ]}
         >
           <Feather name="plus" size={22} color={colors.foreground} />
@@ -76,11 +87,16 @@ export function Stepper({
       </View>
       {chips.length > 0 ? (
         <View style={styles.chips}>
-          {chips.map((c) => {
+          {chips.filter(c => c >= min && c <= max).map((c) => {
             const active = c === value;
             return (
               <Pressable
                 key={c}
+                accessibilityRole="button"
+                accessibilityLabel={`${label}: ${formatNumber(c)}${unit ? ` ${unit}` : ""}`}
+                accessibilityState={{ selected: active, disabled }}
+                disabled={disabled}
+                hitSlop={4}
                 onPress={() => {
                   if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
                   onChange(c);
@@ -100,7 +116,7 @@ export function Stepper({
                     { color: active ? colors.primary : colors.mutedForeground },
                   ]}
                 >
-                  {c}
+                  {formatNumber(c)}
                 </Text>
               </Pressable>
             );
@@ -117,18 +133,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_700Bold",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 0,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    height: 64,
-    borderRadius: 18,
+    height: 56,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: "hidden",
   },
   btn: {
-    width: 64,
+    width: 52,
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
@@ -142,7 +158,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   value: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: "Inter_700Bold",
   },
   unit: {
@@ -152,12 +168,13 @@ const styles = StyleSheet.create({
   chips: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
   },
   chip: {
-    paddingHorizontal: 14,
-    height: 32,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    minWidth: 44,
+    height: 36,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",

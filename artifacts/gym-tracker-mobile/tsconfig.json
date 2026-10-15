@@ -16,6 +16,10 @@
     "expo-env.d.ts"
   ],
   "references": [
+    { "path": "../../lib/ai-coach" },
+    {
+      "path": "../../lib/level-data"
+    },
     {
       "path": "../../lib/api-client-react"
     }

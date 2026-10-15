@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import * as Haptics from "expo-haptics";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Animated, Platform, StyleSheet, Text, View } from "react-native";
@@ -57,7 +57,7 @@ export function useToast() {
 function ToastViewport({ items }: { items: ToastItem[] }) {
   const insets = useSafeAreaInsets();
   return (
-    <View pointerEvents="box-none" style={[styles.viewport, { top: insets.top + 8 }]}>
+    <View pointerEvents="none" style={[styles.viewport, { top: insets.top + 8 }]}>
       {items.map((t) => (
         <ToastView key={t.id} item={t} />
       ))}
@@ -79,7 +79,7 @@ function ToastView({ item }: { item: ToastItem }) {
 
   const accent =
     item.kind === "success"
-      ? colors.primary
+      ? colors.success
       : item.kind === "error"
         ? colors.destructive
         : colors.foreground;

@@ -51,7 +51,7 @@ export function RankBadge({
   if (variant === "compact") {
     return (
       <span
-        className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border} leading-none`}
+        className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap shrink-0 ${style.bg} ${style.text} ${style.border} leading-none`}
       >
         {rank.shortLabel}
       </span>

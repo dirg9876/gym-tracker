@@ -1,22 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePageView } from "@/hooks/usePageView";
 import {
   useGetLevels,
+  getGetLevelsQueryKey,
   useGetExerciseNorms,
   getGetExerciseNormsQueryKey,
+  useClaimLevel,
   SportRankCode,
   type Level,
   type MainExerciseStat,
   type SportRank,
   type BwNormEntry,
 } from "@workspace/api-client-react";
-import { Lock, Trophy, Flame, Check, Dumbbell, Star, AlertTriangle, ChevronRight, Zap, Info } from "lucide-react";
+import { Lock, Trophy, Flame, Check, Dumbbell, AlertTriangle, ChevronRight, Zap, Info, ChevronDown, ChevronUp, ArrowUpCircle } from "lucide-react";
+import { LevelUpOverlay } from "@/components/LevelUpOverlay";
+import { useLevelUpAlert } from "@/hooks/useLevelUpAlert";
 import { RankBadge, RankDivider } from "@/components/RankBadge";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { formatKg, formatNumber } from "@/lib/format";
 import { levelImage } from "@/lib/tierImages";
-import { LevelForecastCard } from "@/components/LevelForecastCard";
 import { ProfileCard } from "@/components/ProfileCard";
 import { AppShell } from "@/components/layout/AppShell";
 import {
@@ -77,6 +81,16 @@ export function Levels() {
 
   const currentRef = useRef<HTMLButtonElement | null>(null);
   const [openLevel, setOpenLevel] = useState<number | null>(null);
+  const [showPast, setShowPast] = useState(false);
+  const { levelUpInfo, dismissLevelUpInfo } = useLevelUpAlert(data);
+  const queryClient = useQueryClient();
+  const claimMutation = useClaimLevel({
+    mutation: {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+      },
+    },
+  });
 
   useEffect(() => {
     if (currentRef.current) {
@@ -95,7 +109,6 @@ export function Levels() {
   const {
     levels,
     currentLevel,
-    bestLevelEver,
     confirmedLevel,
     nextLevelPenaltyMultiplier,
     nextLevelTonnage7dKgRequired,
@@ -107,6 +120,7 @@ export function Levels() {
     currentRank,
     weightClassKg,
     confirmedLevelMigrationNeeded,
+    maxClaimableLevel,
     sex,
   } = data;
   const current: Level = levels[currentLevel];
@@ -136,21 +150,18 @@ export function Levels() {
       ? Math.min(100, (stats.currentTonnageSinceLevelUp / nextTonnageTarget) * 100)
       : 100;
 
-  const tonnageLabel = stats.levelUpAt
-    ? (() => {
-        const d = new Date(stats.levelUpAt);
-        const day = d.getDate();
-        const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-        const mon = months[d.getMonth()];
-        return `Тоннаж с ${day} ${mon}`;
-      })()
-    : "Тоннаж за всё время";
-  const droppedFromBest = bestLevelEver > currentLevel;
   const jumpLevels = next ? next.level - confirmedLevel : 0;
   const showNextLevelPenalty = next && nextLevelPenaltyMultiplier > 1;
 
   return (
     <AppShell>
+      {levelUpInfo && (
+        <LevelUpOverlay
+          newLevel={levelUpInfo.level}
+          levelName={levelUpInfo.name}
+          onDismiss={dismissLevelUpInfo}
+        />
+      )}
       <div className="min-h-[100dvh] bg-background pb-24">
       {/* Hero: current level */}
       <div className="bg-gradient-to-b from-primary/10 to-transparent pt-6 pb-6 px-4 border-b border-border">
@@ -175,7 +186,7 @@ export function Levels() {
                   className="h-40 w-40 object-contain drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
                   style={{ imageRendering: "pixelated" }}
                 />
-                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-sm shadow-lg">
+                <div className="glitch-on-change absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-sm shadow-lg">
                   {current.level}
                 </div>
               </div>
@@ -216,25 +227,17 @@ export function Levels() {
                 );
               })()}
 
-              <div className="text-2xl font-bold">{current.name}</div>
+              <div className="chromatic text-2xl font-bold">{current.name}</div>
               <RankBadge rank={currentRank} variant="hero" />
               {currentRank.code !== "NONE" && (
                 <div className="text-[11px] text-muted-foreground/70 -mt-1">
-                  Класс {weightClassKg} кг
+                  Весовая категория до {weightClassKg} кг
                 </div>
               )}
               <p className="text-sm text-muted-foreground text-center max-w-xs">
                 {current.description}
               </p>
-              {droppedFromBest && (
-                <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
-                  <Star className="h-3 w-3" />
-                  <span>
-                    Лучший уровень — {bestLevelEver}. Тоннаж сбросился, верни форму!
-                  </span>
-                </div>
-              )}
-              {confirmedLevelMigrationNeeded && !droppedFromBest && (
+              {confirmedLevelMigrationNeeded && (
                 <div className="flex items-center gap-1.5 text-[11px] text-blue-400/90 bg-blue-500/10 border border-blue-500/30 rounded-full px-2.5 py-1">
                   <Info className="h-3 w-3" />
                   <span>
@@ -267,67 +270,20 @@ export function Levels() {
 
           {next ? (
             <>
-              <LevelForecastCard />
-              <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                    До уровня {next.level} — «{next.name}»
-                  </div>
-                </div>
-
-                {/* Rank transition hint: "Сейчас твой разряд → Следующий разряд" */}
-                {(() => {
-                  const nextRankCode = next.rank.code;
-                  if (nextRankCode !== currentRank.code) {
-                    return (
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80 bg-muted/30 rounded-md px-2.5 py-2">
-                        <span>Твой разряд:</span>
-                        <RankBadge rank={currentRank} variant="compact" />
-                        <span className="text-muted-foreground/50">→</span>
-                        <RankBadge rank={next.rank} variant="compact" />
-                        <span className="text-muted-foreground/60">на этом уровне</span>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80 bg-muted/30 rounded-md px-2.5 py-2">
-                      <span>Твой разряд:</span>
-                      <RankBadge rank={currentRank} variant="compact" />
-                    </div>
-                  );
-                })()}
-
-                {showNextLevelPenalty && (
-                  <div className="flex items-start gap-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md px-2.5 py-2">
-                    <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    <span>
-                      Прыжок через {jumpLevels - 1}{" "}
-                      {pluralizeLevels(jumpLevels - 1)}: нормы тоннажа и
-                      штанг увеличены на {formatPenaltyPct(nextLevelPenaltyMultiplier)}.
-                    </span>
-                  </div>
-                )}
-
-                <ProgressRow
-                  icon={<Dumbbell className="h-4 w-4" />}
-                  label="Основные упражнения"
-                  value={passedCount}
-                  target={next.mainExercisesRequired}
-                  unit=""
-                  progress={exerciseProgress}
-                />
-
+              <NextLevelProgressCard
+                next={next}
+                currentTonnage={stats.currentTonnageSinceLevelUp}
+                targetTonnage={nextTonnageTarget}
+                tonnageProgress={tonnageProgress}
+                passedCount={passedCount}
+                levelUpAt={stats.levelUpAt ?? null}
+                showPenalty={!!showNextLevelPenalty}
+                jumpLevels={jumpLevels}
+                penaltyMultiplier={nextLevelPenaltyMultiplier}
+              />
+              {passedCount < next.mainExercisesRequired && (
                 <MainExercisesGrid exercises={stats.mainExercises} bodyWeightKg={bodyWeightKg} />
-
-                <ProgressRow
-                  icon={<Flame className="h-4 w-4" />}
-                  label={tonnageLabel}
-                  value={stats.currentTonnageSinceLevelUp}
-                  target={nextTonnageTarget}
-                  unit="кг"
-                  progress={tonnageProgress}
-                />
-              </div>
+              )}
             </>
           ) : (
             <div className="bg-card border border-primary/40 rounded-2xl p-4 flex items-center gap-3">
@@ -342,16 +298,36 @@ export function Levels() {
 
       {/* Full ladder */}
       <div className="max-w-md mx-auto px-4 py-6">
-        <h2 className="text-lg font-semibold mb-3">Лестница уровней</h2>
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">Лестница уровней</h2>
+            <p className="text-[11px] text-muted-foreground/60 mt-0.5">Тоннаж считается за последние 7 дней</p>
+          </div>
+          {currentLevel > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowPast((v) => !v)}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-foreground transition-colors shrink-0 pt-0.5"
+            >
+              {showPast ? (
+                <>Скрыть пройденные <ChevronUp className="h-3.5 w-3.5" /></>
+              ) : (
+                <>Показать пройденные ({currentLevel}) <ChevronDown className="h-3.5 w-3.5" /></>
+              )}
+            </button>
+          )}
+        </div>
         <div className="space-y-2">
-          {levels.map((lvl, idx) => {
+          {levels.filter((lvl) => showPast || lvl.level >= Math.max(0, currentLevel - 2)).map((lvl, idx, arr) => {
             const isCurrent = lvl.level === currentLevel;
             const isUnlocked = lvl.level <= currentLevel;
             const isNext = lvl.level === currentLevel + 1;
-            const prevRankCode = idx > 0 ? levels[idx - 1]!.rank.code : null;
+            const prevRankCode = idx > 0 ? arr[idx - 1]!.rank.code : null;
             const isRankStart = prevRankCode !== lvl.rank.code;
+            const isClaimable = maxClaimableLevel != null && lvl.level <= maxClaimableLevel && !isUnlocked;
+            const showArrow = lvl.level > 0 && !isUnlocked;
             return (
-              <div key={lvl.level}>
+              <div key={lvl.level} className="relative">
                 {isRankStart && lvl.rank.code !== "NONE" && (
                   <RankDivider label={lvl.rank.label} />
                 )}
@@ -373,7 +349,7 @@ export function Levels() {
                   <img
                     src={levelImage(lvl.level, lvl.tier, sex)}
                     alt=""
-                    className={`h-12 w-12 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
+                    className={`h-16 w-16 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
                     style={{ imageRendering: "pixelated" }}
                   />
                   <div className="flex-1 min-w-0">
@@ -412,7 +388,7 @@ export function Levels() {
                             Выбери ≥ 3 основных упражнения на странице «Упражнения»
                           </div>
                         ) : (
-                          <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                          <div className="space-y-0.5">
                             {stats.mainExercises.slice(0, 3).map((e) => {
                               const isTimeBased = e.autoPassedReason === "time_based_exercise";
                               const isBw = e.mcSource === "bodyweight";
@@ -424,22 +400,32 @@ export function Levels() {
                               const autoPassed = isTimeBased || belowBar || bwAutoPassed;
                               const passed = autoPassed || (req > 0 && e.maxWeightKg >= req);
                               const short = abbreviateExercise(e.name);
-                              const kgReqLabel = (!autoPassed && req > 0 && !isBw)
-                                ? `${formatNumber(req)} кг`
-                                : null;
+                              const displayLabel = passed && e.maxWeightKg > 0
+                                ? `${formatNumber(e.maxWeightKg)} кг`
+                                : isTimeBased
+                                  ? "Засчитано"
+                                  : belowBar
+                                    ? "Пустой гриф"
+                                    : bwAutoPassed
+                                      ? "5 повт."
+                                      : req > 0 && !isBw
+                                        ? `${formatNumber(req)} кг`
+                                        : null;
                               return (
-                                <span
+                                <div
                                   key={e.exerciseId}
-                                  className={`text-[10px] leading-tight ${passed ? "text-primary" : "text-muted-foreground/60"}`}
+                                  className={`flex items-baseline gap-1 min-w-0 text-[10px] leading-tight ${passed ? "text-green-400 dark:text-green-400" : "text-muted-foreground/60"}`}
                                 >
-                                  {passed && "✓ "}
-                                  {short}
-                                  {bwAutoPassed && ": любой подход"}
-                                  {kgReqLabel && `: ${kgReqLabel}`}
-                                  {isBw && !bwAutoPassed && e.mcKg != null && (
-                                    <>: <BwCompactReq exerciseId={e.exerciseId} required={req} mcKg={e.mcKg} bodyWeightKg={bodyWeightKg} /></>
+                                  <span className="break-words min-w-0 flex-1">{short}</span>
+                                  {displayLabel && (
+                                    <span className="shrink-0 font-mono">{displayLabel}</span>
                                   )}
-                                </span>
+                                  {isBw && !bwAutoPassed && e.mcKg != null && (
+                                    <span className="shrink-0 font-mono">
+                                      <BwCompactReq exerciseId={e.exerciseId} required={req} mcKg={e.mcKg} bodyWeightKg={bodyWeightKg} />
+                                    </span>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
@@ -448,13 +434,37 @@ export function Levels() {
                           {bodyWeightIsFallback && (
                             <span className="text-amber-400/70">расчёт по {formatNumber(bodyWeightKg)} кг · </span>
                           )}
-                          Тоннаж: {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                          Тоннаж: {formatNumber(lvl.tonnage7dKgRequired)} кг
                         </div>
                       </div>
                     )}
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+                  {!showArrow && (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+                  )}
                 </button>
+                {showArrow && (
+                  <button
+                    type="button"
+                    disabled={isClaimable && claimMutation.isPending}
+                    aria-label={isClaimable ? `Перейти на уровень ${lvl.level}` : `Что нужно для уровня ${lvl.level}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isClaimable) {
+                        claimMutation.mutate({ level: lvl.level });
+                      } else {
+                        setOpenLevel(lvl.level);
+                      }
+                    }}
+                    className={`absolute top-2 right-2 p-1 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isClaimable
+                        ? "text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                        : "text-muted-foreground/40 hover:text-muted-foreground/70 hover:bg-accent/30"
+                    }`}
+                  >
+                    <ArrowUpCircle className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -474,6 +484,8 @@ export function Levels() {
         levelFactorAnchor={levelFactorAnchor}
         weightClassKg={weightClassKg}
         sex={sex}
+        currentTonnageSinceLevelUp={stats.currentTonnageSinceLevelUp}
+        currentLevel={currentLevel}
       />
       </div>
     </AppShell>
@@ -508,20 +520,29 @@ function requiredKgFor(
 
 // Produce a compact label for an exercise name.
 // Barbell is the default → remove "штанги"/"штангой" (no info added).
-// Dumbbell is distinctive → replace "гантелей"/"гантели" with "гант.".
 // Prepositions/service words → remove.
 // Positional words (лёжа, стоя, сидя …) → keep, they differentiate variants.
-const ABBREV_REMOVE = new Set(["штанги", "штангой", "со", "в", "на", "по", "с", "одной"]);
-const ABBREV_REPLACE: Record<string, string> = { гантелей: "гант.", гантели: "гант." };
+const ABBREV_REMOVE = new Set(["штанги", "штангой", "со", "в", "по", "с", "одной"]);
 function abbreviateExercise(name: string): string {
+  // Short names fit fine — return as-is without any substitution.
+  if (name.length <= 16) return name;
   const words = name.split(/\s+/).flatMap((w) => {
     const lower = w.toLowerCase();
     if (ABBREV_REMOVE.has(lower)) return [];
-    if (ABBREV_REPLACE[lower]) return [ABBREV_REPLACE[lower]!];
     return [w];
   });
-  const short = words.slice(0, 2).join(" ");
-  return short.length > 14 ? short.slice(0, 13) + "…" : short;
+  // Greedily accumulate words while the result stays ≤ 18 chars.
+  const MAX_LEN = 18;
+  const kept: string[] = [];
+  let running = 0;
+  for (const w of words) {
+    const next = running === 0 ? w.length : running + 1 + w.length;
+    if (next > MAX_LEN && kept.length > 0) break;
+    kept.push(w);
+    running = next;
+  }
+  const short = kept.join(" ");
+  return short.length > MAX_LEN ? short.slice(0, MAX_LEN - 1) + "…" : short;
 }
 
 function DialogExerciseRow({
@@ -549,17 +570,17 @@ function DialogExerciseRow({
       }`}
     >
       <div className="flex items-center justify-between gap-2 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          {passed && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-          <span className="text-sm font-medium break-words">{ex.name}</span>
+        <div className="flex items-start gap-2 min-w-0 flex-1">
+          {passed && <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />}
+          <span className="text-sm font-medium break-words min-w-0">{ex.name}</span>
         </div>
         <div className="text-xs text-right shrink-0">
           {isTimeBased ? (
-            <span className="text-primary">Время — засчитано</span>
+            <span className="text-primary">Засчитано</span>
           ) : belowBar ? (
-            <span className="text-primary">Ниже грифа — засчитано</span>
+            <span className="text-primary">Пустой гриф</span>
           ) : bwAutoPass ? (
-            <span className="text-primary">Любой подход</span>
+            <span className="text-primary">5 повторений</span>
           ) : isBw ? (
             <span className="font-mono text-foreground/80">
               {bwRep && ex.mcKg != null
@@ -567,7 +588,12 @@ function DialogExerciseRow({
                 : `+${formatNumber(Math.max(0, required - bodyWeightKg))} кг доп.`}
             </span>
           ) : (
-            <span className="font-mono text-foreground/80">{formatKg(required)}</span>
+            <span className="font-mono text-foreground/80">
+              {formatKg(required)}
+              {ex.equipment === "dumbbell" && (
+                <span className="text-muted-foreground/60 font-sans"> (одна гантель)</span>
+              )}
+            </span>
           )}
         </div>
       </div>
@@ -577,7 +603,7 @@ function DialogExerciseRow({
           if (!bwRep.nextEntry) {
             return (
               <div className="text-[10px] text-primary/70">
-                {userPart ? `${userPart} · ` : ""}МСМК достигнут ✓
+                {userPart ? `${userPart} · ` : ""}МСМК достигнут
               </div>
             );
           }
@@ -592,6 +618,7 @@ function DialogExerciseRow({
           return (
             <div className="text-[10px] text-muted-foreground/70">
               Первая цель — Юн III: {formatKg(yun3Target)}
+              {ex.equipment === "dumbbell" && " (одна гантель)"}
             </div>
           );
         }
@@ -600,14 +627,21 @@ function DialogExerciseRow({
           return (
             <div className="text-[10px] text-muted-foreground/70">
               {nr.label}: {formatKg(nr.kgTarget)}
+              {ex.equipment === "dumbbell" && " (одна гантель)"}
             </div>
           );
         }
         if (ex.maxWeightKg >= ex.mcKg) {
-          return <div className="text-[10px] text-primary/70">МСМК достигнут ✓</div>;
+          return (
+            <div className="text-[10px] text-primary/70">
+              МСМК: {formatKg(ex.mcKg)}{ex.equipment === "dumbbell" && " (одна гантель)"} — достигнут
+            </div>
+          );
         }
         return (
-          <div className="text-[10px] text-muted-foreground/70">МСМК: {formatKg(ex.mcKg)}</div>
+          <div className="text-[10px] text-muted-foreground/70">
+            МСМК: {formatKg(ex.mcKg)}{ex.equipment === "dumbbell" && " (одна гантель)"}
+          </div>
         );
       })()}
     </div>
@@ -625,6 +659,8 @@ function LevelDetailDialog({
   levelFactorAnchor,
   weightClassKg,
   sex,
+  currentTonnageSinceLevelUp,
+  currentLevel,
 }: {
   openLevel: number | null;
   onOpenChange: (open: boolean) => void;
@@ -636,6 +672,8 @@ function LevelDetailDialog({
   levelFactorAnchor: number;
   weightClassKg: number;
   sex: "male" | "female";
+  currentTonnageSinceLevelUp: number;
+  currentLevel: number;
 }) {
   const lvl = openLevel != null ? levels[openLevel] : undefined;
   const rows = useMemo(() => {
@@ -680,7 +718,7 @@ function LevelDetailDialog({
                   </DialogTitle>
                   {lvl.rank.code !== "NONE" && (
                     <div className="text-[11px] text-muted-foreground/70 mt-0.5">
-                      {lvl.rank.label} · Класс {weightClassKg} кг
+                      {lvl.rank.label}
                     </div>
                   )}
                 </div>
@@ -698,18 +736,43 @@ function LevelDetailDialog({
                 </div>
               ) : (
                 <>
-                  <div className="bg-muted/40 rounded-xl p-3 flex items-start gap-2">
-                    <Flame className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <div className="text-sm">
-                      <div className="font-semibold">
-                        Тоннаж: {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                  {(() => {
+                    const isLocked = lvl.level > currentLevel;
+                    const missingTonnage = isLocked
+                      ? Math.max(0, lvl.tonnage7dKgRequired - currentTonnageSinceLevelUp)
+                      : 0;
+                    const tonnageDone = isLocked && missingTonnage === 0;
+                    return (
+                      <div className="bg-muted/40 rounded-xl p-3 flex items-start gap-2">
+                        <Flame className={`h-4 w-4 mt-0.5 shrink-0 ${tonnageDone ? "text-green-400" : "text-primary"}`} />
+                        <div className="text-sm flex-1 min-w-0">
+                          <div className="font-semibold">
+                            Тоннаж: {formatNumber(lvl.tonnage7dKgRequired)} кг / 7 дн
+                          </div>
+                          {isLocked && (
+                            <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+                              <span className="text-muted-foreground">Сейчас:</span>
+                              <span className={tonnageDone ? "text-green-400 font-mono" : "font-mono"}>
+                                {formatNumber(currentTonnageSinceLevelUp)} кг
+                              </span>
+                              {missingTonnage > 0 && (
+                                <span className="text-amber-400/80">
+                                  — не хватает {formatNumber(missingTonnage)} кг
+                                </span>
+                              )}
+                              {tonnageDone && (
+                                <span className="text-green-400">— выполнено</span>
+                              )}
+                            </div>
+                          )}
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            Базовый норматив без учёта штрафа за прыжок через
+                            уровни.
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        Базовый норматив без учёта штрафа за прыжок через
-                        уровни.
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div className="space-y-2">
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -743,17 +806,33 @@ function LevelDetailDialog({
                         </div>
                       </Link>
                     )}
-                    {rows.length > 0 && (
-                      <div className="space-y-1.5">
-                        {rows.map((row) => (
-                          <DialogExerciseRow
-                            key={row.ex.exerciseId}
-                            row={row}
-                            bodyWeightKg={bodyWeightKg}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    {rows.length > 0 && (() => {
+                      const passedCount = rows.filter(r => r.passed).length;
+                      const allPassed = passedCount === rows.length;
+                      return (
+                        <>
+                          <div className={`flex items-center gap-2 text-xs font-mono px-1 ${allPassed ? "text-primary" : "text-amber-400"}`}>
+                            {allPassed
+                              ? <Check className="h-3.5 w-3.5 shrink-0" />
+                              : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                            }
+                            <span>
+                              Выполнено: {passedCount} / {rows.length} упражнений
+                              {!allPassed && ` — осталось ${rows.length - passedCount}`}
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {rows.map((row) => (
+                              <DialogExerciseRow
+                                key={row.ex.exerciseId}
+                                row={row}
+                                bodyWeightKg={bodyWeightKg}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()}
                     <div className="text-[11px] text-muted-foreground/80 pt-1">
                       Норматив = твой вес × коэфф. упражнения × (уровень / 80).
                       Без учёта штрафа за прыжок через уровни.
@@ -777,46 +856,6 @@ function pluralizeLevels(n: number): string {
   return "уровней";
 }
 
-function ProgressRow({
-  icon,
-  label,
-  value,
-  target,
-  unit,
-  progress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  target: number;
-  unit: string;
-  progress: number;
-}) {
-  const reached = value >= target;
-  return (
-    <div>
-      <div className="flex items-center justify-between text-sm mb-1">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          {icon}
-          <span>{label}</span>
-        </div>
-        <div className={`font-mono ${reached ? "text-primary" : ""}`}>
-          {formatNumber(value)}
-          {unit && ` / ${formatNumber(target)} ${unit}`}
-          {!unit && ` / ${target}`}
-        </div>
-      </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <motion.div
-          className="h-full bg-primary"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.6 }}
-        />
-      </div>
-    </div>
-  );
-}
 
 function useBwRepState(exerciseId: number, enabled: boolean) {
   const { data: norms } = useGetExerciseNorms(exerciseId, {
@@ -967,6 +1006,133 @@ function MainExercisesGrid({
   );
 }
 
+function NextLevelProgressCard({
+  next,
+  currentTonnage,
+  targetTonnage,
+  tonnageProgress,
+  passedCount,
+  levelUpAt,
+  showPenalty,
+  jumpLevels,
+  penaltyMultiplier,
+}: {
+  next: Level;
+  currentTonnage: number;
+  targetTonnage: number;
+  tonnageProgress: number;
+  passedCount: number;
+  levelUpAt: string | null;
+  showPenalty: boolean;
+  jumpLevels: number;
+  penaltyMultiplier: number;
+}) {
+  const tonnageDone = targetTonnage > 0 && currentTonnage >= targetTonnage;
+  const exercisesDone = passedCount >= next.mainExercisesRequired;
+  const bothDone = tonnageDone && exercisesDone;
+  const tonRemaining = Math.max(0, targetTonnage - currentTonnage);
+  const exPct = Math.min(100, (passedCount / next.mainExercisesRequired) * 100);
+
+  const windowDayInfo = useMemo(() => {
+    if (!levelUpAt) return null;
+    const startMs = new Date(levelUpAt).getTime();
+    const daysSince = Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24));
+    const dayInWindow = Math.min(daysSince + 1, 7);
+    return { dayInWindow, rolling: daysSince >= 7 };
+  }, [levelUpAt]);
+
+  return (
+    <div className={`rounded-2xl p-4 space-y-3 border ${bothDone ? "bg-primary/10 border-primary/40" : "bg-card border-border"}`}>
+      <div className="text-xs uppercase tracking-widest text-muted-foreground">
+        До уровня {next.level} — {next.name}
+      </div>
+
+      {bothDone ? (
+        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+          <Check className="h-4 w-4 shrink-0" />
+          <span>Все условия выполнены — уровень доступен</span>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tonnageDone ? (
+            <div className="flex items-center gap-2 text-primary">
+              <Check className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-xs">Тоннаж за 7 дней выполнен</span>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Flame className="h-3.5 w-3.5 text-primary" />
+                  <span>Тоннаж за 7 дней</span>
+                </div>
+                {windowDayInfo && (
+                  <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0">
+                    {windowDayInfo.rolling ? "Скользящее окно" : `День ${windowDayInfo.dayInWindow} из 7`}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-bold tabular-nums">{formatNumber(currentTonnage)}</span>
+                <span className="text-xs text-muted-foreground">
+                  / {formatNumber(targetTonnage)} кг · осталось {formatNumber(tonRemaining)} кг
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-primary rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${tonnageProgress}%` }}
+                  transition={{ duration: 0.6 }}
+                />
+              </div>
+            </div>
+          )}
+
+          {exercisesDone ? (
+            <div className="flex items-center gap-2 text-primary">
+              <Check className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-xs">
+                Основные упражнения: {passedCount} / {next.mainExercisesRequired} выполнено
+              </span>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Dumbbell className="h-3.5 w-3.5" />
+                  <span>Основные упражнения</span>
+                </div>
+                <span className="text-xs font-mono text-muted-foreground/80 shrink-0">
+                  {passedCount} / {next.mainExercisesRequired}
+                </span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-primary/70 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${exPct}%` }}
+                  transition={{ duration: 0.6 }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showPenalty && (
+        <div className="flex items-start gap-2 text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md px-2.5 py-2">
+          <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>
+            Прыжок через {jumpLevels - 1}{" "}
+            {pluralizeLevels(jumpLevels - 1)}: нормы тоннажа и штанг увеличены на {formatPenaltyPct(penaltyMultiplier)}.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BwAwareGridRow({
   e,
   bodyWeightKg,
@@ -1011,14 +1177,25 @@ function BwAwareGridRow({
           : "border-border bg-card/40 text-muted-foreground"
       }`}
     >
-      {/* Row 1: icon + name + rank badge */}
-      <div className="flex items-start gap-2">
-        {passed ? (
-          <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-        ) : (
-          <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0 mt-0.5" />
-        )}
-        <span className="font-medium break-words flex-1">{e.name}</span>
+      {/* Row 1: icon + name (truncate) + required weight (shrink-0) + rank badge */}
+      <div className="flex items-start gap-2 min-w-0">
+        <span className="font-medium min-w-0 break-words flex-1 leading-snug">{e.name}</span>
+        {/* Required weight — always visible, never truncated */}
+        {e.autoPassedReason === "time_based_exercise" ? (
+          <span className="shrink-0 text-[11px] text-primary">Засчитано</span>
+        ) : e.autoPassedReason === "below_bar_weight" ? (
+          <span className="shrink-0 text-[11px] text-primary">Пустой гриф</span>
+        ) : bwAutoPass ? (
+          <span className="shrink-0 text-[11px] text-primary">5 повторений</span>
+        ) : required != null && required > 0 ? (
+          <span className={`shrink-0 font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/70"}`}>
+            {isBw
+              ? (bwRep && e.mcKg != null
+                  ? bwTierLabel(bwRep.repNorms, required, e.mcKg)
+                  : `+${formatNumber(Math.max(0, required - bodyWeightKg))} кг`)
+              : formatKg(required)}
+          </span>
+        ) : null}
         {currentRankEntry && currentRankEntry.code !== "NONE" && (
           <span
             className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none ${currentRankEntry.cls}`}
@@ -1029,49 +1206,26 @@ function BwAwareGridRow({
         )}
       </div>
 
-      {/* Row 2: auto-passed labels OR progress */}
-      <div className="pl-5">
-        {e.autoPassedReason === "time_based_exercise" ? (
-          <span className="text-[11px] text-primary">Время — засчитано</span>
-        ) : e.autoPassedReason === "below_bar_weight" ? (
-          <span className="text-[11px] text-primary">Ниже грифа — засчитано</span>
-        ) : bwAutoPass ? (
-          <span className="text-[11px] text-primary">Любой подход — засчитано</span>
-        ) : required != null && required > 0 ? (
-          <div className="space-y-1">
-            <div className="flex items-baseline justify-between gap-2 leading-tight">
-              <span
-                className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}
-              >
-                {isBw && bwRep?.currentLabel
-                  ? bwRep.currentLabel
-                  : isBw
-                    ? `+${formatNumber(userExtra ?? 0)} кг доп.`
-                    : `${formatNumber(e.maxWeightKg)} кг`}
-              </span>
-              <span className="text-[10px] text-muted-foreground/70">
-                {isBw && extraRequired != null && required != null
-                  ? `/ ${bwRep && e.mcKg != null ? bwTierLabel(bwRep.repNorms, required, e.mcKg) : `+${formatNumber(extraRequired)} кг доп.`}`
-                  : `/ ${formatKg(required)}`}
-              </span>
-            </div>
-            {kgBarPct !== null && (
-              <div className="h-1 rounded-full overflow-hidden bg-border/60">
-                <div
-                  className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
-                  style={{ width: `${kgBarPct}%` }}
-                />
-              </div>
-            )}
-          </div>
-        ) : (
-          <span className="font-mono text-[11px] text-foreground/80">
-            {isBw
-              ? `+${formatNumber(Math.max(0, e.maxWeightKg - bodyWeightKg))} кг доп.`
-              : `${formatNumber(e.maxWeightKg)} кг`}
+      {/* Row 2: user's current value + progress bar */}
+      {!e.autoPassedReason && !bwAutoPass && required != null && required > 0 && (
+        <div className="pl-5 space-y-1">
+          <span className={`font-mono text-[11px] ${passed ? "text-primary" : "text-foreground/80"}`}>
+            {isBw && bwRep?.currentLabel
+              ? bwRep.currentLabel
+              : isBw
+                ? `+${formatNumber(userExtra ?? 0)} кг доп.`
+                : `${formatNumber(e.maxWeightKg)} кг`}
           </span>
-        )}
-      </div>
+          {kgBarPct !== null && (
+            <div className="h-1 rounded-full overflow-hidden bg-border/60">
+              <div
+                className={`h-full rounded-full transition-all ${passed ? "bg-primary" : "bg-primary/50"}`}
+                style={{ width: `${kgBarPct}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Row 3: penalty hint or rank next hint */}
       {showPenaltyHint && !autoPassed && required != null && required > 0 && !passed ? (

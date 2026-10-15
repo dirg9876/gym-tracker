@@ -1,0 +1,42 @@
+import assert from "node:assert/strict";
+import { beforeEach, test } from "node:test";
+import { createHash } from "node:crypto";
+import { storage, request } from "./testHarness.mjs";
+const { exportProgress, restoreProgress } = await import("../lib/progressBackup.ts");
+const { templateFromWorkout, completedTargets, editableTemplateExercise, plannedSet } = await import("../lib/workoutTemplates.ts");
+const { formatSetContext } = await import("../lib/workoutMeasurement.ts");
+beforeEach(() => storage.clear());
+test("legacy warmup and untyped records remain intact but are counted as working", async () => {
+  const workout = await request("/api/workouts", "POST", {});
+  for (let i = 0; i < 2; i++) await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 20, reps: 10 });
+  await request(`/api/workouts/${workout.id}/finish`, "POST");
+  const backup = JSON.parse(await exportProgress());
+  delete backup.state.sets[0].setType;
+  backup.state.sets[1].setType = "warmup";
+  backup.checksum = createHash("sha256").update(JSON.stringify({ state: backup.state, plans: backup.plans })).digest("hex");
+  await restoreProgress(JSON.stringify(backup));
+  const restored = JSON.parse(await exportProgress());
+  assert.deepEqual(restored.state, backup.state);
+  const recorded = await request(`/api/workouts/${workout.id}`);
+  const template = templateFromWorkout(recorded)[0];
+  assert.ok(template.setTargets.every(set => set.setType === "working"));
+  assert.equal(completedTargets(template, recorded.sets), 2);
+  assert.equal((await request("/api/stats/weekly")).groups[0].workingSets, 2);
+  assert.ok(recorded.sets.every(set => formatSetContext(set) === ""));
+});
+test("legacy templates normalize editable targets without changing their values or ranges", () => {
+  const old = { exerciseId: 1, name: "Bench", equipment: "barbell", suggestedWeightKg: 20, sets: 2, repsMin: 8, repsMax: 12, setTargets: [{ weightKg: 20, reps: 8, setType: "warmup" }, { weightKg: 30, reps: 12 }] };
+  const draft = editableTemplateExercise(old);
+  assert.deepEqual(draft.setTargets.map(set => [set.weightKg, set.reps, set.setType]), [[20, 8, "working"], [30, 12, "working"]]);
+  assert.equal(draft.repsMin, 8); assert.equal(draft.repsMax, 12);
+  assert.equal(plannedSet(old, 0).setType, "working");
+  assert.equal(old.setTargets[0].setType, "warmup");
+});
+test("new approaches cannot be assigned a separate warmup type, RIR and technique remain", async () => {
+  const workout = await request("/api/workouts", "POST", {});
+  const set = await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 20, reps: 10, setType: "warmup", rir: 2, technique: "good" });
+  assert.equal(set.setType, "working");
+  assert.equal(set.rir, 2);
+  assert.equal(set.technique, "good");
+  assert.ok(formatSetContext(set).startsWith("\u0417\u0430\u043f\u0430\u0441 2"));
+});

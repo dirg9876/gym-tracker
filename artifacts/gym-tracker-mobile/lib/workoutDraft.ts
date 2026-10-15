@@ -1,0 +1,49 @@
+import { z } from "zod";
+import type { Equipment } from "@workspace/api-client-react";
+import { coachFieldsSchema, timerSchema } from "./trainingCoach";
+import { isTimedExercise, minimumWeight } from "./workoutMeasurement";
+
+export const draftRevisionSchema = z.number().int().nonnegative().safe();
+export const workoutDraftSchema = z.object({
+  exerciseId: z.number().int().positive().safe(),
+  weightKg: z.number().finite().nonnegative(),
+  reps: z.number().int().nonnegative().safe(),
+  durationSeconds: z.number().int().min(1).max(86400).optional(),
+  rir: coachFieldsSchema.shape.rir,
+  technique: coachFieldsSchema.shape.technique,
+  sourceTimer: timerSchema.optional(),
+}).strict().refine(draft => draft.durationSeconds != null
+  ? draft.weightKg === 0 && draft.reps === 0 && draft.rir == null
+  : draft.reps > 0 && Number.isFinite(draft.weightKg * draft.reps));
+export const draftCommitSchema = z.object({ revision: draftRevisionSchema, setId: z.number().int().positive().safe() });
+export type WorkoutDraft = z.infer<typeof workoutDraftSchema>;
+export type DraftResponse = { draft: WorkoutDraft | null; revision: number };
+
+export function validDraftForExercise(draft: WorkoutDraft, exercise: { id: number; name: string; equipment: Equipment; deletedAt?: string }) {
+  return !exercise.deletedAt && exercise.id === draft.exerciseId && (isTimedExercise(exercise.name)
+    ? draft.durationSeconds != null
+    : draft.durationSeconds == null && draft.weightKg >= minimumWeight(exercise.equipment))
+    && (!draft.sourceTimer || (draft.sourceTimer.kind === "plank" && draft.sourceTimer.exerciseId === draft.exerciseId && draft.durationSeconds != null));
+}
+
+export function makeWorkoutDraft(exercise: { id: number; name: string; equipment: Equipment }, target?: { weightKg: number; reps: number; durationSeconds?: number }): WorkoutDraft {
+  return workoutDraftSchema.parse({
+    exerciseId: exercise.id,
+    ...(isTimedExercise(exercise.name)
+      ? { weightKg: 0, reps: 0, durationSeconds: target?.durationSeconds ?? 30 }
+      : { weightKg: target?.weightKg ?? (exercise.equipment === "bodyweight" ? 0 : exercise.equipment === "dumbbell" ? 10 : 20), reps: target?.reps ?? 10 }),
+    rir: null, technique: null,
+  });
+}
+
+export const sameTimer = (a: z.infer<typeof timerSchema>, b: z.infer<typeof timerSchema>) => JSON.stringify(timerSchema.parse(a)) === JSON.stringify(timerSchema.parse(b));
+export const sameDraft = (a: WorkoutDraft | null, b: WorkoutDraft | null) => a == null || b == null ? a === b : JSON.stringify(workoutDraftSchema.parse(a)) === JSON.stringify(workoutDraftSchema.parse(b));
+
+// Only for idempotent commit/transfer endpoints, never an ordinary set addition.
+export async function retryDraftAction<T>(action: () => Promise<T>): Promise<T> {
+  try { return await action(); }
+  catch (error) {
+    if (error && typeof error === "object" && "status" in error) throw error;
+    return action();
+  }
+}

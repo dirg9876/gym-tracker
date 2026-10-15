@@ -19,6 +19,7 @@ import type {
 import type {
   ActiveWorkoutResponse,
   AddSetInput,
+  ClaimLevelResult,
   CreateCustomProgramInput,
   CreateExerciseInput,
   CreateWorkoutInput,
@@ -1982,6 +1983,90 @@ export function useGetLevels<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Claim a level earned by meeting all weight requirements (≥10 main exercises, no tonnage check)
+ */
+export const getClaimLevelUrl = (level: number) => {
+  return `/api/levels/claim/${level}`;
+};
+
+export const claimLevel = async (
+  level: number,
+  options?: RequestInit,
+): Promise<ClaimLevelResult> => {
+  return customFetch<ClaimLevelResult>(getClaimLevelUrl(level), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getClaimLevelMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimLevel>>,
+    TError,
+    { level: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof claimLevel>>,
+  TError,
+  { level: number },
+  TContext
+> => {
+  const mutationKey = ["claimLevel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof claimLevel>>,
+    { level: number }
+  > = (props) => {
+    const { level } = props ?? {};
+
+    return claimLevel(level, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClaimLevelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof claimLevel>>
+>;
+
+export type ClaimLevelMutationError = ErrorType<void>;
+
+/**
+ * @summary Claim a level earned by meeting all weight requirements (≥10 main exercises, no tonnage check)
+ */
+export const useClaimLevel = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimLevel>>,
+    TError,
+    { level: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof claimLevel>>,
+  TError,
+  { level: number },
+  TContext
+> => {
+  return useMutation(getClaimLevelMutationOptions(options));
+};
 
 /**
  * @summary Get the user's body profile (weight, height, BMI)

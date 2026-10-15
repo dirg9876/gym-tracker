@@ -58,10 +58,10 @@ export function Button({
   };
 
   const sizeStyles = {
-    sm: { height: 36, paddingHorizontal: 14, fontSize: 14, radius: 10 },
-    md: { height: 48, paddingHorizontal: 18, fontSize: 16, radius: 14 },
-    lg: { height: 56, paddingHorizontal: 22, fontSize: 17, radius: 16 },
-    xl: { height: 64, paddingHorizontal: 24, fontSize: 18, radius: 18 },
+    sm: { height: 40, paddingHorizontal: 14, fontSize: 14, radius: 8 },
+    md: { height: 48, paddingHorizontal: 18, fontSize: 16, radius: 8 },
+    lg: { height: 56, paddingHorizontal: 22, fontSize: 17, radius: 8 },
+    xl: { height: 64, paddingHorizontal: 24, fontSize: 18, radius: 8 },
   }[size];
 
   const variantBg = {
@@ -80,6 +80,8 @@ export function Button({
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       onPress={handlePress}
       disabled={disabled || loading}
       testID={testID}
@@ -96,10 +98,10 @@ export function Button({
         styles.base,
         variant === "primary" && {
           shadowColor: colors.primary,
-          shadowOpacity: 0.35,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 4,
+          shadowOpacity: 0.12,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 2,
         },
         style,
       ]}

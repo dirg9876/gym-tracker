@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gym-beam-coach",
+  "account_id": "ab718c47aa012fe9787a9d3541cc364d",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+  "durable_objects": { "bindings": [{ "name": "COACH", "class_name": "CoachObject" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CoachObject"] }],
+  "vars": { "AI_COACH_MONTHLY_LIMIT_USD": "5" }
+}
