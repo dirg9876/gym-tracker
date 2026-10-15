@@ -35,6 +35,7 @@ export default function CoachSessionScreen() {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<CoachMessages>([]);
+  const [automaticRequest, setAutomaticRequest] = useState<string | null>(null);
   const lastAnswer = useRef("");
   const scroll = useRef<ScrollView>(null);
   const scheduled = month.data?.slots.find(slot => !slot.completed);
@@ -49,11 +50,12 @@ export default function CoachSessionScreen() {
     setText("");
   }, [coach.answer]);
   useEffect(() => { if (!coach.enabled) { setMessages([]); setText(""); lastAnswer.current = ""; } }, [coach.enabled]);
-  useEffect(() => { setMessages([]); setText(""); setEditedPlan(null); lastAnswer.current = ""; }, [mode]);
+  useEffect(() => { setMessages([]); setText(""); setEditedPlan(null); setAutomaticRequest(null); lastAnswer.current = ""; }, [mode]);
   const send = () => {
     if (!coach.enabled || coach.busy || unavailable) return;
     const message = text.trim() || (workoutId ? "Предложи оставшуюся часть тренировки с учётом уже выполненного." : mode === "month" ? "Составь полноценный план на четыре недели по моей истории и целям, с расписанием и разумной прогрессией." : mode === "office" ? "Составь короткую офисную тренировку: несколько подходов подтягиваний, отжиманий, брусьев или других упражнений с собственным весом. Есть турник, брусья и место на полу, без дополнительного веса." : "Составь следующую по сохранённому плану тренировку, адаптировав её к истории, моей цели и текущему прогрессу.");
     Keyboard.dismiss();
+    if (!text.trim()) setAutomaticRequest(message);
     void coach.ask([...messages.slice(-6), { role: "user", text: message }]);
   };
   const suggestions = workoutId ? [
@@ -67,7 +69,7 @@ export default function CoachSessionScreen() {
       {!coach.enabled ? <Button title="Подключить ИИ-тренера" icon={<Feather name="zap" size={18} color={colors.primaryForeground} />} onPress={() => router.push("/coach")} /> : <>
         {!workoutId ? <>
           <Segmented label="Тренировка" value={mode} options={[{ value: "next", label: "По плану" }, { value: "office", label: "В офисе" }, { value: "month", label: "На месяц" }]} disabled={coach.busy} onChange={setMode} />
-          {profile.data ? <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Цель: {profile.data.goal === "hypertrophy" ? "Мышцы" : profile.data.goal === "strength" ? "Сила" : "Форма"} · {mode === "office" ? "10–20 мин" : "60–90 мин"} · {profile.data.daysPerWeek} занятий в неделю</Text> : null}
+          {profile.data ? <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Цель: {profile.data.goal === "hypertrophy" ? "Мышцы" : profile.data.goal === "strength" ? "Сила" : "Форма"} · {mode === "office" ? "10–20 мин" : "60–90 мин"} · Занятий в неделю: {profile.data.daysPerWeek}</Text> : null}
         </> : null}
         {!workoutId && mode === "month" && month.data ? <Button title="Открыть сохранённый месячный план" variant="secondary" icon={<Feather name="calendar" size={18} color={colors.success} />} onPress={() => router.push("/coach-month")} /> : null}
         {!workoutId && mode === "next" && scheduled ? <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>Неделя {scheduled.week} · {scheduled.template.name}</Text> : null}
@@ -75,7 +77,7 @@ export default function CoachSessionScreen() {
         {unavailable && !workoutId && active.data?.workout ? <Button title="Открыть текущую тренировку" variant="secondary" onPress={() => router.replace(`/workout/${active.data!.workout!.id}`)} /> : null}
         {workoutId && !workout.isPending && (!workout.data || workout.data.finishedAt) ? <Text accessibilityRole="alert" style={{ color: colors.amber, fontSize: 14 }}>{workout.data?.finishedAt ? "Эта тренировка уже завершена." : "Тренировка не найдена."}</Text> : null}
         {active.isError || workout.isError ? <Button title="Повторить загрузку" variant="secondary" icon={<Feather name="refresh-cw" size={18} color={colors.foreground} />} onPress={() => { void active.refetch(); if (workoutId) void workout.refetch(); }} /> : null}
-        {messages.map((message, i) => <View key={i} style={{ gap: 6, paddingLeft: 12, borderLeftWidth: 2, borderColor: message.role === "user" ? colors.primary : colors.success }}>
+        {messages.filter(message => message.role !== "user" || message.text !== automaticRequest).map((message, i) => <View key={i} style={{ gap: 6, paddingLeft: 12, borderLeftWidth: 2, borderColor: message.role === "user" ? colors.primary : colors.success }}>
           <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{message.role === "user" ? "Вы" : "Тренер"}</Text>
           <Text selectable style={{ color: colors.foreground, fontSize: 14, lineHeight: 21 }}>{message.text}</Text>
         </View>)}
@@ -111,7 +113,7 @@ export default function CoachSessionScreen() {
     </ScrollView>
     {coach.enabled && (workoutId || mode) ? <View style={{ padding: 16, paddingBottom: Math.max(insets.bottom, 12), gap: 10, borderTopWidth: 1, borderColor: colors.cardBorder }}>
       <TextInput accessibilityLabel="Сообщение тренеру" placeholder={workoutId ? "Что изменить сегодня?" : "Пожелания на сегодня"} placeholderTextColor={colors.mutedForeground} value={text} onChangeText={setText} maxLength={300} multiline textAlignVertical="top" editable={!coach.busy && !unavailable} style={{ minHeight: 48, maxHeight: 96, padding: 12, borderRadius: 6, borderWidth: 1, borderColor: colors.cardBorder, color: colors.foreground, backgroundColor: colors.card, fontSize: 14 }} />
-      <Button title={workoutId ? "Отправить тренеру" : mode === "month" ? "Составить месячный план" : "Составить тренировку"} icon={<Feather name="send" size={18} color={colors.primaryForeground} />} loading={coach.busy} disabled={coach.busy || unavailable || (workoutId != null && !text.trim())} onPress={send} />
+      <Button title={workoutId ? "Отправить тренеру" : coach.answer ? "Отправить уточнение" : mode === "month" ? "Составить месячный план" : "Составить тренировку"} icon={<Feather name="send" size={18} color={colors.primaryForeground} />} loading={coach.busy} disabled={coach.busy || unavailable || ((workoutId != null || !!coach.answer) && !text.trim())} onPress={send} />
     </View> : null}
   </KeyboardAvoidingView>;
 }

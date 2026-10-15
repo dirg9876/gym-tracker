@@ -110,3 +110,14 @@ test("month weights are concrete too, while office never reuses historical added
   const office = await request("/api/ai-coach/context", "POST", { task: "next_workout", trainingMode: "office" });
   assert.equal(validateCoachReply(reply(7), office).plan.exercises[0].targets[0].weightKg, 0);
 });
+
+test("starting with a later exercise stays there for its next calibrated set, not a skipped earlier exercise", async () => {
+  const ctx = await context(); const proposed = reply(1);
+  proposed.plan.exercises.push(...reply(3).plan.exercises);
+  const result = validateCoachReply(proposed, ctx);
+  const workout = await request("/api/ai-coach/apply-plan", "POST", { context: ctx, fingerprint: await coachFingerprint(ctx), plan: setCoachProposal(result, ctx) });
+  const next = await commit(workout.id, { exerciseId: 3, weightKg: 2.5, reps: 8, rir: 4, technique: "good" });
+  assert.equal(next.draft.exerciseId, 3);
+  assert.equal(next.draft.weightKg, 5);
+  assert.equal((await loadPlan(workout.id)).exercises[0].setTargets[0].weightKg, 20);
+});

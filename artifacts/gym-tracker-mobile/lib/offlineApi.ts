@@ -923,7 +923,8 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
       workout.lastDraftCommit = { revision: commitRevision, setId: set.id };
       if (plan) {
         const sets = state.sets.filter(set => set.workoutId === workout.id);
-        const next = plan.exercises.find(ex => completedTargets(ex, sets) < ex.sets);
+        const remaining = (ex: TemplateExercise) => completedTargets(ex, sets) < ex.sets;
+        const next = plan.exercises.find(ex => ex.exerciseId === set.exerciseId && remaining(ex)) ?? plan.exercises.find(remaining);
         if (next && (next.setTargets || next.exerciseId !== set.exerciseId)) workout.draft = makeWorkoutDraft(findExercise(state, next.exerciseId)!, plannedSet(next, completedTargets(next, sets)));
       }
     }
