@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ToastProvider } from "@/components/Toast";
+import { ReleaseNotesProvider } from "@/components/ReleaseNotes";
 import colors from "@/constants/colors";
 import { offlineApiFetch } from "@/lib/offlineApi";
 import { queryClient } from "@/lib/queryClient";
@@ -45,6 +46,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.dark.background }}>
         <SafeAreaProvider>
           <ToastProvider>
+            <ReleaseNotesProvider>
             <StatusBar style="light" backgroundColor={colors.dark.background} />
             <Stack
               screenOptions={{
@@ -68,6 +70,7 @@ export default function RootLayout() {
               <Stack.Screen name="history/[id]" />
               <Stack.Screen name="exercises/[id]" />
             </Stack>
+            </ReleaseNotesProvider>
           </ToastProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

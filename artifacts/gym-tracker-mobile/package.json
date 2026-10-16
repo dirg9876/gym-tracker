@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node --test scripts/*.test.mjs",
     "test:journey": "node scripts/simulate-progression.mjs",
+    "release:patch": "node scripts/release.mjs",
+    "release:check": "node scripts/release.mjs --check",
     "dev": "pnpm exec expo start --localhost",
     "build:android:apk": "pnpm dlx eas-cli@latest build --platform android --profile apk",
     "build": "node scripts/build.js",

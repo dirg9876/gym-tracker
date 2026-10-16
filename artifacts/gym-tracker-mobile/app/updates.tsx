@@ -6,13 +6,16 @@ import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useReleaseNotes } from "@/components/ReleaseNotes";
 import { useColors } from "@/hooks/useColors";
 import { coachRequest } from "@/lib/coachApi";
 import { exportProgress } from "@/lib/progressBackup";
+import release from "@/release.json";
 
 export default function UpdatesScreen() {
   const colors = useColors(); const insets = useSafeAreaInsets();
   const active = useGetActiveWorkout();
+  const openReleaseNotes = useReleaseNotes();
   const updates = Updates.useUpdates();
   const [busy, setBusy] = useState(false);
   const [downloaded, setReady] = useState(false);
@@ -29,8 +32,9 @@ export default function UpdatesScreen() {
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScreenHeader title="Обновления" />
     <ScrollView contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: Math.max(insets.bottom, 16) }}>
-      <Text style={{ color: colors.foreground, fontSize: 18, fontFamily: "Inter_700Bold" }}>Gym-Beam {Updates.runtimeVersion ?? "1.1.0"}</Text>
+      <Text style={{ color: colors.foreground, fontSize: 18, fontFamily: "Inter_700Bold" }}>Gym-Beam {release.version}</Text>
       <Text selectable style={{ color: colors.mutedForeground, fontSize: 12 }}>{Updates.isEmbeddedLaunch ? "Встроенная версия" : `Обновление ${Updates.updateId?.slice(0, 8) ?? "—"}`}</Text>
+      <Button title="Что нового" variant="secondary" icon={<Feather name="file-text" size={18} color={colors.foreground} />} onPress={openReleaseNotes} />
       {!Updates.isEnabled ? <Text style={{ color: colors.amber, fontSize: 14 }}>Обновления доступны в установленном APK, не в режиме разработки.</Text> : <>
         <Button title="Проверить обновления" icon={<Feather name="refresh-cw" size={18} color={colors.primaryForeground} />} loading={busy} disabled={busy} onPress={() => { void run(async () => {
           setMessage("Проверка обновлений...");

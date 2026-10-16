@@ -7,6 +7,8 @@ if (!$env:JAVA_HOME -or !$env:ANDROID_HOME) { throw 'Set JAVA_HOME (JDK 17) and 
 $env:CI = '1'; $env:NODE_ENV = 'production'
 Push-Location $root
 try {
+  pnpm run release:check
+  if ($LASTEXITCODE -ne 0) { throw 'Release version/notes check failed' }
   pnpm exec expo prebuild --platform android --no-install
   if ($LASTEXITCODE -ne 0) { throw 'Expo prebuild failed' }
   Copy-Item -LiteralPath $SigningKey -Destination (Join-Path $root 'android/app/debug.keystore') -Force
