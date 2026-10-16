@@ -11,7 +11,7 @@
 - После APK и первой OTA checksum прогресса полностью совпал с исходным. После всех QA `after-code6-qa.json`: исходные 2 тренировки/8 подходов/31 упражнение, нет активной тренировки, нет месячного плана или шаблонов; state/plans deepEqual кроме допустимых счётчиков созданных/удалённых QA-записей: nextWorkoutId6→8,nextSetId9→11. Старые копии не импортировались поверх прогресса.
 - Production-подключение восстановлено; на эмуляторе ИИ OFF/consent OFF, владелец в SecureStore. Публичные временные connection JSON удалены. Mock PID23028 остановлен, adb reverse снят, Gradle daemon остановлен; процессов/exec sessions, необходимых для задачи, не осталось. Эмулятор оставлен работающим.
 - Проверка 128 файлов APK/OTA на настоящий provider key и owner token PASS. Staging источников также проверен, секреты/копии/ключи/SDK/APK в Git не включены. Не относящаяся к коду служебная `.agents`-метадата и пользовательские attached_assets оставлены нетронутыми вне коммита.
-- APK публикуется как asset GitHub Release v1.1.0, не как Git blob. Ссылка: `https://github.com/dirg9876/gym-tracker/releases/download/v1.1.0/gym-beam-1.1.0.apk`; проверять наличие release через gh, если продолжение происходит до завершения публикации.
+- APK опубликован как asset GitHub Release v1.1.0, не как Git blob. `gh release view` подтвердил uploaded/95,697,305 байт. Ссылка: `https://github.com/dirg9876/gym-tracker/releases/download/v1.1.0/gym-beam-1.1.0.apk`. Release tag указывает на c60b31a; commit исходников функциональности 4f8bf35, master дополнен этим финальным подтверждением публикации.
 
 Ниже детали реализации и ранний журнал; текущие статусы выше имеют приоритет.
 
