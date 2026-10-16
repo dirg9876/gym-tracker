@@ -16,16 +16,18 @@ Current 1.1.1 work is implemented; publication/native verification are in progre
 - `app/updates.tsx`: version from release.json and manual "Что нового" button.
 - `scripts/release.mjs`: `pnpm release:check`; `pnpm release:patch --notes-file <JSON array> [--date YYYY-MM-DD]` increments patch and Android code together, validates notes/dates/alignment and preserves runtime. Does not publish automatically. Invalid input does not change files.
 - `scripts/release-notes.test.mjs`: acknowledgement, restart, new release, rollback, storage failure, progress import isolation, metadata and patch command checks.
-- `scripts/build-release.ps1` now validates release metadata before building. CI runs on master/main and checks metadata and mobile tests.
+- `scripts/build-release.ps1` now validates release metadata before building. Native Gradle stderr warnings are handled without aborting PowerShell; nonzero exit codes still fail the build. CI runs on master/main and checks metadata and mobile tests.
 - Root `AGENTS.md` records the user's permanent versioning/checkpoint preferences. Increment once per finished logical release, not once per individual file edit or debugging iteration.
 
 ## Verification So Far
 
 - Mobile 197/197 PASS (189 previous + 8 release checks).
 - Full workspace typecheck PASS.
+- API17 and Worker10 PASS: total224 tests.
+- APK1.1.1/code7 build PASS, stable certificate verified. File `artifacts/apk/verified/gym-beam-1.1.1.apk`, SHA256 `A4CB5D63C68395542AE7C0B709C561591C87DDB9634839576C845A498CC0BE0F`, arm64-v8a/x86_64. Initial PowerShell run aborted on an SDK XML stderr warning; corrected handling and retry finished successfully (835 tasks,31 executed).
 - Logs: `artifacts/apk/verified/release-1.1.1-tests.log`, `release-1.1.1-typecheck.log`.
 - No real AI calls or spending; production coach and its ledger are unchanged.
-- Pending: APK build, signing/secret checks, OTA publication and native popup/restart/layout/progress verification.
+- Pending: packaged secret checks, OTA publication and native popup/restart/layout/progress verification, GitHub APK upload.
 
 ## Publication And Environment
 

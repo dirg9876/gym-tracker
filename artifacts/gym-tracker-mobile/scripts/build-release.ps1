@@ -15,7 +15,12 @@ try {
   [IO.File]::WriteAllText((Join-Path $root 'android/local.properties'), 'sdk.dir=' + $env:ANDROID_HOME.Replace('\', '/'))
   Push-Location (Join-Path $root 'android')
   try {
-    .\gradlew.bat assembleRelease '-PreactNativeArchitectures=arm64-v8a,x86_64' '-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m' --max-workers=2 --console=plain
+    # Windows PowerShell turns redirected native stderr warnings into errors.
+    $previousErrorAction = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = 'Continue'
+      .\gradlew.bat assembleRelease '-PreactNativeArchitectures=arm64-v8a,x86_64' '-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m' --max-workers=2 --console=plain
+    } finally { $ErrorActionPreference = $previousErrorAction }
     if ($LASTEXITCODE -ne 0) { throw 'Android build failed' }
   } finally { Pop-Location }
 } finally { Pop-Location }
