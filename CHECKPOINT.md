@@ -1,7 +1,8 @@
 # Gym Tracker: checkpoint 2026-10-15
 
-Текущий этап: [CHECKPOINT_2026-10-16_CALIBRATION_UPDATES.md](CHECKPOINT_2026-10-16_CALIBRATION_UPDATES.md).
+Текущий этап ЗАВЕРШЁН: [CHECKPOINT_2026-10-16_CALIBRATION_UPDATES.md](CHECKPOINT_2026-10-16_CALIBRATION_UPDATES.md).
 APK6/1.1.0: конкретные веса и подборочный подход, один экран запуска ИИ, Expo Update, публикация master.
+205 tests PASS, APK/OTA native QA PASS, реальный прогресс сохранён, production restored/AI OFF.
 Статусы сборки, проверок и Git находятся в этом новом checkpoint. Ниже архив прежних этапов.
 
 Актуально, ЗАВЕРШЕНО: [CHECKPOINT_2026-10-16_AI_COACH.md](CHECKPOINT_2026-10-16_AI_COACH.md).

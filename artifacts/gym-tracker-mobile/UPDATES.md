@@ -21,6 +21,15 @@ Runtime: `1.1.0`, политика `appVersion`. При изменении nativ
 pnpm dlx eas-cli@16.32.0 update --channel production --platform android --environment production --message "Описание изменений" --non-interactive
 ```
 
+Если Windows/EAS CLI сообщает `spawn npx ENOENT`, проверенный путь с отдельной сборкой:
+
+```powershell
+pnpm exec expo export --platform android --output-dir dist
+pnpm dlx eas-cli@16.32.0 update --channel production --platform android --environment production --skip-bundler --input-dir dist --message "Описание изменений" --non-interactive
+```
+
+Не используйте старый `dist` для новых исходников. Публикация OTA выполняется разработчиком после проверок; сам Git push не публикует обновление. Получение уже опубликованной версии телефоном не требует включённого ПК.
+
 Не включайте платный тариф автоматически. Для личного устройства используйте доступную квоту EAS Update; при исчерпании квоты публикация должна остановиться, а встроенная/offline-версия продолжит работать.
 
 Подписанный локальный APK:
