@@ -27,6 +27,7 @@ Current 1.1.1 work is implemented; publication/native verification are in progre
 - APK1.1.1/code7 build PASS, stable certificate verified. File `artifacts/apk/verified/gym-beam-1.1.1.apk`, SHA256 `A4CB5D63C68395542AE7C0B709C561591C87DDB9634839576C845A498CC0BE0F`, arm64-v8a/x86_64. Initial PowerShell run aborted on an SDK XML stderr warning; corrected handling and retry finished successfully (835 tasks,31 executed).
 - Logs: `artifacts/apk/verified/release-1.1.1-tests.log`, `release-1.1.1-typecheck.log`.
 - No real AI calls or spending; production coach and its ledger are unchanged.
+- Enabling CI on master found a pre-existing Git ignore issue: mobile `android/` also hid `assets/android` security/backup XML. Anchored ignores to `/android/` and `/ios/`, added the three nonsecret XML source assets; local APK already used these same files. A clean checkout must contain them for prebuild and tests.
 - Pending: packaged secret checks, OTA publication and native popup/restart/layout/progress verification, GitHub APK upload.
 
 ## Publication And Environment
