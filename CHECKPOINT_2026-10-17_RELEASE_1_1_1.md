@@ -5,7 +5,7 @@
 User date 2026-10-17, Europe/Moscow. Workspace `C:\gymbeam`, Windows PowerShell.
 Latest request: release the current changes as 1.1.1, increase the app version for each subsequent completed change, and show an update description after updating.
 Previous request (categories, bodyweight volume, levels from any three exercises) is implemented in master commit `26337f5765b9420ed8e6a50c15296cbeefe0cf21`, pushed, OTA published and checked on the emulator. See `CHECKPOINT_2026-10-16_ANY_THREE_VOLUME.md` for that implementation.
-Current 1.1.1 work is implemented; publication/native verification are in progress. Do not report delivery as finished until the results below are updated.
+Current 1.1.1 release is COMPLETE: source saved in master, compatible OTA published/applied, signed APK published, native checks and progress comparison passed.
 
 ## Decisions And Files
 
@@ -28,17 +28,25 @@ Current 1.1.1 work is implemented; publication/native verification are in progre
 - Logs: `artifacts/apk/verified/release-1.1.1-tests.log`, `release-1.1.1-typecheck.log`.
 - No real AI calls or spending; production coach and its ledger are unchanged.
 - Enabling CI on master found a pre-existing Git ignore issue: mobile `android/` also hid `assets/android` security/backup XML. Anchored ignores to `/android/` and `/ios/`, added the three nonsecret XML source assets; local APK already used these same files. A clean checkout must contain them for prebuild and tests.
-- Pending: packaged secret checks, OTA publication and native popup/restart/layout/progress verification, GitHub APK upload.
+- Exact-credential scan PASS: all1357 uncompressed APK entries and122 fresh OTA export files checked against the private provider key and owner token without printing values. Neither is embedded. Staged source scan also passed.
+- GitHub CI PASS on app/source commit `f143111`: `https://github.com/dirg9876/gym-tracker/actions/runs/38968158093` (release check,197mobiletests,typecheck,web/API builds). Earlier two CI failures exposed the ignored XML files above; those were fixed, not bypassed.
+- Native oldAPK6/1.1.0 successfully downloaded/applied the new runtime1.1.0 OTA. Home displayed1.1.1 and the release window. Force-stop BEFORE dismissing showed unread notes again; after "Понятно", force-stop/relaunch did not repeat. Manual reopen, X and Android Back passed. 360x640dp screenshot and scroll checks passed; full1080x2400/density420 restored.
+- Matching-signed APK7/1.1.1 installed with `adb install -r` successfully; preserved acknowledgement and starts on Home. Updates displays1.1.1, not runtime1.1.0. All workout/profile/plan progress fields match the baseline exactly after both OTA and APK updates (only exportedAt/checksum ignored).
+- Evidence `artifacts/apk/verified/release-1.1.1-home-ota-popup.png`, `release-1.1.1-ota-restart-no-popup.png`, `release-1.1.1-small-popup.png`, `release-1.1.1-small-popup-scrolled.png`, `release-1.1.1-apk-updates.png`, `release-1.1.1-final-home.png`; corresponding UI XML files. Backups `after-release-1.1.1-ota.json` and `after-release-1.1.1-apk.json` both match `after-any-three-native-qa.json` completely, excluding export timestamp/checksum.
+- Production coach connection preserved, AI OFF; no paid calls, no local gateway or ADB reverse. ReactNativeJS/AndroidRuntime warning/error log empty. Gradle daemon stopped; build/export/publish/QA exec sessions closed. Emulator remains running on Home.
 
 ## Publication And Environment
 
 - Git branch master, origin `https://github.com/dirg9876/gym-tracker.git`; main is the older default, do not force-push/change it. Use `git -c credential.helper= -c credential.helper='!gh auth git-credential' push origin master` if default credential helper hangs. Commit identity dirg9876 / 273524213+dirg9876@users.noreply.github.com.
 - EAS account dirg9508, project gym-tracker-mobile / `dabd3128-415f-4a2f-8c73-3b0a52585149`, channel/branch production, runtime 1.1.0. Export with `pnpm exec expo export --platform android --output-dir dist`; then `pnpm dlx eas-cli@16.32.0 update --channel production --platform android --environment production --skip-bundler --input-dir dist --message "Gym-Beam 1.1.1" --non-interactive`. On Windows direct EAS bundling may fail with npx ENOENT; use the two commands above.
 - Previous applied OTA group `95479512-4428-484d-a87c-48eb525e2e18`, Android ID `01a1467f-4c18-72ca-91ec-92c4523905e1`, source26337f5.
+- Current published/applied OTA group `6a63401d-48e2-473c-9c2a-12d833a3a4f7`, Android ID `01a14691-93e2-767e-9c6e-e26308814e97`, native runtime1.1.0, source `0fd33426787334df592aaeda67497d616d3036bf` (EAS marked dirty because unrelated worktree changes existed; no secrets or unrelated files are bundled). Dashboard `https://expo.dev/accounts/dirg9508/projects/gym-tracker-mobile/updates/6a63401d-48e2-473c-9c2a-12d833a3a4f7`.
+- App implementation commit `4ae7379fc2b7928356ab2be2aeebbc7faf262c69`; build-warning handling0fd3342; clean-build XML/source fixf143111. All pushed to master. Final checkpoint/release documentation is a later docs-only commit in the same release, not an additional app change.
 - Node/pnpm PATH `C:\Users\Dirg9\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin`. JDK17 `C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot`; SDK `C:\gymbeam\artifacts\android-sdk`.
 - Emulator gymbeam_test / emulator-5554, Android36 x86_64,1080x2400,density420. ADB `artifacts/android-sdk/platform-tools/adb.exe`. UI helpers `artifacts/gym-tracker-mobile/scripts/android-ui-helpers.ps1`. Pause ticking timers for uiautomator; search footer buttons with bottom2350; wait for async navigation.
 - Build with mobile `scripts/build-release.ps1`; requires existing private `artifacts/apk/debug.keystore`. Certificate SHA256 `dfdcf05447cf713727f87f653a702649e4bf0ba8ff9598b294d0ac26a264814a`, key file SHA256 `5013232F77A47ECBF2980735F28B1CA0619A5D3F036657F4495F9CD84AD96AF2`. Never regenerate/re-sign with a different key or uninstall to get around mismatch. Gradle memory3GB/metaspace1GB/maxworkers2, architectures arm64-v8a,x86_64. APK assets go to GitHub Releases, never Git blobs.
 - Previous APK1.1.0/code6 at `https://github.com/dirg9876/gym-tracker/releases/download/v1.1.0/gym-beam-1.1.0.apk`.
+- Current GitHub Release `v1.1.1`, target master atf143111: `https://github.com/dirg9876/gym-tracker/releases/tag/v1.1.1`. APK `https://github.com/dirg9876/gym-tracker/releases/download/v1.1.1/gym-beam-1.1.1.apk`, 95,709,661bytes. GitHub asset digest matches local SHA256 above. User-facing notes `docs/releases/v1.1.1.md`. APK is not a Git blob.
 - Private `.env.coach`, `.coach-data`, `.cloud-deploy`, `.wrangler`, owner-token, connection file, signing keys, personal backups, SDK/AVD must never enter source/APK/OTA/logs. Scan exact private values in memory without printing. Local paid gateway remains blocked; Cloudflare Workers Free / production `https://gym-beam-coach.dirg9876.workers.dev` unchanged, no ledger reset or AI smoke calls.
 
 ## User Data And Remaining Work
@@ -47,4 +55,12 @@ Current emulator baseline `artifacts/apk/verified/after-any-three-native-qa.json
 Earlier `before-any-three-ota.json` has the same real workouts/sets/exercises1..31 but level0 and counters8/32/11. Compare originals deeply; allow only documented QA counters, deleted unused exercise32, level3 and level-up timestamp.
 Native category/level tests passed; known-mass bodyweight arithmetic was checked in isolated integration tests, not by guessing the user's weight. `.agents/agent_assets_metadata.toml`, mockup generated metadata and untracked attached_assets are unrelated user changes: leave alone.
 
-Next step: validate/build1.1.1, export fresh OTA and secret-scan; commit/push only scoped source/docs; publish production/runtime1.1.0; verify popup on oldAPK OTA, close/restart no repeat, manual reopen and small-screen layout; install matching-signed code7 with `adb install -r`, compare exported progress; upload APK to GitHub Release v1.1.1, update this checkpoint and CHECKPOINT.md with exact outcomes/IDs/URLs. Stop build/QA sessions; leave emulator on Home with AI off and production connection preserved.
+## Limitations And Next Step
+
+The current task is done. On the user's phone with OTA-capable1.1.0, use Updates > Check > Apply after finishing any active workout; no uninstall is needed. Physical phone/iOS testing was not performed. New APK uses the same local signing key as1.1.0/code6; the original earlier EAS APK may have a different signature. Never solve a signature mismatch by uninstalling without a verified external backup.
+
+Automatic notice deferral during a workout/recovery was tested at the unit policy boundary; native tests used a baseline with no active workout, without inventing user sets or resetting acknowledgement storage. Notes also show on first installation, since no previous read-version exists. A rollback to an older release must not reset the last-read newer version.
+
+Historical bodyweight sets without mass snapshots remain approximate until a real profile mass is supplied; do not invent it. The any-three algorithm still belongs to mobile offline storage, not the separate legacy web/server implementation. Other previously documented domain limitations remain in the categories checkpoint.
+
+For the NEXT completed app change, release1.1.2: prepare a JSON array of actual Russian notes, run mobile `pnpm release:patch --notes-file <file>` (updates app.json,Androidcode and release.json), test and `pnpm release:check`. Keep native runtime1.1.0 only for compatible changes. Publish a fresh export, verify the one-time window and backup comparison, update checkpoint, then publish compatible OTA and optional signed APK. Do not bump again for QA iterations or docs-only corrections within that release. Preserve all unrelated user worktree files and private production credentials.

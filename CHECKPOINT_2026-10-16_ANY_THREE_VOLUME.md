@@ -29,6 +29,12 @@
 - Native before backup: `artifacts/apk/verified/before-any-three-ota.json`;2готовые тренировки,8подходов,31упражнение,нет active,bodyWeightKg=null,level0,nextWorkoutId8,nextExerciseId32. Никакие прежние копии не импортировать поверх новых данных автоматически.
 - Следующий этап: commit/master, export OTA, скан секретов и публикация EAS production/runtime1.1.0, применение на emulator-5554, native UI категорий/уровней/истории, сравнение прогресса после очистки только QA-записей.
 
+## Завершение И Следующий Выпуск
+
+Этап завершён: master26337f5, OTA group95479512-4428-484d-a87c-48eb525e2e18 / Android01a1467f-4c18-72ca-91ec-92c4523905e1 опубликован и применён. Native UI категорий в быстром создании и каталожном редакторе, собственный вес0/подсказка массы, уровни по любым3, секунды/повторы проверены. Два готовых workout и8реальных sets/профиль/исходные упражнения1..31 сохранены. Временный пустой workout8 удалён, временное упражнение32 удалено без истории; счётчики9/33/11, уровень закономерно поднялся0→3. Итоговая копия `after-any-three-native-qa.json`; старую копию не восстанавливать поверх неё.
+
+Всё включено в ЗАВЕРШЁННЫЙ выпуск1.1.1: см. `CHECKPOINT_2026-10-17_RELEASE_1_1_1.md` с текущими OTA/APK/CI и проверками. Следующий шаг в старых разделах выше уже выполнен; актуальные ограничения и следующий номер версии находятся в новом checkpoint.
+
 ## Среда И Ограничения
 
 EAS project `dabd3128-415f-4a2f-8c73-3b0a52585149`, канал/ветка production, аккаунт dirg9508. Git origin `https://github.com/dirg9876/gym-tracker.git`, ветка master. Native-зависимости/app.json/signature не менялись, APK заново не требуется. Windows EAS fallback: `pnpm exec expo export --platform android --output-dir dist`, затем `pnpm dlx eas-cli@16.32.0 update --channel production --platform android --environment production --skip-bundler --input-dir dist --message "..." --non-interactive`.
