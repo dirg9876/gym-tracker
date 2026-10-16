@@ -60,7 +60,7 @@ registerHooks({
         export async function digestStringAsync(algorithm, value) { return createHash('sha256').update(value).digest('hex'); }
       `), shortCircuit: true,
     };
-    if (["./progressStorage", "./progressBackup", "./automaticBackupState", "./workoutMeasurement", "./workoutTemplates", "./workoutDraft", "./exerciseStandards", "./trainingCoach", "./aiCoachContext", "./aiCoachConnection", "./aiCoachCredentials", "./aiCoachPlan", "./coachApi", "./coachMonth"].includes(specifier)) return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
+    if (["./progressStorage", "./progressBackup", "./automaticBackupState", "./workoutMeasurement", "./workoutTemplates", "./workoutDraft", "./exerciseStandards", "./levelProgress", "./trainingCoach", "./aiCoachContext", "./aiCoachConnection", "./aiCoachCredentials", "./aiCoachPlan", "./coachApi", "./coachMonth"].includes(specifier)) return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
     return specifier === "@react-native-async-storage/async-storage"
       ? { url: mockStorage, shortCircuit: true }
       : nextResolve(specifier, context);

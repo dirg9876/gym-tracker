@@ -309,8 +309,8 @@ export default function ActiveWorkoutScreen() {
               selectedId={selectedExerciseId}
               disabled={formBusy || !planLoaded}
               onSelect={selectExercise}
-              onCreate={(name, muscleGroup) =>
-                createExercise.mutateAsync({ data: { name, muscleGroup } })
+              onCreate={(name, muscleGroup, equipment) =>
+                createExercise.mutateAsync({ data: { name, muscleGroup, equipment } })
               }
             />
             {selectedPlan ? <Text style={{ color: selectedSetCount >= selectedPlan.sets ? colors.success : colors.mutedForeground, fontSize: 12 }}>Подходы: {selectedSetCount} / {selectedPlan.sets}</Text> : null}
@@ -340,6 +340,9 @@ export default function ActiveWorkoutScreen() {
               min={1}
               chips={[1, 5, 8, 10, 12]}
             /></>}
+            {selectedExercise?.equipment === "bodyweight" && !timed ? profile?.bodyWeightKg != null
+              ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Вес тела: {formatKg(profile.bodyWeightKg)} · Общая нагрузка: {formatKg(profile.bodyWeightKg + weight)}</Text>
+              : <Button title="Указать вес тела" variant="ghost" disabled={formBusy} icon={<Feather name="user" size={16} color={colors.foreground} />} onPress={() => router.push("/levels")} /> : null}
             <View style={{ minHeight: 16 }}><Text accessibilityLiveRegion="polite" style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 16 }}>{draft.saving ? "Сохранение черновика..." : ""}</Text></View>
             {draft.error ? <View style={{ gap: 8 }}>
               <Text accessibilityRole="alert" style={{ color: colors.amber, fontSize: 13 }}>Изменения не сохранены. {draft.error}</Text>

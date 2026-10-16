@@ -6,6 +6,7 @@ import { storage, request } from "./testHarness.mjs";
 import { DISCIPLINES, msmcTarget, requiredStrengthKg } from "@workspace/level-data/strength";
 
 const { exportProgress, restoreProgress, parseProgressBackup } = await import("../lib/progressBackup.ts");
+const { targetForExerciseLevel } = await import("../lib/levelProgress.ts");
 const output = new URL("../../apk/journey/", import.meta.url);
 const start = Date.UTC(2023, 0, 2, 18);
 mock.timers.enable({ apis: ["Date"], now: start });
@@ -100,7 +101,10 @@ try {
   assert.equal(completeHistory.length, 624, "All older workouts must remain accessible beyond the first 50");
   assert.equal(completeHistory.at(-1).id, 1);
   assert.ok(previousLevel > 0 && previousLevel < 80, "Ordinary working weights cannot earn international-class targets");
-  assert.equal(previousLevel, 12, "The 100 kg squat has not reached the 112.5 kg III rank threshold");
+  const achieved = await request("/api/exercises");
+  const passes = level => achieved.filter(ex => ex.rankBest >= targetForExerciseLevel(ex.standard, ex.equipment, level)).length;
+  assert.ok(passes(previousLevel) >= 3, "Any three exercises qualify for the current level");
+  assert.ok(passes(previousLevel + 1) < 3, "Fewer than three exercises qualify for the next level");
   report.checks.push({kind: "realistic-plateau", level: previousLevel});
   assert.equal((await request("/api/stats/forecast")).estimatedDays, null);
   // Separate boundary fixtures; these are not average workouts or a training prescription.

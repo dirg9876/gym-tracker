@@ -4,8 +4,9 @@ import { coachContextSchema, coachMessagesSchema, coachProfileSchema, coachTaskS
 import { buildCoachContext } from "./aiCoachContext";
 import { monthProgress } from "./coachMonth";
 import { getLevelLabels } from "@workspace/level-data";
-import { DISCIPLINES, liftForExercise, msmcTarget, rankNorms, rankForLift, rankForGameLevel, requiredStrengthKg, strengthLevel, weightClass, type Lift } from "@workspace/level-data/strength";
-import { durationOf, isTimedExercise, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
+import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
+import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
+import { durationOf, isTimedExercise, setVolume, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
 import { AUTO_BACKUP_JOBS_KEY, PLAN_PREFIX, PROGRESS_KEY, isProgressKey, readProgressEntries, commitProgressTransaction, quarantineProgress, ProgressRecoveryRequired, withProgressLock } from "./progressStorage";
 import { validateStoredProgress } from "./progressBackup";
 import { readAutomaticBackupJobs, readAutomaticBackupSettings } from "./automaticBackupState";
@@ -70,6 +71,7 @@ type WorkoutRow = {
 };
 
 type SetRow = CoachFields & {
+  bodyWeightKg?: number;
   id: number;
   workoutId: number;
   exerciseId: number;
@@ -556,6 +558,8 @@ async function createExercise(state: OfflineState, body: RequestBody): Promise<E
   const name = String(body.name ?? "").trim();
   const muscleGroup = String(body.muscleGroup ?? "").trim();
   if (!name || !muscleGroup) throw httpError(400, "Заполни название и группу мышц");
+  if (name.length > 120 || muscleGroup.length > 60) throw httpError(400, "Название: до 120 символов, группа мышц: до 60.");
+  if (body.equipment !== undefined && !isEquipment(body.equipment)) throw httpError(400, "Неизвестная категория упражнения.");
 
   const row: ExerciseRow = {
     id: state.nextExerciseId++,
@@ -909,6 +913,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
     weightKg: Number(data.weightKg),
     reps: Number(data.reps),
     ...(timed ? { durationSeconds: data.durationSeconds } : {}),
+    ...(!timed && exercise.equipment === "bodyweight" && state.profile.bodyWeightKg != null ? { bodyWeightKg: state.profile.bodyWeightKg } : {}),
     ...coach.data,
     setType: "working",
     createdAt: new Date().toISOString(),
@@ -1003,6 +1008,8 @@ function summarizeWorkout(state: OfflineState, workout: WorkoutRow): WorkoutSumm
 function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
   const exercise = findExercise(state, set.exerciseId);
   const timed = isTimedExercise(exercise?.name ?? "") || set.durationSeconds != null;
+  const bodyweight = !timed && exercise?.equipment === "bodyweight";
+  const bodyWeightKg = bodyweight ? set.bodyWeightKg ?? state.profile.bodyWeightKg : null;
   return {
     id: set.id,
     workoutId: set.workoutId,
@@ -1011,7 +1018,8 @@ function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
     muscleGroup: exercise?.muscleGroup ?? "Другое",
     weightKg: timed ? 0 : set.weightKg,
     reps: timed ? 0 : set.reps,
-    volume: timed ? 0 : round(set.weightKg * set.reps),
+    volume: setVolume(set.weightKg, set.reps, exercise?.equipment, bodyWeightKg, timed),
+    ...(bodyweight ? { equipment: exercise!.equipment, ...(bodyWeightKg != null ? { bodyWeightKg } : {}), bodyWeightEstimated: set.bodyWeightKg == null, effectiveWeightKg: (bodyWeightKg ?? 0) + set.weightKg } : {}),
     ...(timed ? { durationSeconds: set.durationSeconds ?? 0 } : {}),
     ...(set.setType ? { setType: set.setType } : {}),
     ...(set.rir !== undefined ? { rir: set.rir } : {}),
@@ -1375,37 +1383,45 @@ async function getLevelForecast(state: OfflineState): Promise<LevelForecast> {
   };
 }
 
-async function getLevels(state: OfflineState): Promise<LevelsResponse> {
+async function getLevels(state: OfflineState): Promise<ExerciseLevelsResponse> {
   const bodyWeightKg = state.profile.bodyWeightKg ?? FALLBACK_BODY_WEIGHT_KG;
   const sex = state.profile.sex ?? "male";
   const levels = buildLevels(bodyWeightKg, sex);
-  const maxByExercise = getMaxWeightByExercise(state);
-  const results: Record<Lift, number> = { bench: 0, squat: 0, deadlift: 0 };
-  const disciplines = DISCIPLINES.map((discipline, index) => {
-    const matches = state.exercises.filter(item => item.name === discipline.name && item.equipment === "barbell" && !item.isCustom);
-    results[discipline.lift] = Math.max(0, ...matches.map(item => maxByExercise.get(item.id) ?? 0));
-    return { ...discipline, exerciseId: matches[0]?.id ?? -(index + 1) };
+  const observed = new Map<number, { kg: number; reps: number; seconds: number }>();
+  for (const set of getFinishedSets(state)) {
+    const best = observed.get(set.exerciseId) ?? { kg: 0, reps: 0, seconds: 0 };
+    best.kg = Math.max(best.kg, set.weightKg); best.reps = Math.max(best.reps, set.reps); best.seconds = Math.max(best.seconds, durationOf(set));
+    observed.set(set.exerciseId, best);
+  }
+  const candidates = state.exercises.filter(ex => !ex.deletedAt || observed.has(ex.id)).map(exercise => {
+    const standard = exerciseStandard(exercise, state.profile);
+    const best = observed.get(exercise.id);
+    const bestValue = standard.unit === "kg" ? best?.kg ?? 0 : standard.unit === "reps" ? best?.reps ?? 0 : best?.seconds ?? 0;
+    const achievedLevel = achievedExerciseLevel(standard, exercise.equipment, bestValue, !!best);
+    return { exercise, standard, bestValue, achievedLevel, maxWeightKg: best?.kg ?? 0, hasRecordedResult: !!best };
   });
-  const currentLevel = strengthLevel(results, bodyWeightKg, sex);
+  const currentLevel = levelFromExercises(candidates.map(row => ({ exerciseId: row.exercise.id, achievedLevel: row.achievedLevel })));
   if (state.confirmedLevel !== currentLevel) {
     state.confirmedLevel = currentLevel;
     state.levelUpAt = new Date().toISOString();
     await saveState(state);
   }
   const nextLevel = currentLevel >= 80 ? null : currentLevel + 1;
-  const mainStats = disciplines.map((item) => {
-    const mcKg = msmcTarget(item.lift, bodyWeightKg, sex);
+  const mainStats: LevelExerciseStat[] = candidates.map(({ exercise, standard, bestValue, achievedLevel, maxWeightKg, hasRecordedResult }) => {
+    const mcKg = standard.unit === "kg" ? standard.entries.at(-1)!.target : null;
+    const required = targetForExerciseLevel(standard, exercise.equipment, nextLevel ?? 80);
     return {
-      exerciseId: item.exerciseId, name: item.name, muscleGroup: item.muscleGroup,
-      equipment: "barbell" as const, maxWeightKg: results[item.lift],
-      multiplier: mcKg / bodyWeightKg,
-      requiredKgForNextLevel: nextLevel == null ? null : requiredStrengthKg(item.lift, nextLevel, bodyWeightKg, sex),
+      exerciseId: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup,
+      equipment: exercise.equipment, maxWeightKg, standard, bestValue, achievedLevel, hasRecordedResult,
+      archived: !!exercise.deletedAt,
+      requiredValueForNextLevel: nextLevel == null ? null : required,
+      multiplier: mcKg == null ? 0 : mcKg / bodyWeightKg,
+      requiredKgForNextLevel: nextLevel == null || standard.unit !== "kg" ? null : required,
       requiredKgPenaltyMultiplier: 1, autoPassedReason: null,
-      mcKg, mcSource: "classic" as const,
+      mcKg, mcSource: standard.official ? "classic" as const : standard.unit === "seconds" ? "time" as const : standard.unit === "reps" ? "bodyweight" as const : "coefficient" as const,
     };
-  });
-  const currentRank = disciplines.map(item => rankForLift(item.lift, results[item.lift], bodyWeightKg, sex))
-    .reduce((lowest, rank) => rank.tier < lowest.tier ? rank : lowest);
+  }).sort((a, b) => b.achievedLevel - a.achievedLevel || b.bestValue / Math.max(b.requiredValueForNextLevel ?? 1, 1) - a.bestValue / Math.max(a.requiredValueForNextLevel ?? 1, 1) || a.name.localeCompare(b.name, "ru"));
+  const currentRank = rankForGameLevel(currentLevel);
   return {
     levels, currentLevel, bestLevelEver: currentLevel, nextLevel, confirmedLevel: currentLevel,
     nextLevelPenaltyMultiplier: 1, nextLevelTonnage7dKgRequired: null,

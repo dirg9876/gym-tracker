@@ -35,6 +35,7 @@ const stateSchema = z.object({
   workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional() }).passthrough()),
   sets: z.array(z.object({
     id, workoutId: id, exerciseId: id, weightKg: amount,
+    bodyWeightKg: z.number().finite().min(20).max(500).optional(),
     reps: z.number().int().nonnegative().safe(), durationSeconds: id.max(86400).optional(), createdAt: date,
   }).extend(coachFieldsSchema.shape).passthrough().refine(set => set.durationSeconds != null ? set.reps === 0 && set.weightKg === 0 && set.rir == null : set.reps > 0)),
   profile: z.object({
@@ -100,6 +101,7 @@ function checkRelations(backup: Pick<ProgressBackup, "state" | "plans">) {
   for (const set of state.sets) {
     if (!exercises.has(set.exerciseId) || !workouts.has(set.workoutId) || !Number.isFinite(set.weightKg * set.reps)) invalid();
     if (set.durationSeconds != null && !isTimedExercise(state.exercises.find(exercise => exercise.id === set.exerciseId)!.name)) invalid();
+    if (set.bodyWeightKg != null && (set.durationSeconds != null || state.exercises.find(exercise => exercise.id === set.exerciseId)!.equipment !== "bodyweight")) invalid();
   }
   for (const program of state.customPrograms) {
     if (program.exercises.some((exercise) => !available.has(exercise.exerciseId))) invalid();

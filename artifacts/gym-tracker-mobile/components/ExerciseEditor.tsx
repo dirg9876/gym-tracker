@@ -6,13 +6,8 @@ import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Te
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { MuscleGroupPicker } from "./MuscleGroupPicker";
+import { EquipmentPicker } from "./EquipmentPicker";
 import { useColors } from "@/hooks/useColors";
-
-const EQUIPMENT: { value: Equipment; label: string }[] = [
-  { value: "barbell", label: "Штанга" }, { value: "dumbbell", label: "Гантели" },
-  { value: "bodyweight", label: "Собственный вес" }, { value: "machine", label: "Тренажёр" },
-  { value: "other", label: "Другое" },
-];
 
 export function ExerciseEditor({ exercise, onClose }: { exercise: Exercise | null; onClose: () => void }) {
   const colors = useColors();
@@ -20,12 +15,13 @@ export function ExerciseEditor({ exercise, onClose }: { exercise: Exercise | nul
   const client = useQueryClient();
   const [name, setName] = useState(exercise?.name ?? "");
   const [group, setGroup] = useState(exercise?.muscleGroup ?? "");
-  const [equipment, setEquipment] = useState<Equipment>(exercise?.equipment ?? "other");
+  const [equipment, setEquipment] = useState<Equipment | null>(exercise?.equipment ?? null);
   const create = useCreateExercise();
   const update = useUpdateExercise();
   const { data: exercises } = useListExercises();
   const busy = create.isPending || update.isPending;
   const save = async () => {
+    if (!equipment) return;
     try {
       const data = { name: name.trim(), muscleGroup: group.trim(), equipment };
       if (exercise) await update.mutateAsync({ exerciseId: exercise.id, data });
@@ -49,15 +45,10 @@ export function ExerciseEditor({ exercise, onClose }: { exercise: Exercise | nul
           <TextInput accessibilityLabel="Название упражнения" value={name} onChangeText={setName} maxLength={120} editable={!busy} style={inputStyle} />
           <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Группа мышц</Text>
           <MuscleGroupPicker value={group} onChange={setGroup} groups={exercises?.map(ex => ex.muscleGroup)} disabled={busy} />
-          <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Оборудование</Text>
-          <View accessibilityRole="radiogroup">
-            {EQUIPMENT.map(option => <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ checked: equipment === option.value }} disabled={busy} onPress={() => setEquipment(option.value)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Feather name={equipment === option.value ? "check-circle" : "circle"} size={20} color={equipment === option.value ? colors.primary : colors.mutedForeground} />
-              <Text style={{ color: colors.foreground, fontSize: 15 }}>{option.label}</Text>
-            </Pressable>)}
-          </View>
+          <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Категория</Text>
+          <EquipmentPicker value={equipment} onChange={setEquipment} disabled={busy} />
         </ScrollView>
-        <View style={{ flexShrink: 0 }}><Button title={exercise ? "Сохранить" : "Добавить упражнение"} icon={<Feather name={exercise ? "save" : "plus"} size={18} color={colors.primaryForeground} />} disabled={!name.trim() || !group.trim() || busy} loading={busy} onPress={save} /></View>
+        <View style={{ flexShrink: 0 }}><Button title={exercise ? "Сохранить" : "Добавить упражнение"} icon={<Feather name={exercise ? "save" : "plus"} size={18} color={colors.primaryForeground} />} disabled={!name.trim() || !group.trim() || !equipment || busy} loading={busy} onPress={save} /></View>
       </View>
     </KeyboardAvoidingView>
   </Modal>;

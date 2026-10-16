@@ -15,19 +15,20 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { Exercise, Profile } from "@workspace/api-client-react";
+import type { Equipment, Exercise, Profile } from "@workspace/api-client-react";
 import { exerciseRankHint } from "@/lib/rankHint";
 import { formatStandard } from "@/lib/exerciseStandards";
 
 import { useColors } from "@/hooks/useColors";
 import { Button } from "@/components/Button";
 import { MuscleGroupPicker } from "@/components/MuscleGroupPicker";
+import { EquipmentPicker } from "@/components/EquipmentPicker";
 
 type Props = {
   exercises: Exercise[];
   selectedId: number | undefined;
   onSelect: (id: number) => void;
-  onCreate?: (name: string, muscleGroup: string) => Promise<unknown>;
+  onCreate?: (name: string, muscleGroup: string, equipment: Equipment) => Promise<unknown>;
   profile?: Profile;
   disabled?: boolean;
 };
@@ -40,6 +41,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newGroup, setNewGroup] = useState("");
+  const [newEquipment, setNewEquipment] = useState<Equipment | null>(null);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const submitting = useRef(false);
@@ -80,14 +82,15 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
   const handleCreate = async () => {
     const name = newName.trim();
     const group = newGroup.trim();
-    if (!name || !group || !onCreate || submitting.current) return;
+    if (!name || !group || !newEquipment || !onCreate || submitting.current) return;
     submitting.current = true;
     setSaving(true);
     setCreateError(null);
     try {
-      await onCreate(name, group);
+      await onCreate(name, group, newEquipment);
       setNewName("");
       setNewGroup("");
+      setNewEquipment(null);
       setCreating(false);
       Keyboard.dismiss();
       setOpen(false);
@@ -169,6 +172,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
               <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: 12 }}>
                 <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
                   <TextInput
+                    accessibilityLabel="Название упражнения"
                     placeholder="Название"
                     placeholderTextColor={colors.mutedForeground}
                     value={newName}
@@ -179,6 +183,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
                   />
                 </View>
                 <MuscleGroupPicker value={newGroup} onChange={value => { setNewGroup(value); setCreateError(null); }} groups={exercises.map(ex => ex.muscleGroup)} disabled={saving} />
+                <EquipmentPicker value={newEquipment} onChange={value => { setNewEquipment(value); setCreateError(null); }} disabled={saving} />
                 {createError ? <Text accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 13 }}>{createError}</Text> : null}
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <Button
@@ -193,7 +198,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
                     title="Добавить"
                     size="md"
                     style={{ flex: 2 }}
-                    disabled={!newName.trim() || !newGroup.trim() || saving}
+                    disabled={!newName.trim() || !newGroup.trim() || !newEquipment || saving}
                     loading={saving}
                     onPress={handleCreate}
                   />

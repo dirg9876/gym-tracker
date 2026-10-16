@@ -1,5 +1,8 @@
 # Gym Tracker: checkpoint 2026-10-15
 
+Новый этап: [CHECKPOINT_2026-10-16_ANY_THREE_VOLUME.md](CHECKPOINT_2026-10-16_ANY_THREE_VOLUME.md).
+Категории при создании, тоннаж с массой тела и историческими снимками, уровни по любым3упражнениям. 216тестов и длительная симуляция PASS; текущие статусы OTA/nativeQA в этом новом checkpoint.
+
 Текущий этап ЗАВЕРШЁН: [CHECKPOINT_2026-10-16_CALIBRATION_UPDATES.md](CHECKPOINT_2026-10-16_CALIBRATION_UPDATES.md).
 APK6/1.1.0: конкретные веса и подборочный подход, один экран запуска ИИ, Expo Update, публикация master.
 205 tests PASS, APK/OTA native QA PASS, реальный прогресс сохранён, production restored/AI OFF.

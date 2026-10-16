@@ -98,7 +98,7 @@ test("level progress uses individual requirements, not the rounded 0 kg benchmar
   assert.equal(levels.levels[1].benchmarkKg, 0);
   assert.equal(dumbbell.requiredKgForNextLevel, 20);
   assert.equal(isExercisePassed(dumbbell, levels.bodyWeightKg), false);
-  assert.equal(isExercisePassed({ ...dumbbell, maxWeightKg: 20 }, levels.bodyWeightKg), true);
+  assert.equal(isExercisePassed({ ...dumbbell, maxWeightKg: 20, bestValue: 20, hasRecordedResult: true }, levels.bodyWeightKg), true);
 });
 
 test("tonnage alone cannot raise a level when main exercise requirements are missing", async () => {
