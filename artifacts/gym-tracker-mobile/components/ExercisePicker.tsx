@@ -113,7 +113,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
         style={({ pressed }) => [
           styles.trigger,
           {
-            backgroundColor: colors.muted,
+            backgroundColor: colors.card,
             borderColor: colors.cardBorder,
             opacity: pressed ? 0.8 : 1,
           },
@@ -126,7 +126,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
               <Text style={[styles.value, { color: colors.foreground }]}>
                 {selected.name}
               </Text>
-              <Text style={[styles.muscle, { color: colors.primary }]}>
+              <Text style={[styles.muscle, { color: colors.accent }]}>
                 {selected.muscleGroup}
               </Text>
             </View>
@@ -308,11 +308,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     minHeight: 56,
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    gap: 8,
+    gap: 12,
   },
   label: {
     fontSize: 11,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   value: {
-    fontSize: 17,
+    fontSize: 19,
     fontFamily: "Inter_700Bold",
   },
   muscle: {

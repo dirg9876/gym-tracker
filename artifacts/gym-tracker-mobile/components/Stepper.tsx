@@ -45,17 +45,17 @@ export function Stepper({
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: colors.mutedForeground }, compact && { minHeight: 28 }]}>{label}</Text>
-      <View style={[styles.row, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
+      <Text style={[styles.label, { color: colors.mutedForeground }, compact && { minHeight: 32 }]}>{label}</Text>
+      <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.cardBorder }, compact && { height: 68 }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Уменьшить: ${label}`}
-          accessibilityState={{ disabled: value <= min }}
+          accessibilityState={{ disabled: disabled || value <= min }}
           disabled={disabled || value <= min}
           onPress={() => tick(-step)}
           style={({ pressed }) => [
             styles.btn, compact && { width: 44 },
-            { backgroundColor: colors.card, opacity: value <= min ? 0.35 : pressed ? 0.6 : 1 },
+            { backgroundColor: pressed ? colors.secondary : "transparent", opacity: disabled || value <= min ? 0.35 : 1 },
           ]}
         >
           <Feather name="minus" size={22} color={colors.foreground} />
@@ -65,7 +65,7 @@ export function Stepper({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.value, { color: colors.foreground }]}
+            style={[styles.value, { color: colors.foreground }, compact && { fontSize: 30 }]}
           >
             {formatNumber(value)}
           </Text>
@@ -76,12 +76,12 @@ export function Stepper({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Увеличить: ${label}`}
-          accessibilityState={{ disabled: value >= max }}
+          accessibilityState={{ disabled: disabled || value >= max }}
           disabled={disabled || value >= max}
           onPress={() => tick(step)}
           style={({ pressed }) => [
             styles.btn, compact && { width: 44 },
-            { backgroundColor: colors.card, opacity: value >= max ? 0.35 : pressed ? 0.6 : 1 },
+            { backgroundColor: pressed ? colors.secondary : "transparent", opacity: disabled || value >= max ? 0.35 : 1 },
           ]}
         >
           <Feather name="plus" size={22} color={colors.foreground} />
@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 24,
     fontFamily: "Inter_700Bold",
+    fontVariant: ["tabular-nums"],
   },
   unit: {
     fontSize: 14,

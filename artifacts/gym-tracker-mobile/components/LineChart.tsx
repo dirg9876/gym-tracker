@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingHorizontal: 4,
   },
-  label: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0.5, textTransform: "uppercase" },
+  label: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0, textTransform: "uppercase" },
   lastValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
 });

@@ -46,11 +46,12 @@ export function ScreenHeader({ title, subtitle, onBack, onHome, right, variant =
         hitSlop={12}
         style={({ pressed }) => [
           styles.back,
-          { backgroundColor: colors.muted, opacity: pressed ? 0.6 : 1 },
+          { backgroundColor: colors.card, opacity: pressed ? 0.6 : 1 },
         ]}
       >
         <Feather name="chevron-left" size={22} color={colors.foreground} />
       </Pressable> : null}
+      {!showBack ? <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ width: 5, height: 24, backgroundColor: colors.accent }} /> : null}
       <View style={{ flex: 1, minWidth: 0 }}>
         {title ? (
           <Text style={[styles.title, { color: colors.foreground, fontSize: showBack ? 16 : 20 }]} numberOfLines={1}>

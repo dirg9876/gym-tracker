@@ -21,10 +21,11 @@ export function SetCard({ set, index, onDelete }: Props) {
     <View
       style={[
         styles.row,
-        { backgroundColor: colors.successSoft, borderColor: colors.successBorder },
+        { backgroundColor: colors.card, borderColor: colors.successBorder },
       ]}
     >
-      <View style={[styles.indexBadge, { backgroundColor: colors.card }]}>
+      <View style={[styles.indexBadge, { backgroundColor: colors.successSoft }]}>
+        <Feather name="check" size={12} color={colors.success} />
         <Text style={[styles.indexText, { color: colors.success }]}>{index}</Text>
       </View>
       <View style={{ flex: 1 }}>
@@ -62,26 +63,27 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
     borderWidth: 1,
     gap: 12,
   },
   indexBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 38,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
   },
   indexText: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: "Inter_700Bold",
   },
   value: {
     fontSize: 17,
     fontFamily: "Inter_700Bold",
+    fontVariant: ["tabular-nums"],
   },
   volume: {
     fontSize: 11,

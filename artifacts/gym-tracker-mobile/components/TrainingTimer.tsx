@@ -8,6 +8,8 @@ import { coachRequest } from "@/lib/coachApi";
 import { extendTimer, pauseTimer, remainingMs, resumeTimer, startTimer, type TrainingTimer as Timer } from "@/lib/trainingCoach";
 import { Button } from "./Button";
 import { Stepper } from "./Stepper";
+import { ProgressTrack } from "./ProgressTrack";
+import { countdownLabel } from "@/lib/displayProgress";
 
 export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled = false, onTransfer }: { workoutId: number; plank?: { id: number; name: string }; seconds: number; restSignal: number; disabled?: boolean; onTransfer: (timer: Timer) => Promise<{ timer: Timer | null; restSeconds: number }> }) {
   const colors = useColors();
@@ -54,7 +56,6 @@ export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled 
       Vibration.vibrate(200);
     }
   }, [timer, left]);
-  const totalSeconds = Math.ceil(left / 1000);
   const finishPlank = async () => {
     if (!timer || timer.kind !== "plank") return;
     const elapsed = Math.floor((timer.totalMs - remainingMs(timer)) / 1000);
@@ -69,7 +70,8 @@ export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled 
   };
   return <View style={{ gap: 8, paddingVertical: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.cardBorder }}>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <Text style={{ flex: 1, color: colors.foreground, fontSize: 15, fontFamily: "Inter_700Bold" }}>Таймер</Text>
+      <Feather name="clock" size={16} color={timer && left === 0 ? colors.success : colors.accent} />
+      <Text style={{ flex: 1, color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Таймер</Text>
       {!timer && !isLoading && !isError ? <Pressable accessibilityRole="button" accessibilityLabel={`Начать отдых: ${restSeconds} с`} disabled={disabled || mutation.isPending} onPress={() => replace(startTimer("rest", restSeconds))} style={{ flexShrink: 1, minHeight: 48, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 8 }}><Feather name="play" size={18} color={colors.primary} /><Text style={{ color: colors.foreground, fontSize: 13 }}>Отдых · {restSeconds} с</Text></Pressable> : null}
       <Pressable accessibilityRole="button" accessibilityLabel="Настроить длительность отдыха" accessibilityState={{ expanded: configure }} onPress={() => setConfigure(value => !value)} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name="sliders" size={18} color={colors.mutedForeground} /></Pressable>
     </View>
@@ -77,13 +79,14 @@ export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled 
       {timer ? <>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{timer.kind === "rest" ? "Отдых" : "Удержание"}{timer.endsAt == null && left > 0 ? " · пауза" : ""}</Text>
-            <Text accessibilityLabel="Осталось времени" style={{ color: left === 0 ? colors.success : colors.foreground, fontSize: 28, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{Math.floor(totalSeconds / 60)}:{String(totalSeconds % 60).padStart(2, "0")}</Text>
+            <Text style={{ color: left === 0 ? colors.success : colors.mutedForeground, fontSize: 12 }}>{timer.kind === "rest" ? left === 0 ? "Отдых завершён" : "Отдых" : "Удержание"}{timer.endsAt == null && left > 0 ? " · пауза" : ""}</Text>
+            <Text accessibilityLabel="Осталось времени" style={{ color: left === 0 ? colors.success : colors.foreground, fontSize: 36, lineHeight: 44, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{countdownLabel(left)}</Text>
           </View>
           {timer.kind === "rest" ? <Pressable accessibilityRole="button" accessibilityLabel="Добавить 30 секунд отдыха" disabled={disabled || mutation.isPending || timer.totalMs > 86370000} onPress={() => mutation.mutate(extendTimer(timer, 30))} style={{ minWidth: 48, minHeight: 48, alignItems: "center", justifyContent: "center" }}><Feather name="plus" size={18} color={colors.foreground} /><Text style={{ color: colors.foreground, fontSize: 12 }}>30 с</Text></Pressable> : null}
           {left > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={timer.endsAt == null ? "Продолжить таймер" : "Пауза таймера"} disabled={disabled || mutation.isPending} onPress={() => mutation.mutate(timer.endsAt == null ? resumeTimer(timer) : pauseTimer(timer))} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name={timer.endsAt == null ? "play" : "pause"} size={22} color={colors.primary} /></Pressable> : null}
           <Pressable accessibilityRole="button" accessibilityLabel="Сбросить таймер" disabled={disabled || mutation.isPending} onPress={() => mutation.mutate(null)} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name="x" size={22} color={colors.mutedForeground} /></Pressable>
         </View>
+        <ProgressTrack value={timer.totalMs - left} total={timer.totalMs} label={left === 0 ? "Таймер завершён" : timer.kind === "rest" ? "Ход отдыха" : "Ход удержания"} color={left === 0 ? colors.success : colors.accent} />
         {timer.kind === "plank" ? <Button title="Перенести время в подход" variant="secondary" disabled={disabled || mutation.isPending || timer.totalMs - left < 1000} onPress={finishPlank} icon={<Feather name="check" size={16} color={colors.foreground} />} /> : null}
       </> : null}
       {configure ? <View style={{ gap: 12 }}>

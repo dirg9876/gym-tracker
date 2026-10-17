@@ -50,19 +50,22 @@ export default function BrandScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.toolbar}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`ИИ-тренер: ${aiEnabled ? "включён" : "выключен"}`} onPress={() => router.push("/coach")} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name="zap" size={23} color={aiEnabled ? colors.success : colors.mutedForeground} /></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Обновления приложения" onPress={() => router.push("/updates")} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}><Feather name="download-cloud" size={23} color={colors.mutedForeground} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={`ИИ-тренер: ${aiEnabled ? "включён" : "выключен"}`} onPress={() => router.push("/coach")} onLongPress={() => toast.show("info", `ИИ-тренер ${aiEnabled ? "включён" : "выключен"}`)} style={[styles.coach, { borderColor: aiEnabled ? colors.successBorder : colors.cardBorder, backgroundColor: aiEnabled ? colors.successSoft : colors.card }]}><Feather name="zap" size={19} color={aiEnabled ? colors.success : colors.mutedForeground} /><Text style={{ color: aiEnabled ? colors.success : colors.mutedForeground, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>ИИ-тренер</Text></Pressable>
+        <View style={{ flexDirection: "row", gap: 4 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Обновления приложения" onPress={() => router.push("/updates")} onLongPress={() => toast.show("info", "Обновления приложения")} style={styles.backup}><Feather name="download-cloud" size={21} color={colors.accent} /></Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Резервная копия"
           onPress={() => router.push("/backup")}
+          onLongPress={() => toast.show("info", "Резервная копия")}
           style={({ pressed }) => [styles.backup, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Feather name="hard-drive" size={23} color={colors.mutedForeground} />
+          <Feather name="hard-drive" size={21} color={colors.mutedForeground} />
         </Pressable>
+        </View>
       </View>
       <View style={styles.artwork} onLayout={({ nativeEvent: { layout } }) => {
-        setArtworkSize(Math.max(0, Math.min(layout.width - 32, (layout.height - 100) * 1254 / 880, 480)));
+        setArtworkSize(Math.max(0, Math.min(layout.width - 32, (layout.height - 112) * 1254 / 880, 440)));
       }}>
         <View style={{ width: artworkSize, height: artworkSize * 880 / 1254, overflow: "hidden" }}>
           <Image
@@ -73,12 +76,11 @@ export default function BrandScreen() {
             style={{ width: artworkSize, height: artworkSize }}
           />
         </View>
-        <Text accessibilityLabel="Gym-Beam" style={styles.wordmark} adjustsFontSizeToFit numberOfLines={1}>
-          GYM-<Text style={{ color: "#FF8A1F" }}>BEAM</Text>
-        </Text>
+        <Text accessibilityLabel="Gym-Beam" adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={1} maxFontSizeMultiplier={1.2} style={styles.wordmark}>GYM-<Text style={{ color: colors.primary }}>BEAM</Text></Text>
+        <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ flexDirection: "row", gap: 4, height: 5, marginTop: 4 }}><View style={{ width: 56, backgroundColor: colors.accent }} /><View style={{ width: 24, backgroundColor: colors.accent }} /><View style={{ width: 8, backgroundColor: colors.primary }} /></View>
       </View>
       <View style={styles.commands}>
-        {aiEnabled ? <Button title={workout ? "Продолжить с ИИ-тренером" : "Начать тренировку с ИИ"} size="lg" variant="secondary" icon={<Feather name="zap" size={21} color={colors.success} />} disabled={active.isPending || active.isError || createWorkout.isPending} onPress={() => router.push(workout ? `/coach-session?workoutId=${workout.id}` : "/coach-session")} /> : null}
+        {aiEnabled ? <Button title={workout ? "Продолжить с ИИ-тренером" : "Начать тренировку с ИИ"} size="lg" variant="secondary" style={{ borderColor: colors.successBorder, backgroundColor: colors.successSoft }} textStyle={{ color: colors.success }} icon={<Feather name="zap" size={21} color={colors.success} />} disabled={active.isPending || active.isError || createWorkout.isPending} onPress={() => router.push(workout ? `/coach-session?workoutId=${workout.id}` : "/coach-session")} /> : null}
         <Button
           title={workout ? "Продолжить тренировку" : "Начать тренировку"}
           size="lg"
@@ -97,9 +99,10 @@ export default function BrandScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#000000" },
   toolbar: { height: 56, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  coach: { minHeight: 44, paddingHorizontal: 12, flexDirection: "row", gap: 8, alignItems: "center", borderWidth: 1, borderRadius: 6 },
   backup: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  artwork: { flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 24, gap: 16 },
+  artwork: { flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", paddingVertical: 12 },
   commands: { width: "100%", maxWidth: 480, alignSelf: "center", paddingHorizontal: 16, paddingBottom: 20, gap: 10 },
   activeCaption: { fontSize: 12, lineHeight: 17, fontFamily: "Inter_400Regular", textAlign: "center" },
-  wordmark: { color: "#FFFFFF", fontSize: 36, lineHeight: 46, fontFamily: "Inter_700Bold", fontStyle: "italic", textAlign: "center", maxWidth: "90%" },
+  wordmark: { fontSize: 42, lineHeight: 56, fontFamily: "Inter_900Black_Italic", color: "#F4F6F8", textAlign: "center", maxWidth: "90%", marginTop: 16, paddingHorizontal: 8 },
 });

@@ -10,6 +10,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  useWindowDimensions,
 } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
@@ -48,6 +49,7 @@ export function Button({
   fullWidth,
 }: Props) {
   const colors = useColors();
+  const { fontScale } = useWindowDimensions();
 
   const handlePress = () => {
     if (disabled || loading) return;
@@ -87,22 +89,17 @@ export function Button({
       testID={testID}
       style={({ pressed }) => [
         {
-          height: sizeStyles.height,
+          height: Math.ceil(sizeStyles.height * Math.max(1, Math.min(fontScale, 1.5))),
           paddingHorizontal: sizeStyles.paddingHorizontal,
           borderRadius: sizeStyles.radius,
           backgroundColor: variantBg,
+          borderWidth: 1,
+          borderColor: variant === "secondary" ? colors.cardBorder : "transparent",
           opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
           transform: [{ scale: pressed && !disabled ? 0.98 : 1 }],
           width: fullWidth ? "100%" : undefined,
         },
         styles.base,
-        variant === "primary" && {
-          shadowColor: colors.primary,
-          shadowOpacity: 0.12,
-          shadowRadius: 4,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: 2,
-        },
         style,
       ]}
     >
@@ -115,6 +112,7 @@ export function Button({
             <Text
               adjustsFontSizeToFit
               minimumFontScale={0.75}
+              maxFontSizeMultiplier={1.5}
               numberOfLines={2}
               style={[
                 {

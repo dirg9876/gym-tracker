@@ -261,6 +261,7 @@ export default function ActiveWorkoutScreen() {
           paddingVertical: 10,
           borderBottomWidth: 1,
           borderBottomColor: colors.cardBorder,
+          backgroundColor: colors.card,
         }}
       >
         {[
@@ -273,7 +274,7 @@ export default function ActiveWorkoutScreen() {
             <Text
               style={{
                 color: colors.mutedForeground,
-                fontSize: 9,
+                fontSize: 10,
                 fontFamily: "Inter_700Bold",
                 letterSpacing: 0,
                 textTransform: "uppercase",
@@ -282,11 +283,15 @@ export default function ActiveWorkoutScreen() {
               {s.l}
             </Text>
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.65}
               style={{
-                color: colors.foreground,
-                fontSize: 13,
+                color: s.l === "Подходы" ? colors.accent : colors.foreground,
+                fontSize: 17,
                 fontFamily: "Inter_700Bold",
-                marginTop: 2,
+                fontVariant: ["tabular-nums"],
+                marginTop: 4,
               }}
             >
               {s.v}
@@ -319,14 +324,18 @@ export default function ActiveWorkoutScreen() {
             />
             {selectedExerciseId ? <PreviousExerciseSets key={selectedExerciseId} exerciseId={selectedExerciseId} /> : null}
             {selectedPlan ? <Text style={{ color: selectedSetCount >= selectedPlan.sets ? colors.success : colors.mutedForeground, fontSize: 12 }}>Подходы: {selectedSetCount} / {selectedPlan.sets}</Text> : null}
-            {rankHint && profile ? <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
-              <Feather name="award" size={16} color={colors.primary} />
+            {rankHint && profile ? <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 8, alignItems: "flex-start", paddingVertical: 6 }}>
+              <Feather name="award" size={16} color={colors.accent} />
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>
+                <Text style={{ color: colors.accent, fontSize: 12, lineHeight: 18, fontFamily: "Inter_500Medium" }}>
                   {rankHint.standard.official ? "Спортивная цель · " : "Расчётный ориентир · "}{rankHint.rank.label}: {formatStandard(rankHint.target, rankHint.standard.unit)}{rankHint.atMaximum ? " · выбранное значение не ниже цели" : ` · ещё ${formatStandard(rankHint.remaining, rankHint.standard.unit)}`}
                 </Text>
               </View>
             </View> : null}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <Text style={{ color: colors.mutedForeground, fontSize: 11, fontFamily: "Inter_600SemiBold" }}>СЛЕДУЮЩИЙ ПОДХОД</Text>
+              {selectedExerciseId ? <Text style={{ color: colors.accent, fontSize: 13, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>#{workout.sets.filter(set => set.exerciseId === selectedExerciseId).length + 1}</Text> : null}
+            </View>
             {timed ? <Stepper label="Время удержания" unit="с" value={seconds} disabled={formBusy || !selectedExercise} onChange={value => changeDraft({ durationSeconds: value })} step={5} min={1} max={86400} chips={[15, 30, 45, 60, 90]} /> : <>
             <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}><View style={{ flex: 1, minWidth: 0 }}><Stepper compact
               label={assisted ? "Противовес (кг)" : weightLabel(selectedExercise?.equipment)}
@@ -345,7 +354,7 @@ export default function ActiveWorkoutScreen() {
               step={1}
               min={1}
             /></View></View>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>{weightPresets(selectedExercise, profile?.bodyWeightKg).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={`${assisted ? "Противовес" : weightLabel(selectedExercise?.equipment)}: ${value}`} accessibilityState={{ selected: weight === value, disabled: formBusy || !selectedExercise }} disabled={formBusy || !selectedExercise} onPress={() => changeDraft({ weightKg: value })} style={{ minWidth: 44, minHeight: 36, paddingHorizontal: 10, alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: weight === value ? colors.primarySoft : colors.muted, borderWidth: 1, borderColor: weight === value ? colors.primary : colors.cardBorder }}><Text style={{ color: weight === value ? colors.primary : colors.mutedForeground, fontSize: 13 }}>{formatNumber(value)}</Text></Pressable>)}</View>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>{weightPresets(selectedExercise, profile?.bodyWeightKg).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={`${assisted ? "Противовес" : weightLabel(selectedExercise?.equipment)}: ${value}`} accessibilityState={{ selected: weight === value, disabled: formBusy || !selectedExercise }} disabled={formBusy || !selectedExercise} onPress={() => changeDraft({ weightKg: value })} style={{ minWidth: 44, minHeight: 36, paddingHorizontal: 10, alignItems: "center", justifyContent: "center", borderRadius: 4, backgroundColor: weight === value ? colors.primary : colors.card, borderWidth: 1, borderColor: weight === value ? colors.primary : colors.cardBorder }}><Text style={{ color: weight === value ? colors.primaryForeground : colors.mutedForeground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>{formatNumber(value)}</Text></Pressable>)}</View>
             </>}
             {selectedExercise?.equipment === "dumbbell" && !timed ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{selectedExercise.dumbbellCount === 2 ? `Две гантели · суммарно ${formatKg(weight * 2)}` : "Одна гантель"}</Text> : null}
             {(selectedExercise?.equipment === "bodyweight" || assisted) && !timed ? profile?.bodyWeightKg != null
@@ -372,7 +381,7 @@ export default function ActiveWorkoutScreen() {
                 await draft.save(makeWorkoutDraft(exercise, { weightKg: set.weightKg!, reps: set.reps, ...(set.durationSeconds == null ? {} : { durationSeconds: set.durationSeconds }) }, draft.value?.exerciseId === set.exerciseId ? draft.value : undefined), { revision: context.focus.draftRevision, coachFingerprint: answer.fingerprint });
               }} /> : aiConnection.data?.enabled ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Противовес подбирается вручную; ИИ не меняет его.</Text> : null}
               <Pressable accessibilityRole="button" accessibilityState={{ expanded: showAssessment }} accessibilityLabel="Оценка подхода" onPress={() => setShowAssessment(value => !value)} style={{ minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Feather name="activity" size={18} color={colors.mutedForeground} />
+                <Feather name="activity" size={18} color={technique === "good" ? colors.success : technique === "breakdown" ? colors.amber : colors.mutedForeground} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Оценка подхода</Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{!timed ? `RIR: ${rir == null ? "не отмечен" : rir === 5 ? "5+" : rir} · ` : ""}Техника: {technique === "good" ? "сохранена" : technique === "breakdown" ? "нарушалась" : "не отмечена"}</Text>
