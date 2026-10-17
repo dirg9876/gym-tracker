@@ -49,7 +49,9 @@ function Export-Backup([string]$filename) {
     Tap-Text 'GymTracker'
   }
   Tap-Text 'USE THIS FOLDER'
-  Tap-Text 'ALLOW'
+  $permission = Read-Ui
+  $allow = $permission.SelectSingleNode('//node[@text="ALLOW"]')
+  if ($allow) { Tap-Node $allow }
   $ui = Read-Ui
   $success = [regex]::Unescape('\u041a\u043e\u043f\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430')
   if (!$ui.SelectSingleNode("//node[@text='$success']")) { throw 'Backup not confirmed' }

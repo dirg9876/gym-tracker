@@ -1,18 +1,17 @@
 import Feather from "@expo/vector-icons/Feather";
 import React, { useMemo, useRef, useState } from "react";
 import {
-  FlatList,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { FlatList, GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Equipment, Exercise, Profile } from "@workspace/api-client-react";
@@ -23,12 +22,15 @@ import { useColors } from "@/hooks/useColors";
 import { Button } from "@/components/Button";
 import { MuscleGroupPicker } from "@/components/MuscleGroupPicker";
 import { EquipmentPicker } from "@/components/EquipmentPicker";
+import { EquipmentSettingsFields } from "@/components/EquipmentSettingsFields";
+import type { EquipmentSettings } from "@/lib/equipmentSettings";
+import { isTimedExercise } from "@/lib/workoutMeasurement";
 
 type Props = {
   exercises: Exercise[];
   selectedId: number | undefined;
   onSelect: (id: number) => void;
-  onCreate?: (name: string, muscleGroup: string, equipment: Equipment) => Promise<unknown>;
+  onCreate?: (name: string, muscleGroup: string, equipment: Equipment, settings: EquipmentSettings) => Promise<unknown>;
   profile?: Profile;
   disabled?: boolean;
 };
@@ -42,6 +44,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
   const [newName, setNewName] = useState("");
   const [newGroup, setNewGroup] = useState("");
   const [newEquipment, setNewEquipment] = useState<Equipment | null>(null);
+  const [newSettings, setNewSettings] = useState<EquipmentSettings>({ weightStepKg: 2.5 });
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const submitting = useRef(false);
@@ -87,10 +90,11 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
     setSaving(true);
     setCreateError(null);
     try {
-      await onCreate(name, group, newEquipment);
+      await onCreate(name, group, newEquipment, { weightStepKg: newSettings.weightStepKg, ...(newEquipment === "machine" ? { loadMode: newSettings.loadMode ?? "weight" } : {}), ...(newEquipment === "dumbbell" && !isTimedExercise(name) ? { dumbbellCount: newSettings.dumbbellCount ?? 1 } : {}) });
       setNewName("");
       setNewGroup("");
       setNewEquipment(null);
+      setNewSettings({ weightStepKg: 2.5 });
       setCreating(false);
       Keyboard.dismiss();
       setOpen(false);
@@ -139,11 +143,13 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
         transparent
         onRequestClose={() => { if (!submitting.current) setOpen(false); }}
       >
-        <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <Pressable style={styles.backdrop} disabled={saving} onPress={() => setOpen(false)} />
           <View
             style={[
               styles.sheet,
+              creating && { height: "92%" },
               {
                 backgroundColor: colors.background,
                 borderColor: colors.cardBorder,
@@ -169,7 +175,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
             </View>
 
             {creating ? (
-              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: 12 }}>
+              <ScrollView style={{ flex: 1, minHeight: 0 }} nestedScrollEnabled keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: 12, paddingBottom: 16 }}>
                 <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
                   <TextInput
                     accessibilityLabel="Название упражнения"
@@ -184,6 +190,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
                 </View>
                 <MuscleGroupPicker value={newGroup} onChange={value => { setNewGroup(value); setCreateError(null); }} groups={exercises.map(ex => ex.muscleGroup)} disabled={saving} />
                 <EquipmentPicker value={newEquipment} onChange={value => { setNewEquipment(value); setCreateError(null); }} disabled={saving} />
+                {newEquipment && !isTimedExercise(newName) ? <EquipmentSettingsFields equipment={newEquipment} value={newSettings} onChange={setNewSettings} disabled={saving} /> : null}
                 {createError ? <Text accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 13 }}>{createError}</Text> : null}
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <Button
@@ -290,6 +297,7 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
             )}
           </View>
         </KeyboardAvoidingView>
+        </GestureHandlerRootView>
       </Modal>
     </>
   );

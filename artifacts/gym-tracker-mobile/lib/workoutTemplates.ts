@@ -126,7 +126,8 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
   const easy = performed.technique === "good" && performed.rir >= 4;
   const min = minimumWeight(exercise.equipment);
   const bodyweight = exercise.equipment === "bodyweight" && performed.weightKg === 0;
-  const weightKg = bodyweight ? 0 : Math.max(min, performed.weightKg + (difficult ? -2.5 : easy ? 2.5 : 0));
+  const step = exercise.weightStepKg ?? 2.5;
+  const weightKg = bodyweight ? 0 : Math.max(min, performed.weightKg + (difficult ? -step : easy ? step : 0));
   const reduceReps = difficult && weightKg === performed.weightKg;
   const reps = Math.max(1, performed.reps + (reduceReps ? -Math.max(1, Math.ceil(performed.reps / 4)) : bodyweight && easy ? 1 : 0));
   const targets = exercise.setTargets?.map((set, i) => i < completed ? set : { ...set, weightKg, reps });

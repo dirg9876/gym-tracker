@@ -2,7 +2,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { useGetActiveWorkout } from "@workspace/api-client-react";
 import { usePathname } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -58,6 +59,7 @@ export function ReleaseNotesProvider({ children }: { children: ReactNode }) {
   return <ReleaseNotesContext.Provider value={open}>
     {children}
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => { void close(); }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={[styles.backdrop, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         <View accessibilityViewIsModal style={[styles.dialog, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.header}>
@@ -80,6 +82,7 @@ export function ReleaseNotesProvider({ children }: { children: ReactNode }) {
           </View>
         </View>
       </View>
+      </GestureHandlerRootView>
     </Modal>
   </ReleaseNotesContext.Provider>;
 }

@@ -26,14 +26,21 @@ export function validDraftForExercise(draft: WorkoutDraft, exercise: { id: numbe
     && (!draft.sourceTimer || (draft.sourceTimer.kind === "plank" && draft.sourceTimer.exerciseId === draft.exerciseId && draft.durationSeconds != null));
 }
 
-export function makeWorkoutDraft(exercise: { id: number; name: string; equipment: Equipment }, target?: { weightKg: number; reps: number; durationSeconds?: number }): WorkoutDraft {
+export function makeWorkoutDraft(exercise: { id: number; name: string; equipment: Equipment }, target?: { weightKg: number; reps: number; durationSeconds?: number }, assessment?: { rir?: number | null; technique?: "good" | "breakdown" | null }): WorkoutDraft {
   return workoutDraftSchema.parse({
     exerciseId: exercise.id,
     ...(isTimedExercise(exercise.name)
       ? { weightKg: 0, reps: 0, durationSeconds: target?.durationSeconds ?? 30 }
       : { weightKg: target?.weightKg ?? (exercise.equipment === "bodyweight" ? 0 : exercise.equipment === "dumbbell" ? 10 : 20), reps: target?.reps ?? 10 }),
-    rir: null, technique: null,
+    rir: isTimedExercise(exercise.name) ? null : assessment?.rir ?? null, technique: assessment?.technique ?? null,
   });
+}
+
+export function selectWorkoutDraft(exercise: { id: number; name: string; equipment: Equipment }, target: { weightKg: number; reps: number; durationSeconds?: number } | undefined, current: WorkoutDraft | null, sets: Array<{ exerciseId: number; weightKg: number; reps: number; durationSeconds?: number; rir?: number | null; technique?: "good" | "breakdown" | null }>): WorkoutDraft {
+  if (current?.exerciseId === exercise.id) return current;
+  const previous = sets.slice().reverse().find(set => set.exerciseId === exercise.id);
+  const recordedTarget = isTimedExercise(exercise.name) && !previous?.durationSeconds ? undefined : previous;
+  return makeWorkoutDraft(exercise, target ?? recordedTarget, previous);
 }
 
 export const sameTimer = (a: z.infer<typeof timerSchema>, b: z.infer<typeof timerSchema>) => JSON.stringify(timerSchema.parse(a)) === JSON.stringify(timerSchema.parse(b));

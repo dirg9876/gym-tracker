@@ -1,6 +1,7 @@
 import { coachContextSchema, defaultCoachProfile, personalCoachProfile, type CoachContext, type CoachMessages, type CoachTask } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { isTimedExercise } from "./workoutMeasurement";
+import { isAssisted } from "./equipmentSettings";
 import { completedTargets, plannedSet, type TemplatePlan } from "./workoutTemplates";
 import { nextScheduledSession } from "./coachMonth";
 
@@ -11,7 +12,9 @@ export function buildCoachContext(state: OfflineState, task: CoachTask, workoutI
   if (task === "next_set" && (!focus || focus.finishedAt || !focus.draft)) throw new Error("Сначала выберите упражнение в текущей тренировке.");
   if (task === "review" && (!focus?.finishedAt)) throw new Error("Сначала завершите тренировку.");
   if (task === "adjust_workout" && (!focus || focus.finishedAt)) throw new Error("Сначала откройте текущую тренировку.");
-  const available = state.exercises.filter(ex => !ex.deletedAt);
+  // The current gateway contract has no counterweight semantics. Never send it as external load.
+  const available = state.exercises.filter(ex => !ex.deletedAt && !isAssisted(ex));
+  if (task === "next_set" && focus?.draft && isAssisted(state.exercises.find(ex => ex.id === focus.draft!.exerciseId))) throw new Error("Подбор противовеса пока доступен вручную.");
   const catalog = available.slice(0, 120).map(ex => ({ id: ex.id, name: ex.name.slice(0, 120), muscleGroup: ex.muscleGroup.slice(0, 120), equipment: ex.equipment, timed: isTimedExercise(ex.name) }));
   const ids = new Set(catalog.map(ex => ex.id));
   const finished = state.workouts.filter(w => w.finishedAt).sort((a, b) => a.finishedAt!.localeCompare(b.finishedAt!));
@@ -27,7 +30,7 @@ export function buildCoachContext(state: OfflineState, task: CoachTask, workoutI
     version: 1, task, preferences: trainingMode === "office" ? { ...personalCoachProfile(state.coachProfile ?? defaultCoachProfile()), sessionMinutes: 20, equipment: ["bodyweight"] } : personalCoachProfile(state.coachProfile ?? defaultCoachProfile()),
     athlete: { sex: state.profile.bodyWeightKg == null ? null : state.profile.sex ?? null, bodyWeightKg: state.profile.bodyWeightKg },
     catalog, sessions: sessions.map(w => ({ id: w.id, finishedAt: w.finishedAt, sets: recentSets.filter(set => set.workoutId === w.id).map(observation) })),
-    focus: focus ? { workoutId: focus.id, finished: !!focus.finishedAt, draftRevision: focus.draftRevision ?? 0, draft: focus.draft ? observation(focus.draft) : null, ...(task === "adjust_workout" ? { performedSetCount: state.sets.filter(set => set.workoutId === focus.id).length } : {}) } : null,
+    focus: focus ? { workoutId: focus.id, finished: !!focus.finishedAt, draftRevision: focus.draftRevision ?? 0, draft: focus.draft && ids.has(focus.draft.exerciseId) ? observation(focus.draft) : null, ...(task === "adjust_workout" ? { performedSetCount: state.sets.filter(set => set.workoutId === focus.id).length } : {}) } : null,
     programs: state.customPrograms.slice(-3).map(program => ({ name: program.name.slice(0, 80), exercises: program.exercises.slice(0, 20).map(ex => ({ exerciseId: ex.exerciseId, sets: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax })) })),
     truncated: available.length > catalog.length || finished.length > 12 || eligible.length > recentSets.length || state.sets.filter(set => sessionIds.has(set.workoutId)).length !== eligible.length,
     ...(messages ? { messages } : {}),

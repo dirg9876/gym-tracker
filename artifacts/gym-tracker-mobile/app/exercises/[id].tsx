@@ -16,6 +16,7 @@ import type { RankedExercise } from "@/lib/exerciseStandards";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
 import { durationOf, maxDurationOf, formatSeconds, isTimedExercise } from "@/lib/workoutMeasurement";
+import { isAssisted } from "@/lib/equipmentSettings";
 
 
 export default function ExerciseProgressScreen() {
@@ -74,7 +75,7 @@ export default function ExerciseProgressScreen() {
             { l: "Лучший подход", v: `${ranked.rankBest ?? 0} повт.`, accent: true },
             { l: "Всего повторов", v: formatNumber(points.reduce((sum, point) => sum + point.reps, 0)), accent: false },
           ] : [
-            { l: "Макс. вес", v: formatKg(maxWeight), accent: true },
+            { l: isAssisted(exercise) ? "Расчётная нагрузка" : "Макс. вес", v: formatKg(maxWeight), accent: true },
             { l: "Объем", v: formatKg(maxVolume), accent: false },
             { l: "Повторы", v: formatNumber(maxReps), accent: false },
           ]).map((s) => (
@@ -123,7 +124,7 @@ export default function ExerciseProgressScreen() {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <Feather name="trending-up" size={16} color={colors.primary} />
                 <Text style={{ color: colors.foreground, fontSize: 16, fontFamily: "Inter_700Bold" }}>
-                  {timed ? "Лучшее удержание" : repBased ? "Повторы за лучший подход" : "Максимальный вес"}
+                  {timed ? "Лучшее удержание" : repBased ? "Повторы за лучший подход" : isAssisted(exercise) ? "Масса тела минус противовес" : "Максимальный вес"}
                 </Text>
               </View>
               <LineChart

@@ -34,7 +34,7 @@ test("catalog deletion includes built-ins and preserves recorded sets, statistic
   assert.equal(await loadPlan(workout.id), null);
   assert.equal((await request("/api/programs/chest")).exercises.some(ex => ex.exerciseId === 1), false);
   const text = await exportProgress();
-  assert.equal(JSON.parse(text).version, 8);
+  assert.equal(JSON.parse(text).version, 9);
   await restoreProgress(text);
   assert.equal((await request("/api/exercises")).some(ex => ex.id === 1), false);
   assert.deepEqual(await request(`/api/workouts/${workout.id}`), original);

@@ -7,11 +7,12 @@ import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
 import { durationOf, isTimedExercise, setVolume, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
+import { equipmentSettingsSchema, validEquipmentSettings, isAssisted, performanceWeight, type EquipmentSettings } from "./equipmentSettings";
 import { AUTO_BACKUP_JOBS_KEY, PLAN_PREFIX, PROGRESS_KEY, isProgressKey, readProgressEntries, commitProgressTransaction, quarantineProgress, ProgressRecoveryRequired, withProgressLock } from "./progressStorage";
 import { validateStoredProgress } from "./progressBackup";
 import { readAutomaticBackupJobs, readAutomaticBackupSettings } from "./automaticBackupState";
 import { calibrateRemaining, completedTargets, plannedSet, templateInputSchema, validateTargets, type SetTarget, type TemplateExercise, type TemplatePlan } from "./workoutTemplates";
-import { draftRevisionSchema, workoutDraftSchema, validDraftForExercise, makeWorkoutDraft, sameTimer, type DraftResponse, type WorkoutDraft } from "./workoutDraft";
+import { draftRevisionSchema, workoutDraftSchema, validDraftForExercise, makeWorkoutDraft, selectWorkoutDraft, sameTimer, type DraftResponse, type WorkoutDraft } from "./workoutDraft";
 import { exerciseStandard, standardProgress, type RankedExercise } from "./exerciseStandards";
 import { coachFieldsSchema, timerSchema, remainingMs, weeklyWork, type CoachFields, type TrainingTimer, type Progression } from "./trainingCoach";
 import type {
@@ -51,7 +52,7 @@ import type {
   WorkoutSummary,
 } from "@workspace/api-client-react";
 
-type ExerciseRow = Exercise & {
+type ExerciseRow = Exercise & EquipmentSettings & {
   bodyweightMultiplier: number;
   deletedAt?: string;
 };
@@ -72,6 +73,8 @@ type WorkoutRow = {
 
 type SetRow = CoachFields & {
   bodyWeightKg?: number;
+  loadMode?: "weight" | "assisted";
+  dumbbellCount?: 1 | 2;
   id: number;
   workoutId: number;
   exerciseId: number;
@@ -356,7 +359,7 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
       const elapsed = Math.floor((workout.timer.totalMs - remainingMs(workout.timer)) / 1000);
       if (elapsed < 1) throw httpError(400, "Удержание должно длиться хотя бы секунду");
       const exercise = findExercise(state, workout.timer.exerciseId!)!;
-      workout.draft = { ...makeWorkoutDraft(exercise, { weightKg: 0, reps: 0, durationSeconds: elapsed }), sourceTimer: workout.timer };
+      workout.draft = { ...makeWorkoutDraft(exercise, { weightKg: 0, reps: 0, durationSeconds: elapsed }, workout.draft?.exerciseId === exercise.id ? workout.draft : state.sets.slice().reverse().find(set => set.workoutId === workout.id && set.exerciseId === exercise.id)), sourceTimer: workout.timer };
       workout.draftRevision = (workout.draftRevision ?? 0) + 1;
       delete workout.timer;
       await saveState(state);
@@ -560,6 +563,8 @@ async function createExercise(state: OfflineState, body: RequestBody): Promise<E
   if (!name || !muscleGroup) throw httpError(400, "Заполни название и группу мышц");
   if (name.length > 120 || muscleGroup.length > 60) throw httpError(400, "Название: до 120 символов, группа мышц: до 60.");
   if (body.equipment !== undefined && !isEquipment(body.equipment)) throw httpError(400, "Неизвестная категория упражнения.");
+  const settings = equipmentSettingsSchema.safeParse(body);
+  if (!settings.success) throw httpError(400, "Проверьте шаг веса и настройки оборудования.");
 
   const row: ExerciseRow = {
     id: state.nextExerciseId++,
@@ -572,7 +577,9 @@ async function createExercise(state: OfflineState, body: RequestBody): Promise<E
     mcKg: null,
     userMaxKg: null,
     userRank: null,
+    ...settings.data,
   };
+  if (!validEquipmentSettings(row)) throw httpError(400, "Противовес доступен только для тренажёров, число гантелей — только для гантелей.");
   state.exercises.push(row);
   await saveState(state);
   return enrichExercise(state, row);
@@ -586,6 +593,9 @@ async function updateExercise(
   const row = findExercise(state, exerciseId);
   if (!row || row.deletedAt) throw httpError(404, "Упражнение не найдено");
   const next = { ...row };
+  const settings = equipmentSettingsSchema.safeParse(body);
+  if (!settings.success) throw httpError(400, "Проверьте шаг веса и настройки оборудования.");
+  Object.assign(next, settings.data);
   if (body.name !== undefined || body.muscleGroup !== undefined) {
     if (!row.isCustom) throw httpError(409, "Названия встроенных упражнений закреплены за нормативами.");
     if (body.name !== undefined) {
@@ -601,8 +611,10 @@ async function updateExercise(
     if (!isEquipment(body.equipment)) throw httpError(400, "Неизвестный тип оборудования.");
     if (!row.isCustom && body.equipment !== row.equipment) throw httpError(409, "Оборудование встроенного упражнения закреплено за нормативами.");
     next.equipment = body.equipment;
+    if (next.equipment !== "dumbbell") delete next.dumbbellCount;
   }
-  if (next.equipment !== row.equipment || isTimedExercise(next.name) !== isTimedExercise(row.name)) {
+  if (!validEquipmentSettings(next)) throw httpError(400, "Проверьте совместимость категории и настройки нагрузки.");
+  if (next.equipment !== row.equipment || isTimedExercise(next.name) !== isTimedExercise(row.name) || isAssisted(next) !== isAssisted(row)) {
     const plans = (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX));
     const used = state.sets.some(set => set.exerciseId === exerciseId)
       || state.workouts.some(workout => workout.timer?.exerciseId === exerciseId || workout.draft?.exerciseId === exerciseId)
@@ -612,6 +624,12 @@ async function updateExercise(
     if (used) throw httpError(409, "Упражнение уже используется. Для другого оборудования или единиц измерения создайте новое упражнение.");
   }
   if (typeof body.isMain === "boolean") next.isMain = body.isMain;
+  if ((next.weightStepKg ?? 2.5) !== (row.weightStepKg ?? 2.5) || (next.dumbbellCount ?? 1) !== (row.dumbbellCount ?? 1)) {
+    for (const workout of state.workouts.filter(workout => !workout.finishedAt && workout.draft?.exerciseId === exerciseId)) {
+      if ((workout.draftRevision ?? 0) >= Number.MAX_SAFE_INTEGER) throw httpError(409, "Слишком много изменений черновика.");
+      workout.draftRevision = (workout.draftRevision ?? 0) + 1;
+    }
+  }
   Object.assign(row, next);
   await saveState(state);
   return enrichExercise(state, row);
@@ -655,9 +673,9 @@ function enrichExercise(state: OfflineState, row: ExerciseRow): RankedExercise {
   const mc = getMcKg(state, row);
   const sets = getFinishedSets(state).filter((set) => set.exerciseId === row.id);
   const userMaxKg = sets
-    .reduce<number | null>((best, set) => (best == null || set.weightKg > best ? set.weightKg : best), null);
+    .reduce<number | null>((best, set) => (best == null || performanceWeight(set) > best ? performanceWeight(set) : best), null);
   const standard = exerciseStandard(row, state.profile);
-  const rankBest = sets.reduce((best, set) => Math.max(best, standard.unit === "kg" ? set.weightKg : standard.unit === "seconds" ? durationOf(set) : set.reps), 0);
+  const rankBest = sets.reduce((best, set) => Math.max(best, standard.unit === "kg" ? performanceWeight(set) : standard.unit === "seconds" ? durationOf(set) : set.reps), 0);
   return {
     id: row.id,
     name: row.name,
@@ -665,6 +683,9 @@ function enrichExercise(state: OfflineState, row: ExerciseRow): RankedExercise {
     isCustom: row.isCustom,
     isMain: row.isMain,
     equipment: row.equipment,
+    ...(row.weightStepKg != null ? { weightStepKg: row.weightStepKg } : {}),
+    ...(row.loadMode != null ? { loadMode: row.loadMode } : {}),
+    ...(row.dumbbellCount != null ? { dumbbellCount: row.dumbbellCount } : {}),
     mcKg: mc.kg,
     userMaxKg,
     userRank: standardProgress(standard, rankBest).current?.rank ?? null,
@@ -680,7 +701,7 @@ function getExerciseNorms(state: OfflineState, exerciseId: number): ExerciseRank
   const mc = getMcKg(state, row);
   const userMaxWeightKg = getFinishedSets(state)
     .filter((set) => set.exerciseId === exerciseId)
-    .reduce<number | null>((best, set) => (best == null || set.weightKg > best ? set.weightKg : best), null);
+    .reduce<number | null>((best, set) => (best == null || performanceWeight(set) > best ? performanceWeight(set) : best), null);
 
   if (mc.kg == null) {
     return {
@@ -724,7 +745,7 @@ function getExerciseNorms(state: OfflineState, exerciseId: number): ExerciseRank
 function getExerciseLastSets(state: OfflineState, exerciseId: number): ExerciseLastSets {
   const sets = getFinishedSets(state)
     .filter((set) => set.exerciseId === exerciseId)
-    .sort((a, b) => new Date(b.workoutStartedAt).getTime() - new Date(a.workoutStartedAt).getTime());
+    .sort((a, b) => new Date(b.workoutStartedAt).getTime() - new Date(a.workoutStartedAt).getTime() || b.workoutId - a.workoutId);
 
   if (sets.length === 0) {
     return {
@@ -739,7 +760,7 @@ function getExerciseLastSets(state: OfflineState, exerciseId: number): ExerciseL
   }
 
   const best = sets.reduce((top, set) =>
-    set.weightKg > top.weightKg || (set.weightKg === top.weightKg && set.reps > top.reps) ? set : top,
+    performanceWeight(set) > performanceWeight(top) || (performanceWeight(set) === performanceWeight(top) && set.reps > top.reps) ? set : top,
   );
   const lastWorkoutId = sets[0].workoutId;
   return {
@@ -749,9 +770,9 @@ function getExerciseLastSets(state: OfflineState, exerciseId: number): ExerciseL
     workoutDate: sets[0].workoutStartedAt,
     sets: sets
       .filter((set) => set.workoutId === lastWorkoutId)
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .map((set) => ({ weightKg: set.weightKg, reps: set.reps, durationSeconds: durationOf(set) })),
-    bestEverWeightKg: best.weightKg,
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || a.id - b.id)
+      .map((set) => ({ ...set, durationSeconds: durationOf(set) })),
+    bestEverWeightKg: performanceWeight(best),
     bestEverReps: best.reps,
   };
 }
@@ -800,7 +821,7 @@ async function applyCoachPlan(state: OfflineState, body: RequestBody): Promise<W
   const expectedFingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, JSON.stringify(context));
   if (fingerprint !== body.fingerprint || expectedFingerprint !== fingerprint) throw httpError(409, "Тренировка или профиль изменились. Запросите новый план.");
   const input = parseCustomProgram(state, body.plan as RequestBody);
-  if (input.exercises.length > 8 || input.exercises.some(ex => !context.preferences.equipment.includes(findExercise(state, ex.exerciseId)!.equipment) || context.preferences.excludedExerciseIds.includes(ex.exerciseId))) throw httpError(400, "План не соответствует выбранному оборудованию или исключениям.");
+  if (input.exercises.length > 8 || input.exercises.some(ex => !context.catalog.some(item => item.id === ex.exerciseId) || !context.preferences.equipment.includes(findExercise(state, ex.exerciseId)!.equipment) || context.preferences.excludedExerciseIds.includes(ex.exerciseId))) throw httpError(400, "План не соответствует выбранному оборудованию или исключениям.");
   const active = state.workouts.find(w => !w.finishedAt);
   const adjusting = context.task === "adjust_workout";
   if (adjusting ? !active || active.id !== context.focus?.workoutId : !!active) throw httpError(409, "Текущая тренировка изменилась. Откройте её с Главной.");
@@ -815,7 +836,7 @@ async function applyCoachPlan(state: OfflineState, body: RequestBody): Promise<W
   const makeRow = (exerciseId: number, targets: SetTarget[], note?: string | null): TemplateExercise => {
     const exercise = findExercise(state, exerciseId)!;
     const values = targets.map(set => set.durationSeconds ?? set.reps);
-    return { exerciseId, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: targets[0].weightKg, sets: targets.length, repsMin: Math.min(...values), repsMax: Math.max(...values), intent: "hypertrophy", note: note ?? null, setTargets: targets, weightStepKg: 2.5, targetRir: 2 };
+    return { exerciseId, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: targets[0].weightKg, sets: targets.length, repsMin: Math.min(...values), repsMax: Math.max(...values), intent: "hypertrophy", note: note ?? null, setTargets: targets, weightStepKg: exercise.weightStepKg ?? 2.5, targetRir: 2 };
   };
   for (const set of performed) {
     if (!findExercise(state, set.exerciseId) || findExercise(state, set.exerciseId)!.deletedAt) continue;
@@ -834,7 +855,7 @@ async function applyCoachPlan(state: OfflineState, body: RequestBody): Promise<W
   }
   if (performed.length + input.exercises.reduce((sum, ex) => sum + ex.sets, 0) > Math.floor(context.preferences.sessionMinutes / 2)) throw httpError(400, "Слишком много подходов для выбранной длительности.");
   const first = input.exercises[0];
-  workout.draft = makeWorkoutDraft(findExercise(state, first.exerciseId)!, first.setTargets![0]);
+  workout.draft = makeWorkoutDraft(findExercise(state, first.exerciseId)!, first.setTargets![0], workout.draft?.exerciseId === first.exerciseId ? workout.draft : performed.slice().reverse().find(set => set.exerciseId === first.exerciseId));
   workout.draftRevision = (workout.draftRevision ?? 0) + 1;
   if (!active) state.workouts.push(workout);
   const pendingIds = new Set(input.exercises.map(ex => ex.exerciseId));
@@ -888,6 +909,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
     throw httpError(400, "Вес должен быть неотрицательным числом");
   }
   const timed = isTimedExercise(exercise.name);
+  if (isAssisted(exercise) && (state.profile.bodyWeightKg == null || data.weightKg > state.profile.bodyWeightKg)) throw httpError(400, "Для противовеса укажите вес тела; противовес не должен превышать его.");
   if (timed && data.rir != null) throw httpError(400, "Для удержания запас повторений не применяется");
   if (timed) {
     if (!Number.isSafeInteger(data.durationSeconds) || data.durationSeconds! < 1 || data.durationSeconds! > 86400 || data.weightKg !== 0 || data.reps !== 0) {
@@ -904,7 +926,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
   }
   const rawPlan = (await readProgressEntries()).find(([key]) => key === PLAN_PREFIX + workout.id)?.[1];
   const plan = rawPlan ? JSON.parse(rawPlan) as TemplatePlan : null;
-  const calibration = plan?.exercises.find(ex => ex.exerciseId === exercise.id && ex.calibration && !state.sets.some(set => set.workoutId === workout.id && set.exerciseId === exercise.id));
+  const calibration = !isAssisted(exercise) && plan?.exercises.find(ex => ex.exerciseId === exercise.id && ex.calibration && !state.sets.some(set => set.workoutId === workout.id && set.exerciseId === exercise.id));
   if (calibration && (coach.data.rir == null || coach.data.technique == null)) throw httpError(400, "После подборочного подхода отметьте запас повторений и технику.");
   const set: SetRow = {
     id: state.nextSetId++,
@@ -913,16 +935,18 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
     weightKg: Number(data.weightKg),
     reps: Number(data.reps),
     ...(timed ? { durationSeconds: data.durationSeconds } : {}),
-    ...(!timed && exercise.equipment === "bodyweight" && state.profile.bodyWeightKg != null ? { bodyWeightKg: state.profile.bodyWeightKg } : {}),
+    ...(!timed && (exercise.equipment === "bodyweight" || isAssisted(exercise)) && state.profile.bodyWeightKg != null ? { bodyWeightKg: state.profile.bodyWeightKg } : {}),
+    ...(isAssisted(exercise) ? { loadMode: "assisted" as const } : {}),
+    ...(!timed && exercise.equipment === "dumbbell" ? { dumbbellCount: exercise.dumbbellCount ?? 1 } : {}),
     ...coach.data,
     setType: "working",
     createdAt: new Date().toISOString(),
   };
   state.sets.push(set);
-  if (calibration && plan) plan.exercises = plan.exercises.map(ex => ex === calibration ? calibrateRemaining(ex, { ...set, setType: "working" }, 1) : ex);
+  if (calibration && plan) plan.exercises = plan.exercises.map(ex => ex === calibration ? calibrateRemaining({ ...ex, weightStepKg: exercise.weightStepKg ?? ex.weightStepKg }, { ...set, setType: "working" }, 1) : ex);
   if (workout.draft) {
     const { sourceTimer: _sourceTimer, ...draft } = workout.draft;
-    workout.draft = draft.exerciseId === set.exerciseId ? { ...draft, rir: null, technique: null } : undefined;
+    workout.draft = draft.exerciseId === set.exerciseId ? { ...draft, rir: set.rir ?? null, technique: set.technique ?? null } : undefined;
     workout.draftRevision = (workout.draftRevision ?? 0) + 1;
     if (commitRevision != null) {
       workout.lastDraftCommit = { revision: commitRevision, setId: set.id };
@@ -930,7 +954,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
         const sets = state.sets.filter(set => set.workoutId === workout.id);
         const remaining = (ex: TemplateExercise) => completedTargets(ex, sets) < ex.sets;
         const next = plan.exercises.find(ex => ex.exerciseId === set.exerciseId && remaining(ex)) ?? plan.exercises.find(remaining);
-        if (next && (next.setTargets || next.exerciseId !== set.exerciseId)) workout.draft = makeWorkoutDraft(findExercise(state, next.exerciseId)!, plannedSet(next, completedTargets(next, sets)));
+        if (next && (next.setTargets || next.exerciseId !== set.exerciseId)) workout.draft = selectWorkoutDraft(findExercise(state, next.exerciseId)!, plannedSet(next, completedTargets(next, sets)), null, sets);
       }
     }
   }
@@ -1008,7 +1032,7 @@ function summarizeWorkout(state: OfflineState, workout: WorkoutRow): WorkoutSumm
 function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
   const exercise = findExercise(state, set.exerciseId);
   const timed = isTimedExercise(exercise?.name ?? "") || set.durationSeconds != null;
-  const bodyweight = !timed && exercise?.equipment === "bodyweight";
+  const bodyweight = !timed && (exercise?.equipment === "bodyweight" || isAssisted(set));
   const bodyWeightKg = bodyweight ? set.bodyWeightKg ?? state.profile.bodyWeightKg : null;
   return {
     id: set.id,
@@ -1018,8 +1042,11 @@ function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
     muscleGroup: exercise?.muscleGroup ?? "Другое",
     weightKg: timed ? 0 : set.weightKg,
     reps: timed ? 0 : set.reps,
-    volume: setVolume(set.weightKg, set.reps, exercise?.equipment, bodyWeightKg, timed),
-    ...(bodyweight ? { equipment: exercise!.equipment, ...(bodyWeightKg != null ? { bodyWeightKg } : {}), bodyWeightEstimated: set.bodyWeightKg == null, effectiveWeightKg: (bodyWeightKg ?? 0) + set.weightKg } : {}),
+    equipment: exercise?.equipment,
+    ...(set.loadMode ? { loadMode: set.loadMode } : {}),
+    ...(set.dumbbellCount ? { dumbbellCount: set.dumbbellCount } : {}),
+    volume: setVolume(set.weightKg, set.reps, exercise?.equipment, bodyWeightKg, timed, set),
+    ...(bodyweight ? { ...(bodyWeightKg != null ? { bodyWeightKg } : {}), bodyWeightEstimated: set.bodyWeightKg == null, effectiveWeightKg: isAssisted(set) ? Math.max(0, (bodyWeightKg ?? 0) - set.weightKg) : (bodyWeightKg ?? 0) + set.weightKg } : {}),
     ...(timed ? { durationSeconds: set.durationSeconds ?? 0 } : {}),
     ...(set.setType ? { setType: set.setType } : {}),
     ...(set.rir !== undefined ? { rir: set.rir } : {}),
@@ -1058,7 +1085,7 @@ function buildWorkoutReport(state: OfflineState, workout: WorkoutRow): WorkoutRe
   const previousSets = getFinishedSets(state).filter(
     (set) => set.workoutId !== workout.id && new Date(set.workoutStartedAt) < new Date(workout.startedAt),
   );
-  const currentMaxWeight = full.sets.reduce((best, set) => Math.max(best, set.weightKg), 0);
+  const currentMaxWeight = full.sets.filter(set => !isAssisted(set as MeasuredSet)).reduce((best, set) => Math.max(best, set.weightKg), 0);
   const previousByWorkout = groupBy(previousSets, (set) => String(set.workoutId));
   let prevBestTonnage = 0;
   let prevBestReps = 0;
@@ -1067,7 +1094,7 @@ function buildWorkoutReport(state: OfflineState, workout: WorkoutRow): WorkoutRe
     const totals = totalsFromSets(sets);
     prevBestTonnage = Math.max(prevBestTonnage, totals.totalVolume);
     prevBestReps = Math.max(prevBestReps, totals.totalReps);
-    prevBestMaxWeight = Math.max(prevBestMaxWeight, ...sets.map((set) => set.weightKg), 0);
+    prevBestMaxWeight = Math.max(prevBestMaxWeight, ...sets.filter(set => !isAssisted(set)).map((set) => set.weightKg), 0);
   }
 
   const newPersonalRecords = full.sets.length > 0
@@ -1101,7 +1128,7 @@ function buildWorkoutReport(state: OfflineState, workout: WorkoutRow): WorkoutRe
     const topReps = sets.reduce((best, set) => (set.reps > best.reps ? set : best), sets[0]);
     const topVolume = sets.reduce((best, set) => (set.volume > best.volume ? set : best), sets[0]);
     const rows = [
-      topWeight.weightKg > prev.maxWeight
+      !isAssisted(topWeight as MeasuredSet) && topWeight.weightKg > prev.maxWeight
         ? { exerciseId, exerciseName: topWeight.exerciseName, muscleGroup: topWeight.muscleGroup, kind: "max_weight" as const, value: topWeight.weightKg, previous: prev.maxWeight, reps: topWeight.reps, weightKg: topWeight.weightKg }
         : null,
       topReps.reps > prev.maxReps
@@ -1207,7 +1234,7 @@ function computeExerciseBreakdown(
     const previous = [...previousSessions.values()]
       .map((sessionSets) => ({ sets: sessionSets, aggregate: aggregateSets(sessionSets) }))
       .sort((a, b) => new Date(b.sets[0].workoutStartedAt).getTime() - new Date(a.sets[0].workoutStartedAt).getTime())[0];
-    const topSet = sets.reduce((best, set) => (set.weightKg > best.weightKg ? set : best), sets[0]);
+    const topSet = sets.reduce((best, set) => (performanceWeight(set) > performanceWeight(best) ? set : best), sets[0]);
     return {
       exerciseId,
       exerciseName: sets[0].exerciseName,
@@ -1216,7 +1243,7 @@ function computeExerciseBreakdown(
       reps: current.reps,
       volume: current.volume,
       durationSeconds: sets.reduce((sum, set) => sum + durationOf(set), 0),
-      topSetWeight: topSet.weightKg,
+      topSetWeight: performanceWeight(topSet),
       topSetReps: topSet.reps,
       previousSessionWorkoutId: previous?.sets[0].workoutId ?? null,
       previousSessionWorkoutName: previous?.sets[0].workoutName ?? null,
@@ -1243,7 +1270,7 @@ function getStatsOverview(state: OfflineState): StatsOverview & DurationMetrics 
     const totals = totalsFromSets(workoutSets);
     bestTonnage = Math.max(bestTonnage, totals.totalVolume);
     bestReps = Math.max(bestReps, totals.totalReps);
-    bestMaxWeight = Math.max(bestMaxWeight, ...workoutSets.map((set) => set.weightKg), 0);
+    bestMaxWeight = Math.max(bestMaxWeight, ...workoutSets.map(performanceWeight), 0);
   }
   const totals = totalsFromSets(sets);
   const topExercises = [...groupBy(sets, (set) => String(set.exerciseId)).entries()]
@@ -1298,7 +1325,7 @@ function getProgress(state: OfflineState): ProgressSeries {
         volume: full.totalVolume,
         reps: full.totalReps,
         durationSeconds: durationOf(full),
-        maxWeight: full.sets.reduce((best, set) => Math.max(best, set.weightKg), 0),
+        maxWeight: full.sets.reduce((best, set) => Math.max(best, performanceWeight(set)), 0),
       };
     }),
   };
@@ -1310,7 +1337,7 @@ function getExerciseProgress(state: OfflineState, exerciseId: number): ExerciseP
   const unit = exerciseStandard(exercise, state.profile).unit;
   const points = [...groupBy(getFinishedSets(state).filter((set) => set.exerciseId === exerciseId), (set) => String(set.workoutId)).values()]
     .map((sets) => {
-      const score = (set: MeasuredSet) => unit === "seconds" ? durationOf(set) : unit === "reps" ? set.reps : set.weightKg;
+      const score = (set: MeasuredSet) => unit === "seconds" ? durationOf(set) : unit === "reps" ? set.reps : performanceWeight(set);
       const topSet = sets.reduce((best, set) => (score(set) > score(best) ? set : best), sets[0]);
       const aggregate = aggregateSets(sets);
       return {
@@ -1390,7 +1417,7 @@ async function getLevels(state: OfflineState): Promise<ExerciseLevelsResponse> {
   const observed = new Map<number, { kg: number; reps: number; seconds: number }>();
   for (const set of getFinishedSets(state)) {
     const best = observed.get(set.exerciseId) ?? { kg: 0, reps: 0, seconds: 0 };
-    best.kg = Math.max(best.kg, set.weightKg); best.reps = Math.max(best.reps, set.reps); best.seconds = Math.max(best.seconds, durationOf(set));
+    best.kg = Math.max(best.kg, performanceWeight(set)); best.reps = Math.max(best.reps, set.reps); best.seconds = Math.max(best.seconds, durationOf(set));
     observed.set(set.exerciseId, best);
   }
   const candidates = state.exercises.filter(ex => !ex.deletedAt || observed.has(ex.id)).map(exercise => {
@@ -1585,9 +1612,10 @@ async function getProgramPlan(state: OfflineState, programId: string): Promise<T
         repsMin: timed && !setTargets ? 30 : def.repsMin,
         repsMax: timed && !setTargets ? 60 : def.repsMax,
         intent: def.intent,
-        suggestedWeightKg: setTargets?.[0]?.weightKg ?? suggestedWeightKg,
+        suggestedWeightKg: setTargets?.[0]?.weightKg ?? (isAssisted(exercise) ? getFinishedSets(state).filter(set => set.exerciseId === exercise.id).at(-1)?.weightKg ?? Math.min(20, state.profile.bodyWeightKg ?? 20) : suggestedWeightKg),
         ...(setTargets ? { setTargets } : {}),
         ...progression,
+        ...(exercise.weightStepKg != null ? { weightStepKg: exercise.weightStepKg } : {}),
         isBodyweight: exercise.equipment === "bodyweight",
         equipment: exercise.equipment,
         basedOn: pr > 0 ? "personal-record" : "level-benchmark",
@@ -1647,7 +1675,7 @@ function aggregateSets(sets: Array<Pick<WorkoutSet, "volume" | "reps" | "weightK
   return {
     volume: round(sets.reduce((sum, set) => sum + set.volume, 0)),
     reps: sets.reduce((sum, set) => sum + set.reps, 0),
-    maxWeight: sets.reduce((best, set) => Math.max(best, set.weightKg), 0),
+    maxWeight: sets.reduce((best, set) => Math.max(best, performanceWeight(set)), 0),
   };
 }
 

@@ -13,6 +13,10 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Expo prebuild failed' }
   Copy-Item -LiteralPath $SigningKey -Destination (Join-Path $root 'android/app/debug.keystore') -Force
   [IO.File]::WriteAllText((Join-Path $root 'android/local.properties'), 'sdk.dir=' + $env:ANDROID_HOME.Replace('\', '/'))
+  # Expo's task tracks the entry path, not JS changes; a cached manifest can select older OTA code.
+  $embeddedManifest = Join-Path $root 'android/app/build/generated/assets/createReleaseUpdatesResources/app.manifest'
+  if (Test-Path -LiteralPath $embeddedManifest) { Remove-Item -LiteralPath $embeddedManifest -Force }
+  $buildStartedMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   Push-Location (Join-Path $root 'android')
   try {
     # Windows PowerShell turns redirected native stderr warnings into errors.
@@ -22,5 +26,7 @@ try {
       .\gradlew.bat assembleRelease '-PreactNativeArchitectures=arm64-v8a,x86_64' '-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m' --max-workers=2 --console=plain
     } finally { $ErrorActionPreference = $previousErrorAction }
     if ($LASTEXITCODE -ne 0) { throw 'Android build failed' }
+    $manifest = Get-Content -LiteralPath $embeddedManifest -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (!$manifest.commitTime -or [long]$manifest.commitTime -lt $buildStartedMs) { throw 'The embedded Expo update manifest is stale' }
   } finally { Pop-Location }
 } finally { Pop-Location }

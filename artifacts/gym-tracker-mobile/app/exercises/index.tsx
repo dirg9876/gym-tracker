@@ -57,9 +57,7 @@ export default function ExercisesScreen() {
               <Text style={{ color: rank ? colors.success : colors.foreground, fontSize: 15, fontFamily: "Inter_500Medium" }}>{ex.name}</Text>
               {rank ? <Text style={{ color: colors.success, fontSize: 12 }}>{(ex as RankedExercise).standard?.official ? rank.label : "Ориентир: " + rank.label}</Text> : null}
             </Pressable>
-            {ex.isCustom ?
-              <Pressable accessibilityRole="button" accessibilityLabel={"Изменить: " + ex.name} onPress={() => setEditing(ex)} style={iconStyle}><Feather name="edit-3" size={18} color={colors.foreground} /></Pressable>
-              : null}
+            <Pressable accessibilityRole="button" accessibilityLabel={"Изменить: " + ex.name} onPress={() => setEditing(ex)} style={iconStyle}><Feather name={ex.isCustom ? "edit-3" : "sliders"} size={18} color={colors.foreground} /></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={"Удалить: " + ex.name} disabled={remove.isPending} onPress={() => confirmDelete(ex)} style={iconStyle}><Feather name="trash-2" size={18} color={colors.mutedForeground} /></Pressable>
           </View>;
         })}

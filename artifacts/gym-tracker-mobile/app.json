@@ -2,11 +2,13 @@
   "expo": {
     "name": "Gym-Beam",
     "slug": "gym-tracker-mobile",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "runtimeVersion": "1.1.0",
     "updates": {
       "url": "https://u.expo.dev/dabd3128-415f-4a2f-8c73-3b0a52585149",
-      "requestHeaders": { "expo-channel-name": "production" },
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      },
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
@@ -26,7 +28,7 @@
     },
     "android": {
       "package": "com.dirg9876.gymtracker",
-      "versionCode": 7,
+      "versionCode": 8,
       "backgroundColor": "#0a0a0a",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/gymbeam-adaptive.png",
@@ -44,7 +46,12 @@
         }
       ],
       "expo-font",
-      ["expo-secure-store", { "configureAndroidBackup": false }],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false
+        }
+      ],
       "./plugins/withCoachSecureStorage.cjs",
       "./plugins/withCoachNetworkSecurity.cjs",
       "./plugins/withWindowsNativePaths.cjs"

@@ -16,6 +16,7 @@ type Props = {
   chips?: number[];
   unit?: string;
   disabled?: boolean;
+  compact?: boolean;
 };
 
 export function Stepper({
@@ -28,6 +29,7 @@ export function Stepper({
   chips = [],
   unit,
   disabled = false,
+  compact = false,
 }: Props) {
   const colors = useColors();
 
@@ -43,7 +45,7 @@ export function Stepper({
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: colors.mutedForeground }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.mutedForeground }, compact && { minHeight: 28 }]}>{label}</Text>
       <View style={[styles.row, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
         <Pressable
           accessibilityRole="button"
@@ -52,7 +54,7 @@ export function Stepper({
           disabled={disabled || value <= min}
           onPress={() => tick(-step)}
           style={({ pressed }) => [
-            styles.btn,
+            styles.btn, compact && { width: 44 },
             { backgroundColor: colors.card, opacity: value <= min ? 0.35 : pressed ? 0.6 : 1 },
           ]}
         >
@@ -78,7 +80,7 @@ export function Stepper({
           disabled={disabled || value >= max}
           onPress={() => tick(step)}
           style={({ pressed }) => [
-            styles.btn,
+            styles.btn, compact && { width: 44 },
             { backgroundColor: colors.card, opacity: value >= max ? 0.35 : pressed ? 0.6 : 1 },
           ]}
         >

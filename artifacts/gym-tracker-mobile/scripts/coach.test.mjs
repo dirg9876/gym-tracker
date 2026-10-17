@@ -39,7 +39,7 @@ test("coach fields round-trip and every new approach is working", async () => {
   for (const invalid of [{ rir: -1 }, { rir: 6 }, { rir: 1.5 }, { technique: "perfect" }, { setType: "other" }]) await assert.rejects(request(url, "POST", { exerciseId: 1, weightKg: 20, reps: 10, ...invalid }));
   await assert.rejects(request(url, "POST", { exerciseId: 30, weightKg: 0, reps: 0, durationSeconds: 30, rir: 2 }));
   const snapshot = await exportProgress();
-  assert.equal(JSON.parse(snapshot).version, 8);
+  assert.equal(JSON.parse(snapshot).version, 9);
   await restoreProgress(snapshot);
   assert.equal((await request(`/api/workouts/${workout.id}`)).sets[0].setType, "working");
   assert.deepEqual((await request(`/api/workouts/${workout.id}`)).sets[1], set);

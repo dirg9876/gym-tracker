@@ -1,6 +1,7 @@
 import type { Exercise, Profile } from "@workspace/api-client-react";
 import { DISCIPLINES, liftForExercise, rankNorms, WRPF_RANKS, type Lift } from "@workspace/level-data/strength";
 import { isTimedExercise } from "./workoutMeasurement";
+import { isAssisted, type EquipmentSettings } from "./equipmentSettings";
 
 type Rank = typeof WRPF_RANKS[number];
 export type StandardUnit = "kg" | "reps" | "seconds";
@@ -30,7 +31,7 @@ const GROUPS: Record<string, [Lift, number]> = {
   "Икры": ["squat", .6], "Пресс": ["squat", .25],
 };
 
-export function exerciseStandard(exercise: Exercise, profile: Profile): ExerciseStandard {
+export function exerciseStandard(exercise: Exercise & EquipmentSettings, profile: Profile): ExerciseStandard {
   const sex = profile.sex ?? "male";
   const kg = profile.bodyWeightKg ?? 75;
   const ranks = WRPF_RANKS.slice(1);
@@ -53,7 +54,7 @@ export function exerciseStandard(exercise: Exercise, profile: Profile): Exercise
   return {
     official, unit: "kg", entries,
     description: official ? "WRPF: без экипировки, с допинг-контролем. Сравнение результата, не присвоение звания."
-      : `${anchorName} × ${String(ratio).replace(".", ",")}${exercise.equipment === "dumbbell" ? "; вес одной гантели" : ""}. Расчётный ориентир, не норматив WRPF.${exercise.equipment === "machine" ? " Зависит от конструкции тренажёра." : ""}${!known ? " Коэффициент выбран по группе мышц." : ""}`,
+      : `${anchorName} × ${String(ratio).replace(".", ",")}${exercise.equipment === "dumbbell" ? "; вес одной гантели" : ""}. Расчётный ориентир, не норматив WRPF.${isAssisted(exercise) ? " Сравнивается масса тела минус противовес, не вес противовеса." : ""}${exercise.equipment === "machine" ? " Зависит от конструкции тренажёра." : ""}${!known ? " Коэффициент выбран по группе мышц." : ""}`,
   };
 }
 
