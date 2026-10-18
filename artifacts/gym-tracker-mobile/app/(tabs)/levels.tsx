@@ -2,16 +2,18 @@ import Feather from "@expo/vector-icons/Feather";
 import { useGetLevels } from "@workspace/api-client-react";
 import { NORM_SOURCE_URL } from "@workspace/level-data/strength";
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Linking, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Linking, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { AthleteProfile } from "@/components/AthleteProfile";
 import { ProgressTrack } from "@/components/ProgressTrack";
 import { LevelPortrait } from "@/components/LevelPortrait";
 import { useColors } from "@/hooks/useColors";
-import { isExercisePassed, targetForExerciseLevel, type ExerciseLevelsResponse } from "@/lib/levelProgress";
+import { exerciseLevelGoal, isExercisePassed, type ExerciseLevelsResponse } from "@/lib/levelProgress";
 import { formatStandard, standardProgress } from "@/lib/exerciseStandards";
+import { isAssisted } from "@/lib/equipmentSettings";
 
 export default function LevelsScreen() {
   const colors = useColors();
+  const { width } = useWindowDimensions();
   const { data, isLoading, refetch, isError } = useGetLevels<ExerciseLevelsResponse>();
   const [expanded, setExpanded] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -39,14 +41,14 @@ export default function LevelsScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
             <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
               <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: "Inter_700Bold" }}>ТЕКУЩИЙ УРОВЕНЬ</Text>
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
                 <Text style={{ color: colors.foreground, fontSize: 52, lineHeight: 60, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{currentLevel}</Text>
                 <Text style={{ color: colors.mutedForeground, fontSize: 16 }}>/ 80</Text>
               </View>
-              <Text style={{ color: colors.foreground, fontSize: 19, lineHeight: 27, fontFamily: "Inter_700Bold" }}>{current.name}</Text>
             </View>
-            <LevelPortrait level={current.level} tier={current.tier} sex={data.sex} label={current.name} size={100} />
+            <LevelPortrait level={current.level} tier={current.tier} sex={data.sex} label={current.name} size={width >= 400 ? 192 : 160} />
           </View>
+          <Text style={{ color: colors.foreground, fontSize: 21, lineHeight: 29, fontFamily: "Inter_700Bold" }}>{current.name}</Text>
           <ProgressTrack value={currentLevel} total={80} label={`Уровень ${currentLevel} из 80`} segmented />
           <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20 }}>{current.description}</Text>
           {data.currentRank.code !== "NONE" ? <Text style={{ color: colors.success, fontSize: 13 }}>Ступень прогресса: {data.currentRank.label}</Text> : null}
@@ -64,8 +66,8 @@ export default function LevelsScreen() {
             <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Любые три упражнения · {Math.min(3, passed)} / 3</Text>
           </View> : null}
           {visibleExercises.map(item => {
-            const target = item.requiredValueForNextLevel ?? targetForExerciseLevel(item.standard, item.equipment, 80);
-            const done = item.hasRecordedResult && item.bestValue >= target;
+            const goal = exerciseLevelGoal(item, next?.level ?? 80);
+            const { target, passed: done } = goal;
             const rank = standardProgress(item.standard, item.bestValue);
             return (
               <View key={item.exerciseId} style={{ gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.cardBorder }}>
@@ -74,11 +76,15 @@ export default function LevelsScreen() {
                   <Text style={{ flex: 1, color: done ? colors.success : colors.foreground, fontSize: 14, lineHeight: 20, fontFamily: "Inter_600SemiBold" }}>{item.name}{item.archived ? " · архив" : ""}</Text>
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
-                  <Text style={{ color: done ? colors.success : colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{item.hasRecordedResult ? formatStandard(item.bestValue, item.standard.unit) : "Нет результата"}</Text>
+                  <Text style={{ color: done ? colors.success : colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{item.hasRecordedResult ? `${isAssisted(item) ? "Нагрузка: " : ""}${formatStandard(item.bestValue, item.standard.unit)}` : "Нет результата"}</Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Цель: {formatStandard(target, item.standard.unit)}</Text>
                 </View>
                 <ProgressTrack value={item.hasRecordedResult ? item.bestValue : 0} total={target} label={`${item.name}: до следующего уровня`} color={done ? colors.success : colors.accent} />
-                <Text style={{ color: item.standard.official ? colors.accent : colors.mutedForeground, fontSize: 12, lineHeight: 18 }}>{item.standard.official ? "WRPF · " : "Расчётный ориентир · "}{rank.rank.label}: {formatStandard(rank.target, item.standard.unit)}{rank.atMaximum ? " · достигнут" : ` · ещё ${formatStandard(rank.remaining, item.standard.unit)}`}</Text>
+                <Text style={{ color: done ? colors.success : colors.accent, fontSize: 15, lineHeight: 22, fontFamily: "Inter_600SemiBold" }}>
+                  {done ? `Уровень ${next?.level ?? 80}: выполнено` : goal.remaining == null ? `Цель уровня ${next?.level ?? 80}: ${formatStandard(target, item.standard.unit)} · результат не записан` : `До уровня ${next?.level ?? 80}: ещё ${formatStandard(goal.remaining, item.standard.unit)}${isAssisted(item) ? " нагрузки" : ""}`}
+                </Text>
+                {isAssisted(item) ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Нагрузка = вес тела минус противовес</Text> : null}
+                <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 18 }}>{item.standard.official ? "WRPF" : "Расчётный ориентир"} · {rank.rank.label}: {formatStandard(rank.target, item.standard.unit)}{rank.atMaximum ? " · достигнут" : item.hasRecordedResult ? ` · ещё ${formatStandard(rank.remaining, item.standard.unit)}` : ""}</Text>
               </View>
             );
           })}
@@ -104,7 +110,7 @@ export default function LevelsScreen() {
             return (
               <Pressable accessibilityRole="button" accessibilityState={{ expanded: selected }} onPress={() => setExpanded(selected ? null : level.level)} style={{ borderBottomWidth: 1, borderBottomColor: colors.cardBorder, borderLeftWidth: 3, borderLeftColor: level.level === currentLevel ? colors.primary : "transparent", backgroundColor: level.level === currentLevel ? colors.primarySoft : "transparent", padding: 16, gap: 10 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                  <LevelPortrait level={level.level} tier={level.tier} sex={data.sex} label={level.name} size={48} />
+                  {!selected ? <LevelPortrait level={level.level} tier={level.tier} sex={data.sex} label={level.name} size={96} /> : null}
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: level.level === currentLevel ? colors.primary : unlocked ? colors.success : colors.mutedForeground, fontSize: 10, fontFamily: "Inter_600SemiBold" }}>УРОВЕНЬ {level.level}{level.level === currentLevel ? " · ТЕКУЩИЙ" : unlocked ? " · ПРОЙДЕН" : ""}</Text>
                     <Text style={{ color: unlocked ? colors.success : colors.foreground, fontSize: 14, fontFamily: "Inter_700Bold" }}>{level.name}</Text>
@@ -113,13 +119,15 @@ export default function LevelsScreen() {
                   </View>
                   <Feather name={selected ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
                 </View>
+                {selected ? <View style={{ alignItems: "center" }}><LevelPortrait level={level.level} tier={level.tier} sex={data.sex} label={level.name} size={216} /></View> : null}
                 {selected && level.level > 0 ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Любые три упражнения из списка</Text> : null}
-                {selected && level.level > 0 ? visibleExercises.map(item => (
-                  <View key={item.exerciseId} style={{ flexDirection: "row", gap: 12, justifyContent: "space-between" }}>
-                    <Text style={{ flex: 1, color: colors.mutedForeground, fontSize: 12 }}>{item.name}</Text>
-                    <Text style={{ color: colors.foreground, fontSize: 12 }}>{formatStandard(targetForExerciseLevel(item.standard, item.equipment, level.level), item.standard.unit)}</Text>
-                  </View>
-                )) : null}
+                {selected && level.level > 0 ? visibleExercises.map(item => {
+                  const goal = exerciseLevelGoal(item, level.level);
+                  return <View key={item.exerciseId} style={{ gap: 4, paddingVertical: 6 }}>
+                    <Text style={{ color: colors.foreground, fontSize: 13 }}>{item.name}</Text>
+                    <Text style={{ color: goal.passed ? colors.success : colors.accent, fontSize: 12 }}>{goal.passed ? "Выполнено" : goal.remaining == null ? "Результат не записан" : `Ещё ${formatStandard(goal.remaining, item.standard.unit)}${isAssisted(item) ? " нагрузки" : ""}`} · цель {formatStandard(goal.target, item.standard.unit)}</Text>
+                  </View>;
+                }) : null}
               </Pressable>
             );
       }}

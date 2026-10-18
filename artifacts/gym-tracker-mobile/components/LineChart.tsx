@@ -1,113 +1,60 @@
-import React, { useState } from "react";
-import { LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
-
+import React, { useId, useState } from "react";
+import { Text, View } from "react-native";
+import Svg, { Circle, Defs, LinearGradient, Line, Path, Stop, Text as SvgText } from "react-native-svg";
 import { useColors } from "@/hooks/useColors";
-import { formatShortDate } from "@/lib/format";
-
-type Point = { date: string; value: number };
+import { formatNumber, formatShortDate } from "@/lib/format";
+import { lineChartGeometry } from "@/lib/chartGeometry";
 
 type Props = {
-  points: Point[];
+  points: { date: string; value: number }[];
   color?: string;
   height?: number;
-  formatValue?: (n: number) => string;
+  formatValue?: (value: number) => string;
+  selectedIndex?: number;
+  onSelect?: (index: number) => void;
+  label?: string;
 };
 
-export function LineChart({ points, color, height = 160, formatValue }: Props) {
+export function LineChart({ points, color, height = 160, formatValue = formatNumber, selectedIndex, onSelect, label = "Динамика" }: Props) {
   const colors = useColors();
   const stroke = color ?? colors.primary;
   const [width, setWidth] = useState(0);
-
-  const onLayout = (e: LayoutChangeEvent) => {
-    setWidth(e.nativeEvent.layout.width);
-  };
-
-  if (points.length === 0) {
-    return (
-      <View style={{ height, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ color: colors.mutedForeground }}>Нет данных</Text>
-      </View>
-    );
-  }
-
-  const padX = 8;
-  const padY = 12;
-  const chartHeight = points.length === 1 ? 64 : height;
-  const w = width - padX * 2;
-  const h = chartHeight - padY * 2;
-
-  const values = points.map((p) => p.value);
-  const max = Math.max(...values);
-  const min = Math.min(...values, 0);
-  const span = max - min || 1;
-
-  const xFor = (i: number) =>
-    padX + (points.length === 1 ? w / 2 : (i / (points.length - 1)) * w);
-  const yFor = (v: number) => padY + h - ((v - min) / span) * h;
-
-  const linePath =
-    width > 0
-      ? points
-          .map((p, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(p.value)}`)
-          .join(" ")
-      : "";
-  const areaPath =
-    width > 0
-      ? `${linePath} L ${xFor(points.length - 1)} ${padY + h} L ${xFor(0)} ${padY + h} Z`
-      : "";
-
-  const last = points[points.length - 1];
-
-  return (
-    <View onLayout={onLayout}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.label, { color: colors.mutedForeground }]}>
-          {formatShortDate(last.date)}
-        </Text>
-        <Text style={[styles.lastValue, { color: stroke }]}>
-          {formatValue ? formatValue(last.value) : last.value}
-        </Text>
-      </View>
-      {width > 0 ? (
-        <Svg width={width} height={chartHeight}>
-          <Defs>
-            <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={stroke} stopOpacity={0.35} />
-              <Stop offset="1" stopColor={stroke} stopOpacity={0} />
-            </LinearGradient>
-          </Defs>
-          {points.length > 1 ? (
-            <Path d={areaPath} fill="url(#grad)" />
-          ) : null}
-          <Path d={linePath} stroke={stroke} strokeWidth={2.5} fill="none" />
-          {points.map((p, i) => (
-            <Circle
-              key={`${p.date}-${i}`}
-              cx={xFor(i)}
-              cy={yFor(p.value)}
-              r={3.5}
-              fill={colors.background}
-              stroke={stroke}
-              strokeWidth={2}
-            />
-          ))}
-        </Svg>
-      ) : (
-        <View style={{ height: chartHeight }} />
-      )}
+  const gradient = `area-${useId().replace(/[^a-z0-9]/gi, "")}`;
+  const geometry = lineChartGeometry(points, width, height);
+  const index = selectedIndex != null && selectedIndex >= 0 && selectedIndex < points.length ? selectedIndex : points.length - 1;
+  const selected = points[index];
+  const valid = points.length > 0 && points.every(point => Number.isFinite(point.value) && Number.isFinite(Date.parse(point.date)));
+  if (!valid) return <View style={{ height: height + 62, alignItems: "center", justifyContent: "center" }}><Text style={{ color: colors.mutedForeground }}>Нет данных</Text></View>;
+  const line = geometry?.coordinates.map((point, i) => `${i ? "L" : "M"} ${point.x} ${point.y}`).join(" ") ?? "";
+  const area = geometry ? `${line} L ${geometry.coordinates.at(-1)!.x} ${geometry.bottom} L ${geometry.coordinates[0].x} ${geometry.bottom} Z` : "";
+  return <View onLayout={event => setWidth(event.nativeEvent.layout.width)}>
+    <View style={{ minHeight: 40, flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
+      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{formatShortDate(selected.date)}</Text>
+      <Text style={{ color: stroke, fontSize: 20, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{formatValue(selected.value)}</Text>
     </View>
-  );
+    <View accessible accessibilityRole={onSelect ? "adjustable" : "image"} accessibilityLabel={label}
+      accessibilityValue={{ text: `${formatShortDate(selected.date)}: ${formatValue(selected.value)}` }}
+      accessibilityActions={onSelect ? [{ name: "increment", label: "Следующая тренировка" }, { name: "decrement", label: "Предыдущая тренировка" }] : undefined}
+      onAccessibilityAction={event => onSelect?.(Math.max(0, Math.min(points.length - 1, index + (event.nativeEvent.actionName === "increment" ? 1 : -1))))}>
+      {geometry ? <Svg width={width} height={height} onPress={onSelect ? event => {
+        const x = event.nativeEvent.locationX;
+        let nearest = 0;
+        for (let i = 1; i < geometry.coordinates.length; i++) if (Math.abs(geometry.coordinates[i].x - x) < Math.abs(geometry.coordinates[nearest].x - x)) nearest = i;
+        onSelect(nearest);
+      } : undefined}>
+        <Defs><LinearGradient id={gradient} x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={stroke} stopOpacity={0.2} /><Stop offset="1" stopColor={stroke} stopOpacity={0} /></LinearGradient></Defs>
+        {geometry.ticks.map((tick, i) => <React.Fragment key={i}>
+          <Line x1={geometry.left} x2={geometry.right} y1={tick.y} y2={tick.y} stroke={colors.cardBorder} strokeDasharray="3 5" />
+          <SvgText x={geometry.left - 8} y={tick.y + 4} textAnchor="end" fontSize={10} fill={colors.mutedForeground}>{formatNumber(tick.value)}</SvgText>
+        </React.Fragment>)}
+        {points.length > 1 ? <Path d={area} fill={`url(#${gradient})`} /> : null}
+        <Path d={line} stroke={stroke} strokeWidth={2.5} fill="none" />
+        {geometry.coordinates.map((point, i) => <Circle key={i} cx={point.x} cy={point.y} r={i === index ? 5 : 3} fill={i === index ? stroke : colors.background} stroke={stroke} strokeWidth={2} />)}
+      </Svg> : <View style={{ height }} />}
+    </View>
+    <View style={{ minHeight: 22, flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
+      <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{formatShortDate(points[0].date)}</Text>
+      {points.length > 1 ? <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{formatShortDate(points.at(-1)!.date)}</Text> : null}
+    </View>
+  </View>;
 }
-
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    marginBottom: 6,
-    paddingHorizontal: 4,
-  },
-  label: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0, textTransform: "uppercase" },
-  lastValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
-});

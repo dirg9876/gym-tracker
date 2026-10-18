@@ -94,5 +94,8 @@ test("male portrait frame uses one fixed inset, not a per-level zoom", () => {
   assert.match(component, /levelImage\(level, tier, sex\)/);
   assert.match(component, /sex === "male" \? size \* MALE_PORTRAIT_INSET : 0/);
   const screen = readFileSync(resolve(mobile, "app/(tabs)/levels.tsx"), "utf8");
-  assert.equal((screen.match(/<LevelPortrait[^>]*sex=\{data.sex\}/g) ?? []).length, 2);
+  assert.equal((screen.match(/<LevelPortrait[^>]*sex=\{data.sex\}/g) ?? []).length, 3);
+  assert.match(screen, /size=\{96\}/);
+  assert.match(screen, /size=\{216\}/);
+  assert.match(screen, /width >= 400 \? 192 : 160/);
 });

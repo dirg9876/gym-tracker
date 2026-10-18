@@ -1,7 +1,8 @@
 import type { Equipment, LevelsResponse, MainExerciseStat } from "@workspace/api-client-react";
 import type { ExerciseStandard } from "./exerciseStandards";
+import type { EquipmentSettings } from "./equipmentSettings";
 
-export type LevelExerciseStat = MainExerciseStat & {
+export type LevelExerciseStat = MainExerciseStat & Pick<EquipmentSettings, "loadMode"> & {
   standard: ExerciseStandard; bestValue: number; requiredValueForNextLevel: number | null;
   hasRecordedResult: boolean; achievedLevel: number;
   archived: boolean;
@@ -38,4 +39,10 @@ export function levelFromExercises(exercises: Pick<LevelExerciseStat, "exerciseI
 export function isExercisePassed(exercise: MainExerciseStat | LevelExerciseStat, _bodyWeightKg?: number): boolean {
   if ("bestValue" in exercise) return exercise.hasRecordedResult && exercise.requiredValueForNextLevel != null && exercise.bestValue >= exercise.requiredValueForNextLevel;
   return exercise.requiredKgForNextLevel != null && exercise.maxWeightKg >= exercise.requiredKgForNextLevel;
+}
+
+export function exerciseLevelGoal(exercise: LevelExerciseStat, level: number) {
+  const target = targetForExerciseLevel(exercise.standard, exercise.equipment, level);
+  const remaining = exercise.hasRecordedResult ? Math.max(0, Math.round((target - exercise.bestValue) * 100) / 100) : null;
+  return { target, remaining, passed: remaining === 0 };
 }

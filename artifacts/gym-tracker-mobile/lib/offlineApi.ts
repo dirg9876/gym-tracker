@@ -3,6 +3,7 @@ import * as Crypto from "expo-crypto";
 import { coachContextSchema, coachMessagesSchema, coachProfileSchema, coachTaskSchema, defaultCoachProfile, personalCoachProfile, validateCoachReply, type CoachContext, type CoachProfile, type SavedCoachMonth } from "@workspace/ai-coach";
 import { buildCoachContext } from "./aiCoachContext";
 import { monthProgress } from "./coachMonth";
+import { buildTrainingInsights } from "./trainingInsights";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
@@ -429,6 +430,11 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
   if (match && method === "GET") return getWorkoutExerciseBreakdown(state, Number(match[1]));
 
   if (method === "GET" && path === "/api/stats/overview") return getStatsOverview(state);
+  if (method === "GET" && path === "/api/stats/insights") {
+    const days = parsedUrl.searchParams.get("days") ?? "28";
+    if (!["28", "84", "all"].includes(days)) throw httpError(400, "Неверный период статистики");
+    return buildTrainingInsights(state.workouts, getFinishedSets(state), state.exercises, days === "all" ? null : days === "84" ? 84 : 28);
+  }
   if (method === "GET" && path === "/api/stats/weekly") {
     const sets = getFinishedSets(state);
     return { groups: weeklyWork(sets), exercises: weeklyWork(sets.map(set => ({ ...set, muscleGroup: String(set.exerciseId) }))).map(row => ({ ...row, exerciseId: Number(row.muscleGroup), name: findExercise(state, Number(row.muscleGroup))?.name ?? "Упражнение" })) };
@@ -1439,7 +1445,7 @@ async function getLevels(state: OfflineState): Promise<ExerciseLevelsResponse> {
     const required = targetForExerciseLevel(standard, exercise.equipment, nextLevel ?? 80);
     return {
       exerciseId: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup,
-      equipment: exercise.equipment, maxWeightKg, standard, bestValue, achievedLevel, hasRecordedResult,
+      equipment: exercise.equipment, loadMode: exercise.loadMode, maxWeightKg, standard, bestValue, achievedLevel, hasRecordedResult,
       archived: !!exercise.deletedAt,
       requiredValueForNextLevel: nextLevel == null ? null : required,
       multiplier: mcKg == null ? 0 : mcKg / bodyWeightKg,
