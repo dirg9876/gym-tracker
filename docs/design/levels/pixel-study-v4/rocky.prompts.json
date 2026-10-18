@@ -1,0 +1,54 @@
+{
+  "status": "user-selected-first-attempt-as-style-reference-not-production",
+  "userSelection": {
+    "date": "2026-10-18",
+    "variant": "firstAttempt",
+    "workspace": "docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+    "decision": "User prefers the FIRST Rocky, not the more simplified second image. Preserve that moderate pixel detail. Future cast must grow in visible strength with level; female gallery unchanged.",
+    "productionApproval": false,
+    "note": "A style choice, not approval of framing, 81 portraits, old v3 batch or app publication. See visual-power-v4.json and art-direction-male-v4.md."
+  },
+  "scope": "one male Rocky sample only; no app integration or batch",
+  "userDecision": "Appearance like Punch Club, without a strict 32x32 size requirement. Male gallery only; female unchanged.",
+  "toolMode": "built-in image_gen.imagegen",
+  "intent": "generate",
+  "transparent_background": true,
+  "referencePolicy": "Actual developer scaling illustration and official screenshot inspected as research only. No game sprites copied; no reference image attached to this new-image call.",
+  "researchSources": [
+    "https://www.gamedeveloper.com/production/punch-club-s-guide-to-pixel-art",
+    "https://lazybeargames.com/game/punch-club/"
+  ],
+  "prompt": "Use case: stylized-concept. Asset: ONE full-body male level-character sprite for an adult gym-tracking app, isolated on a truly transparent background. Subject: a humorous original gym interpretation of Rocky Balboa, recognizable by a light-gray hooded tracksuit, short dark hair and red boxing gloves. Adult stocky athletic proportions, roughly six heads tall, slightly tired determined expression, relaxed boxing stance, facing three-quarter front. A plain white towel around the neck is one simple strip, not detailed fabric. No other props.\nCRITICAL STYLE: actual COARSE low-resolution game pixel art like the small playable adult characters in Punch Club, NOT a detailed illustration with a pixel filter. Imagine first drawing a very small sprite on a roughly 64-by-80 logical pixel canvas, with the person only about 28-34 logical pixels wide and 58-64 pixels tall, then enlarging uniformly with nearest-neighbor. These are visual coarseness targets, not mandatory delivered file dimensions. All edges are deliberate large square staircase pixels; consistent pixel-block scale everywhere. Face is only about 8-10 logical pixels wide: single-pixel eyes, a tiny block nose, a short mouth mark. Hair is one dark cluster with at most one highlight. Use about 16-20 flat colors for the entire sprite, 2 or 3 shades per material, a thin dark pixel outline. Torso, arms and trousers are broad flat connected color clusters. Only one or two large fold shapes per limb. No tiny marks, no beard stubble, no individually drawn curls, no skin texture, no smooth lighting, no gradients, no dithering, no antialiasing, no polished comic-book rendering. Keep mature adult proportions; no chibi oversized head, no childlike mascot.\nComposition: a single centered full figure occupying about 75-80 percent of the canvas height, feet and gloves completely visible, generous empty transparent margins. The joke comes from the weary everyday gym-boxer attitude, not exaggerated facial detail. Plain opaque interior colors, fully transparent exterior; no background, no floor, no shadow, no glow, no card, no frame, no text or watermark. Prioritize sparse pixel clusters and an immediately readable silhouette over anatomical or facial detail.",
+  "gridVerification": "Logical sizes and palette counts above are prompting targets only, not a verified output guarantee. Inspect actual output before approval.",
+  "firstAttempt": {
+    "source": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-7c01921b-a262-41f2-b1ea-e319a49281e7.png",
+    "assessment": "Assistant originally considered this too detailed, but the USER explicitly prefers it over the second, coarser attempt. This is now the chosen STYLE reference. Actual 1024x1536 PNG, transparent exterior 69.11%, alpha>=250 core 28.07%, 37523 solid RGBA colors. Not a verified fixed grid or indexed palette; production framing still needs QA."
+  },
+  "refinement": {
+    "intent": "edit",
+    "referenced_image_paths": [
+      "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-7c01921b-a262-41f2-b1ea-e319a49281e7.png"
+    ],
+    "transparent_background": true,
+    "prompt": "Edit target: the supplied Rocky gym sprite. Change ONLY the pixel-art rendering resolution and detail level. Keep the same single adult male character, full-body three-quarter pose, gray tracksuit, white towel, red boxing gloves, short dark hair and red-white shoes. Preserve genuine transparent background and full-figure margins.\nThe current rendering is TOO DETAILED. Redraw it from scratch at a MUCH COARSER logical resolution, with pixel blocks about THREE TIMES larger than the current visible blocks. Think of a small actual playable Punch Club NPC, not a portrait illustration or polished HD sprite. The whole head should have only about 8-10 pixels across, eyes are ONE dark square each, nose ONE small block, mouth ONE short dash, no white sclera, no detailed lips, no cheek modeling. Hair is ONE dark mass plus ONE broad highlight. Gray suit has only THREE flat grays total plus dark outline; use one broad shadow cluster per limb and remove ALL small folds and thin seams. Red gloves have only TWO reds plus outline. Shoes are simple red-white blocks with no lace detail. White towel is a plain strip. Body keeps mature approximately six-head proportions, not chibi.\nUse an extremely restrained total palette around 16 flat colors, broad contiguous pixel clusters, uniform big square pixels and a single-dark-pixel outline. No smooth gradients, no antialiasing, no microtextures or dithering. No black backing, no gray halo, no glow, no floor, no shadow, no text, no surrounding frame. Exterior is completely transparent, character interior opaque. Do not just blur or apply a pixel filter: deliberately simplify the drawing into very few large pixel shapes. Produce only ONE sprite."
+  },
+  "output": {
+    "selection": "second-attempt-not-selected-by-user-retained-for-history",
+    "source": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-5e8c07d3-c155-404e-af88-aa83c415a46f.png",
+    "workspace": "docs/design/levels/pixel-study-v4/rocky-candidate.png",
+    "preview": "docs/design/levels/pixel-study-v4/rocky-preview.png",
+    "sha256": "df143d44dddaf000d815123ad7bc48d3f53df9cc2db0244f008cdbc6830df43f",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 1081793,
+    "transparentFraction": 0.6448783874511719,
+    "alphaAtLeast250Fraction": 0.33597056070963544,
+    "partialAlphaBelow250Fraction": 0.019151051839192707,
+    "coreRgbaColors": 27955,
+    "coreBounds": [207, 42, 840, 1523],
+    "cornerAlpha": [0, 0, 0, 0],
+    "visualReview": "Larger pixel clusters and substantially simplified face/clothes. Viewed at 250/100/48px. User subsequently preferred the FIRST attempt, so do not use this as the production style reference.",
+    "limitations": "Not a verified fixed pixel grid or 16-color export. Source still has soft/partial alpha and many near colors. Bottom core margin only 12px: reframe with adequate padding before app integration. Diagnostic preview resizes only for inspection; source remains unmodified."
+  },
+  "appVersion": "1.1.3 unchanged; art prototype only"
+}

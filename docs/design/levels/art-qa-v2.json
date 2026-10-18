@@ -1,0 +1,71 @@
+[
+  {
+    "file": "style-study-v2.png",
+    "role": "current adult concept sheet, deliberately opaque",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1568164,
+    "sha256": "d08c53cb53d14ee8d7e4f7305cd3a09a3c9dae24e4bd8763fd261a2dc53cae35",
+    "transparent": 0,
+    "opaqueLike": 1572864,
+    "partial": 0,
+    "contentBoundsAtAlpha200": {
+      "left": 0,
+      "top": 0,
+      "right": 1535,
+      "bottom": 1023
+    },
+    "cornerAlpha": [
+      255,
+      255,
+      255,
+      255
+    ]
+  },
+  {
+    "file": "style-study-v1.png",
+    "role": "superseded cute-style concept sheet",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1824651,
+    "sha256": "0dae0a0c4a4da4982876b0f12ac6ce19b4499c1ff5aa446a5be92abc3271d0b3",
+    "transparent": 0,
+    "opaqueLike": 1572864,
+    "partial": 0,
+    "contentBoundsAtAlpha200": {
+      "left": 0,
+      "top": 0,
+      "right": 1535,
+      "bottom": 1023
+    },
+    "cornerAlpha": [
+      255,
+      255,
+      255,
+      255
+    ]
+  },
+  {
+    "file": "masters-v1/level-000.png",
+    "role": "superseded transparent candidate, not production art",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 791631,
+    "sha256": "4f546860d70d2f903cde4ba8810dcc9e4ebaafa1729ad845069496de6ba3fdd3",
+    "transparent": 1073553,
+    "opaqueLike": 431304,
+    "partial": 67659,
+    "contentBoundsAtAlpha200": {
+      "left": 198,
+      "top": 48,
+      "right": 1062,
+      "bottom": 1199
+    },
+    "cornerAlpha": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+]

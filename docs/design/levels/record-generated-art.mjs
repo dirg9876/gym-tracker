@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const id = Number(process.argv[2]);
+const source = resolve(process.argv[3] || "");
+assert.ok(Number.isInteger(id) && id >= 0 && id <= 80, "Invalid level ID");
+assert.match(source, /^C:\\Users\\Dirg9\\\.codex\\generated_images\\[a-zA-Z0-9-]+\\exec-[a-zA-Z0-9-]+\.png$/u, "Expected built-in image_gen output");
+const catalog = JSON.parse(readFileSync(new URL("./catalog-male-v3.json", import.meta.url), "utf8"));
+const spec = JSON.parse(readFileSync(new URL("./male-generation-v3.json", import.meta.url), "utf8"));
+assert.notEqual(spec.generationEnabled, false, "This art batch is stopped; review a coarse-pixel sample first");
+const level = catalog.levels[id];
+const subject = spec.subjectOverrides[id] ?? `Identification: ${level.name}. Reference: ${level.reference}. Visual specification: ${level.visual}`;
+const staging = new URL("../../../artifacts/apk/verified/level-art-male-v3/", import.meta.url);
+mkdirSync(staging, { recursive: true });
+const destination = new URL(`level-${id}.png`, staging);
+const hash = (buffer) => createHash("sha256").update(buffer).digest("hex");
+const sha256 = hash(readFileSync(source));
+if (existsSync(destination)) assert.equal(hash(readFileSync(destination)), sha256, "Do not overwrite an existing different candidate");
+else copyFileSync(source, destination, constants.COPYFILE_EXCL);
+const logUrl = new URL("./male-generation-v3.sources.json", import.meta.url);
+const log = existsSync(logUrl) ? JSON.parse(readFileSync(logUrl, "utf8")) : { mode: spec.mode, sources: [] };
+const entry = { id, source, destination: fileURLToPath(destination), sha256,
+  prompt: spec.promptPrefix + subject, reference: spec.reference, transparent_background: true };
+const old = log.sources.findIndex((item) => item.id === id);
+if (old >= 0) log.sources[old] = entry;
+else log.sources.push(entry);
+log.sources.sort((a, b) => a.id - b.id);
+writeFileSync(logUrl, `${JSON.stringify(log, null, 2)}\n`, "utf8");
+console.log(`Saved male level ${id}: ${level.name}`);

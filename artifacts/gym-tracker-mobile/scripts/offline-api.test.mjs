@@ -50,8 +50,8 @@ for (const sex of ["male", "female"]) {
     assert.equal(new Set(labels.map(([name]) => name)).size, 81);
     assert.equal(new Set(labels.map(([, description]) => description)).size, 81);
     assert.deepEqual(levels.map(({ name, description }) => [name, description]), labels);
-    assert.equal(levels[0].name, sex === "male" ? "Дохляк" : "Феечка");
-    assert.equal(levels[4].name, sex === "male" ? "Колобок" : "Золушка");
+    assert.equal(levels[0].name, sex === "male" ? "Новичок" : "Феечка");
+    assert.equal(levels[4].name, sex === "male" ? "Чувак у стойки" : "Золушка");
     assert.equal(levels[80].name, sex === "male" ? "Атлас" : "Легенда");
   });
 }

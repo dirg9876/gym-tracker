@@ -184,7 +184,7 @@ export function Levels() {
                   src={levelImage(current.level, current.tier, sex)}
                   alt={current.name}
                   className="h-40 w-40 object-contain drop-shadow-[0_0_25px_rgba(255,80,40,0.35)]"
-                  style={{ imageRendering: "pixelated" }}
+                  style={{ imageRendering: "pixelated", transform: sex === "male" ? "scale(0.88)" : undefined }}
                 />
                 <div className="glitch-on-change absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-sm shadow-lg">
                   {current.level}
@@ -350,7 +350,7 @@ export function Levels() {
                     src={levelImage(lvl.level, lvl.tier, sex)}
                     alt=""
                     className={`h-16 w-16 object-contain shrink-0 ${isUnlocked ? "" : "opacity-40 grayscale"}`}
-                    style={{ imageRendering: "pixelated" }}
+                    style={{ imageRendering: "pixelated", transform: sex === "male" ? "scale(0.88)" : undefined }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -704,7 +704,7 @@ function LevelDetailDialog({
                   src={levelImage(lvl.level, lvl.tier, sex)}
                   alt=""
                   className="h-16 w-16 object-contain shrink-0"
-                  style={{ imageRendering: "pixelated" }}
+                  style={{ imageRendering: "pixelated", transform: sex === "male" ? "scale(0.88)" : undefined }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

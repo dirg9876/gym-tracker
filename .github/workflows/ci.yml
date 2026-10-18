@@ -49,6 +49,12 @@ jobs:
       - name: Test mobile app
         run: pnpm --filter @workspace/gym-tracker-mobile test
 
+      - name: Validate level galleries
+        run: |
+          node --test docs/design/levels/*.test.mjs
+          node docs/design/levels/build-power-catalog.mjs
+          node docs/design/levels/preserve-female.mjs
+
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
 

@@ -144,7 +144,7 @@ export function Home() {
                   src={levelImage(cur.level, cur.tier, levelsData.sex)}
                   alt=""
                   className="h-16 w-16 object-contain shrink-0 drop-shadow-[0_0_12px_rgba(255,80,40,0.25)]"
-                  style={{ imageRendering: "pixelated" }}
+                  style={{ imageRendering: "pixelated", transform: levelsData.sex === "male" ? "scale(0.88)" : undefined }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">

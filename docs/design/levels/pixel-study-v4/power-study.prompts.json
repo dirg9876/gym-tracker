@@ -1,0 +1,27 @@
+{
+  "status": "generated-comparison-concept-not-production-user-review-pending",
+  "toolMode": "built-in image_gen.imagegen",
+  "intent": "edit-composition-style-study-not-individual-production-assets",
+  "userDecision": "First Rocky variant is preferred. Physical power must approximately grow with level and be visible; beginner 1 cannot be bigger/stronger-looking than 30.",
+  "styleReference": "docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+  "styleReferenceSha256": "d0e33abfd176b7bbe4a4c74578517620e3433a9eacb6e5f031b3dbf78ebdaee6",
+  "referenced_image_paths": [
+    "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+  ],
+  "transparent_background": true,
+  "prompt": "Use case: style-transfer/composition edit. The supplied FIRST Rocky sprite is the USER-SELECTED rendering reference: match its moderate pixel density, mature anatomy, restrained face rendering, chunky staircase outlines and limited material shading. Do not simplify to the rejected ultra-coarse second variant. Transform this single-character study into ONE horizontal comparison sheet containing THREE DISTINCT ADULT MEN, full figures side by side, separated by generous transparent gaps. This is ONE concept comparison sheet, not finished individual app assets.\nThe left figure is level 1, the middle is level 30, the right is level 80. CRITICAL: all three have approximately the SAME human body height, SAME head size, SAME floor baseline, SAME pixel-block scale and same three-quarter front camera; perceived strength must grow through anatomy and stance, NOT through zoom or making early figures miniature. No borders, labels or printed numbers.\nLEFT, BEGINNER 1: an ordinary adult around thirty in a coral-red thin sports T-shirt, navy sports trousers and simple sneakers; a small folded gym calendar in one lowered hand. Modest naturally narrow shoulders, ordinary slender arms, no pec definition or bodybuilder muscles; healthy normal body, not sickly or childlike. Relaxed everyday stance. Clear mature adult face.\nMIDDLE, ATHLETE 30: a humorous Jean-Claude Van Damme gym interpretation, short brown hair, recognizable angular adult face, open black sleeveless training vest, simple red belt, dark training trousers. Developed rounded shoulders, visible muscular upper arms/forearms, strong chest and thick athletic thighs, planted stable stance, hands relaxed low so torso is visible. CLEARLY more muscular and broader than the left man at the SAME body height, but a believable human athlete, not a giant superhero. No martial-arts split, furniture or weapons.\nRIGHT, ATLAS 80: the most powerful mature man, bearded, simple dark-blue training shorts and sleeveless top leaving massive shoulders and arms readable. Extremely broad heroic chest, thick trapezius, very large forearms and powerful legs, confident planted stance. CLEARLY more massive and stronger than the middle athlete while body height and head scale remain approximately the same. He balances a compact blue globe wrapped in a weightlifting belt in one bent raised hand beside his shoulder. Globe does not cover face and must NOT force a smaller body. No aura, pedestal, armor, weapons or scene.\nRendering: original retro gym-game pixel-art interpretations, obvious square pixel steps and dark outlines like the supplied selected Rocky, not glossy comic art, not photorealism, not chibi. Same moderate detail and lighting for all three; controlled broad shading, no grain or smooth gradients. Compose for silhouette comparison; distinct torso/shoulder/limb bulk increases left to right. Keep complete feet, hair and globe inside the image with generous outer padding. Genuinely transparent exterior, opaque figure interiors. No floor shadow, glow, black backing, text, numbers, frame or watermark.",
+  "output": {
+    "source": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-56b589e4-40ed-4b94-9207-eee31bd5aca5.png",
+    "workspace": "docs/design/levels/pixel-study-v4/power-comparison.png",
+    "sha256": "b284febd67d66841d51179c916c2ddcda1217c6f33a07ed0743fef47504b6b2d",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1717179,
+    "transparentFraction": 0.49838701883951825,
+    "alphaAtLeast250Fraction": 0.39959716796875,
+    "partialAlphaBelow250Fraction": 0.10201581319173177,
+    "coreBounds": [61, 49, 1507, 975],
+    "visualReview": "Full three figures viewed. Left=1 ordinary visitor, middle=30 Van Damme athlete, right=80 Atlas. Increasing muscular bulk is visible at similar human height and baseline. Globe remains distinct from head. Direction study only, not three accepted portraits.",
+    "limitations": "Pixel detail has drifted finer than selected first Rocky; match that reference again for production. No verified low-resolution grid, uniform cell scale or palette. Whole-sheet right margin 28px, under planned6%; needs adequate individual portrait framing. Partial alpha remains. Single production portraits at 100/48px not yet available/tested. Do not crop the sheet into production assets."
+  }
+}

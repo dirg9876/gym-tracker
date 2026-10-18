@@ -1,0 +1,43 @@
+{
+  "mode": "built-in image_gen.imagegen; no coach API key or fallback CLI",
+  "purpose": "Superseded cute-style exploration; not integrated into the app. Stop this batch: user requested a more mature film-oriented direction before completion.",
+  "status": "superseded-by-adult-direction-v2",
+  "completedLevels": [0, 23],
+  "unstartedLevels": [38, 47, 55, 80],
+  "reference": "docs/design/levels/style-study-v1.png",
+  "referenceRole": "Style, shading, outline and gym-parody tone only; not an edit target or source to crop",
+  "transparent_background": true,
+  "sharedPrompt": "Use case: stylized-concept. Asset type: ONE standalone transparent full-body character sprite master for Gym-Beam workout app. The input image is a STYLE REFERENCE ONLY: use its unified pixel-comic character rendering, not its poster layout, text or background. Draw a new single character, not a crop or a sheet. Style: coherent coarse pixel art intended to read like a character on an approximately 96x128 logical pixel grid; crisp stepped pixel clusters, restrained dark outline, just three shade steps per material, consistent upper-left light and a three-quarter camera. No smooth painted gradients, photographic skin, tiny hatching or noisy dithering. Adult cartoon proportions around five heads high, expressive but not chibi; affectionate gym satire, never humiliation for body size. Composition: a square image with the entire figure and every prop safely in frame, generous approximately 8 percent transparent margins, feet at a stable baseline around 89 percent of image height. The standing body usually fills about 74 percent of canvas height; accommodate special props without clipping. One readable silhouette and ONE principal gym joke. No decorative environment or scenery. Absolutely NO text, letters, numbers, labels, cards, badges, borders, logos, watermarks, speech balloons, floor line, aura, particles or floating effects. No weapon, injury or blood. Keep clothing practical for a workout, not sexualized. Background must be genuinely transparent RGBA, not a painted checkerboard, solid color or a vignette. Keep attached clothing and prop details opaque; no broad translucent shadow. Character specification follows: ",
+  "assets": [
+    {
+      "level": 0,
+      "output": "masters-v1/level-000.png",
+      "subjectPrompt": "NOVICE: an approachable adult man in his twenties with short dark-brown hair, ordinary healthy build, white T-shirt, blue-grey gym shorts, white socks and navy trainers. Do not copy the red-haired craftsman face. A turquoise duffel bag hangs from one shoulder; he proudly holds an oversized turquoise gym-entry key tag, as if it were his first trophy. One eyebrow slightly raised, determined friendly half-smile, relaxed wide standing stance. Turquoise bag and tag are the clear visual hook. Natural warm skin, cool grey and turquoise clothing; a tiny orange zipper pull connects the sprite to Gym-Beam. No medical crosses or writing on the bag or key tag. The tag is a plain recognizable key fob, not a phone or drink."
+    },
+    {
+      "level": 23,
+      "output": "masters-v1/level-023.png",
+      "subjectPrompt": "LARA HUNTING WEIGHT PLATES: an affectionate instantly recognizable Lara Croft gym reinterpretation, adult athletic woman with one long dark-brown braid, turquoise sleeveless training top, practical loose brown gym shorts, short white socks, charcoal trainers and a compact brown backpack. No guns, holsters, ammunition or weapons. In a confident explorer pose she triumphantly raises a large easily readable steel spring collar from a barbell in one hand like a lost ancient artifact; her other hand holds her backpack strap. The barbell spring collar must have two loop handles and a central coil, not look like a pistol. Warm knowing grin. Her athletic anatomy is natural, not exaggerated, no pinup pose. The braid, turquoise top and found collar are enough to identify this gym joke."
+    },
+    {
+      "level": 38,
+      "output": "masters-v1/level-038.png",
+      "subjectPrompt": "CHUN-LI AFTER HER SHIFT: affectionate adult Chun-Li gym reinterpretation, strong East Asian woman with her unmistakable two dark hair buns tied with white ribbons. A royal-blue short-sleeved athletic tunic with restrained cream trim over full-length dark navy training leggings, blue-white trainers. Big soft white padded wristbands, NO spikes. She holds a small hand-operated repetition tally counter close to one wristband, looks at it with a playful raised eyebrow, and stands in a grounded relaxed asymmetrical stance, not kicking or fighting. The counter face has only simple dots, no legible digits or letters. Hair buns, blue tunic, white ribbons and large soft wristbands must remain clear at icon size. No pinup anatomy, no exposed underwear, no tiny waist."
+    },
+    {
+      "level": 47,
+      "output": "masters-v1/level-047.png",
+      "subjectPrompt": "TERMINATOR OF SETS: affectionate recognizable adult Terminator gym parody in a black sleeveless workout shirt, charcoal training trousers and black trainers. Short squared brown haircut, angular but playful face, dark sunglasses with one tiny red lens detail, no glow. His LEFT arm is compact cool-steel machinery with simple large shapes; his other arm is human. The mechanical hand supports the near end of a short barbell with a few broad weight plates, angled DOWNWARD well away from the feet. In the human hand he holds a clearly readable round red-black rest stopwatch and checks it with comically serious patience. Full body in frame; one intact arm, one mechanical arm, exactly two hands. No gun, no leather coat, no extra floating barbell or loose limbs. Keep the timer simple, without numbers or letters."
+    },
+    {
+      "level": 55,
+      "output": "masters-v1/level-055.png",
+      "subjectPrompt": "MARYA MOREVNA: an original witty Slavic warrior-princess gym character, adult athletic woman with one long black braid and a self-assured warm face, red short athletic tunic over dark navy training leggings, practical dark trainers, two compact silver shoulder guards and a simple blue belt. She confidently compares TWO KEYS in her outstretched hands: a comically huge old iron dungeon key and a tiny modern gym-locker key with a blue fob. The gym key is MUCH smaller, making the visual joke clear. No sword, crown, magic, dungeon scene or prisoner. Her broad athletic shoulders and calm direct stance differentiate her from Lara and Chun-Li; comfortable practical clothing, no sexualization or generic pink recolor. Both keys fully visible, no text, labels or number on the tag."
+    },
+    {
+      "level": 80,
+      "output": "masters-v1/level-080.png",
+      "subjectPrompt": "ATLAS: a humorous classic mythic adult athlete with a thick warm-brown beard, powerful but clearly stylized build, dark workout shorts, simple Greek-pattern orange belt and brown athletic sandals. He holds a recognizable blue-and-green globe overhead with both hands, in a wide grounded half-squat. The joke is a thick brown gym weightlifting belt BUCKLED AROUND THE GLOBE. Make the globe compact enough that his face, hands and body remain prominent at icon size, not a tiny figure beneath a giant planet. His entire confident expressive face is below the globe and fully visible, not covered by it. Exactly two arms, both visibly connected to shoulders, and two hands supporting the globe at its sides. No floating extra hands, stars, light rays, golden aura or clouds. Cool bright globe, orange belt, natural skin, dark shorts, restrained same pixel rendering as the other reference characters."
+    }
+  ]
+}

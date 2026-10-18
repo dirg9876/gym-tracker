@@ -1,13 +1,12 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useGetLevels } from "@workspace/api-client-react";
 import { NORM_SOURCE_URL } from "@workspace/level-data/strength";
-import { Image } from "expo-image";
 import React, { useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, Pressable, Text, View } from "react-native";
 import { AthleteProfile } from "@/components/AthleteProfile";
 import { ProgressTrack } from "@/components/ProgressTrack";
+import { LevelPortrait } from "@/components/LevelPortrait";
 import { useColors } from "@/hooks/useColors";
-import { levelImage } from "@/lib/levelImages";
 import { isExercisePassed, targetForExerciseLevel, type ExerciseLevelsResponse } from "@/lib/levelProgress";
 import { formatStandard, standardProgress } from "@/lib/exerciseStandards";
 
@@ -46,7 +45,7 @@ export default function LevelsScreen() {
               </View>
               <Text style={{ color: colors.foreground, fontSize: 19, lineHeight: 27, fontFamily: "Inter_700Bold" }}>{current.name}</Text>
             </View>
-            <Image source={levelImage(current.level, current.tier)} accessibilityLabel={current.name} style={{ width: 100, height: 100, borderRadius: 6 }} contentFit="contain" />
+            <LevelPortrait level={current.level} tier={current.tier} sex={data.sex} label={current.name} size={100} />
           </View>
           <ProgressTrack value={currentLevel} total={80} label={`Уровень ${currentLevel} из 80`} segmented />
           <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20 }}>{current.description}</Text>
@@ -105,7 +104,7 @@ export default function LevelsScreen() {
             return (
               <Pressable accessibilityRole="button" accessibilityState={{ expanded: selected }} onPress={() => setExpanded(selected ? null : level.level)} style={{ borderBottomWidth: 1, borderBottomColor: colors.cardBorder, borderLeftWidth: 3, borderLeftColor: level.level === currentLevel ? colors.primary : "transparent", backgroundColor: level.level === currentLevel ? colors.primarySoft : "transparent", padding: 16, gap: 10 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                  <Image source={levelImage(level.level, level.tier)} style={{ width: 48, height: 48, borderRadius: 4 }} contentFit="contain" />
+                  <LevelPortrait level={level.level} tier={level.tier} sex={data.sex} label={level.name} size={48} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: level.level === currentLevel ? colors.primary : unlocked ? colors.success : colors.mutedForeground, fontSize: 10, fontFamily: "Inter_600SemiBold" }}>УРОВЕНЬ {level.level}{level.level === currentLevel ? " · ТЕКУЩИЙ" : unlocked ? " · ПРОЙДЕН" : ""}</Text>
                     <Text style={{ color: unlocked ? colors.success : colors.foreground, fontSize: 14, fontFamily: "Inter_700Bold" }}>{level.name}</Text>
