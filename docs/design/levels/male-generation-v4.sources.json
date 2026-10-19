@@ -19,7 +19,7 @@
     },
     {
       "id": 1,
-      "name": "Человек с абонементом",
+      "name": "Спонсор фитнес-клуба",
       "sourceCatalogId": 1,
       "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-66970645-0a0e-4f04-8232-835ac6073783.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-1.png",
@@ -31,11 +31,17 @@
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "labelChanges": [
+        {
+          "from": "Человек с абонементом",
+          "to": "Спонсор фитнес-клуба"
+        }
+      ]
     },
     {
       "id": 2,
-      "name": "Турист у стойки",
+      "name": "Турист в раздевалке",
       "sourceCatalogId": 2,
       "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-ff957738-d99a-44d2-bd80-05585edc1c69.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-2.png",
@@ -47,11 +53,17 @@
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "labelChanges": [
+        {
+          "from": "Турист у стойки",
+          "to": "Турист в раздевалке"
+        }
+      ]
     },
     {
       "id": 3,
-      "name": "Хранитель шейкера",
+      "name": "Шейкерный чемпион",
       "sourceCatalogId": 3,
       "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-1694853e-ff17-4dd1-b18b-997470355655.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-3.png",
@@ -63,7 +75,13 @@
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "labelChanges": [
+        {
+          "from": "Хранитель шейкера",
+          "to": "Шейкерный чемпион"
+        }
+      ]
     },
     {
       "id": 4,
@@ -83,7 +101,7 @@
     },
     {
       "id": 5,
-      "name": "Инвентаризатор",
+      "name": "Ревизор блинов",
       "sourceCatalogId": 5,
       "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-9697baf9-f780-43b8-a0a4-980be17b9195.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-5.png",
@@ -95,11 +113,17 @@
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "labelChanges": [
+        {
+          "from": "Инвентаризатор",
+          "to": "Ревизор блинов"
+        }
+      ]
     },
     {
       "id": 6,
-      "name": "Победитель будильника",
+      "name": "Герой понедельника",
       "sourceCatalogId": 6,
       "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-5b6be8b7-3d99-44d4-99f2-0cb165717cf0.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-6.png",
@@ -111,7 +135,13 @@
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "labelChanges": [
+        {
+          "from": "Победитель будильника",
+          "to": "Герой понедельника"
+        }
+      ]
     },
     {
       "id": 7,
@@ -211,35 +241,38 @@
     },
     {
       "id": 13,
-      "name": "Данте после смены",
+      "name": "Виктор Багров",
       "sourceCatalogId": 11,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-4f781778-6552-4974-a854-b2d0e0a3d45e.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-6f65d16b-bf11-4fb2-abeb-60c52065b492.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-13.png",
-      "sha256": "cab627fd87568586b6ff3a0b2f67271fdf696c92b815f852c5d283cbef85c88e",
+      "sha256": "e546b6934e66758267bdf09aa7d211b954569f1bb6da6448819166b985657903",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Данте после смены; Данте Хикс, Clerks. Взрослый темноволосый мужчина с бородкой в чёрно-белой свободной спортивной футболке и тёмных шортах. Смотрит в дневник с усталой иронией офисного человека, без огромных мышц. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Смена закончилась. В расписании внезапно ещё три подхода.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Виктор Багров; Виктор Багров, «Брат» (1997) и «Брат 2» (2000), Виктор Сухоруков. Взрослый худощавый мужчина с коротко стриженными светлыми волосами, высоким лбом, широкой живой улыбкой и узнаваемыми чертами Виктора Сухорукова. Короткая чёрная кожаная куртка поверх бордовой футболки, тёмные спортивные брюки и простые кроссовки. Небольшое полотенце в опущенной руке. Обычное слегка подтянутое тело, не качок; без оружия и денег. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Брат за брата. Но подход каждый делает свой.",
         "referenced_image_paths": [
           "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "cab627fd87568586b6ff3a0b2f67271fdf696c92b815f852c5d283cbef85c88e"
     },
     {
       "id": 14,
-      "name": "Ганнибал по плану",
+      "name": "Генерал Иволгин",
       "sourceCatalogId": 61,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-122c2b49-602c-4ac8-9ca8-0f938549ee2d.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-ecc76504-ebe0-49ef-bf0b-ec85a322753b.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-14.png",
-      "sha256": "7f317d3724f55f1e549c1072807e4a492129d2e01386e5192eaa084e19d1d3d5",
+      "sha256": "86c73fe04f8ed4c278824bf403da235861ca642b1982f593c8fa0a3ac7ec5348",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Ганнибал по плану; Ганнибал Лектер, Hannibal; только мирная ироничная стилизация. Зрелый мужчина с аккуратно зачёсанными седоватыми волосами и спокойным выразительным лицом. Безупречно аккуратный тёмно-зелёный спортивный костюм, сложенное белое полотенце и таймер; без маски, крови и насилия. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Всё запланировано. Даже паузы между подходами.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Генерал Иволгин; Генерал Иволгин, «Особенности национальной рыбалки» (1998), Алексей Булдаков. Зрелый мужчина около пятидесяти с широким тяжёлым лицом, массивным подбородком, опущенными уголками рта и короткими седеющими волосами, без усов и бороды; узнаваемые черты Алексея Булдакова. Простая оливковая кепка, расстёгнутая оливковая куртка с закатанными рукавами без знаков различия, тёмная футболка, свободные тренировочные брюки, закрытые кроссовки. В одной руке небольшая бутылка воды. Обычное умеренно плотное телосложение без мышечной гипертрофии. Никакого алкоголя, сигары и оружия. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nImage2: IDENTITY ONLY. Match Alexey Buldakov as General Ivolgin in the supplied movie still: mature broad heavy clean-shaven face, large nose, heavy jaw/chin, downturned mouth and gray temples, khaki cap. Absolutely NO moustache or beard. Not a young generic soldier. Convert facial geometry into the coarse pixel style of Image1. Do not copy table, tea set, cigarette, cigar, scenery, camera crop or photographic rendering. Full-body relaxed gym visitor with modest ordinary build, olive jacket and joggers, small WATER bottle. No alcohol or weapons.\nCaption for mood only, do NOT print it: За технику! На этот раз речь не о тосте.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/ivolgin.jpg"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "b11d623a2b46f4e5f33c5717e9b7fa6e18b06691591fc2aa29a70339f0a92dcb"
     },
     {
       "id": 15,
@@ -275,35 +308,37 @@
     },
     {
       "id": 17,
-      "name": "Венкман на вечерней",
+      "name": "Кузьмич",
       "sourceCatalogId": 75,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-b857a593-a93b-4bb7-bbb0-0739fa87fea8.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-89ceb713-1b9a-4599-89ec-bdfd14643a53.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-17.png",
-      "sha256": "c3c554c58f4d03e95128bf7b5745a4706f9c89adfca50efe4de5aa93baf77eb7",
+      "sha256": "1404c2abff6c875a9a37fd558fd5380ec8014735fcf4ce17f34db56c36faa751",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Венкман на вечерней; Питер Венкман, Ghostbusters. Мужчина средних лет с короткими тёмными волосами и узнаваемой невозмутимой иронией. Светло-серый рабочий комбинезон, красный пояс и маленький счётчик, без протонного оружия и призраков. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Паранормального нет. Просто штангу не убрали.",
+        "prompt": "Edit ONLY the outer framing of this supplied existing full-body adult gym pixel portrait. Preserve exactly the same character, face, hairstyle, outfit, anatomy, muscular build, pose, every held object, colors and pixel-block density. Add a modest transparent border so the complete figure occupies about86% of square canvas height, with AT LEAST5% fully clear space above the hair and below the lowest shoe. Same figure, only uniform modest reduction for safe margins. Do not crop, add new objects, text, background, floor, shadows or glow. Do not add detail or change style. Genuinely transparent exterior, opaque character interior.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-ce04a5e9-c130-490f-9ba4-757040cfd561.png"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "c26f2af113beb7716428e98ce1c8f748924b1aba62be172eda65bdcad30cdfef"
     },
     {
       "id": 18,
-      "name": "Уэймонд без аврала",
+      "name": "Данила Багров",
       "sourceCatalogId": 56,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-3d53d569-1275-4d75-9bf9-f445891fc8a7.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-4db3d7f7-c457-4eb3-9133-92982961c465.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-18.png",
-      "sha256": "b35e751886872de10a7cbdbcedb5419edcc8c500ffb5979fb92ca9b95610c734",
+      "sha256": "75a2d14139704f83c62f46e2c09f0aaf46d8b111e0e88a054ef141ce71bcb40e",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Уэймонд без аврала; Уэймонд Ван, Everything Everywhere All at Once. Мужчина средних лет с чёрными волосами и доброжелательным взрослым лицом, очки, светлая футболка и зелёная тренировочная куртка. Поясная сумка и свёрнутое полотенце, без боевого реквизита. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Вселенных много. Свободная скамья пока одна.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Данила Багров; Данила Багров, «Брат» (1997) и «Брат 2» (2000), Сергей Бодров-младший. Взрослый молодой мужчина с короткими тёмными волосами, открытым серьёзным лицом и узнаваемыми чертами Сергея Бодрова-младшего. Знаковый серо-бежевый свитер крупной вязки, тёмные тренировочные брюки, простые закрытые кроссовки. В опущенной руке компактный кассетный плеер с тонким проводом наушников. Лёгкое спортивное тело и крепкие ноги, не массивный качок. Без оружия и сцен насилия. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Брат, подстрахуй. Тут одной правды маловато.",
         "referenced_image_paths": [
           "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "b35e751886872de10a7cbdbcedb5419edcc8c500ffb5979fb92ca9b95610c734"
     },
     {
       "id": 19,
@@ -339,19 +374,21 @@
     },
     {
       "id": 21,
-      "name": "Макгайвер с резинкой",
+      "name": "Антон Городецкий",
       "sourceCatalogId": 25,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-6f412b4f-d3e7-41d1-97d4-9e6f95991e67.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-f99e821e-5c03-4f2c-9588-149628b85923.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-21.png",
-      "sha256": "3aeeced2e62f41974a4109596f8fc097ce7dd43253ff6061361785898f25f1cd",
+      "sha256": "81574f9a203810ad28030de9d64dc511a613329301d84dbb4cb43d7c89cd86d2",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Макгайвер с резинкой; Макгайвер, изобретательность без опасных самоделок. Светлые волосы, синяя куртка с закатанными рукавами. В руках обычный заводской эспандер, никаких самодельных креплений. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Тренажёр занят. Резинка уже придумала план Б.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Антон Городецкий; Антон Городецкий, «Ночной дозор» (2004) и «Дневной дозор» (2006), Константин Хабенский. Взрослый темноволосый мужчина с узнаваемым усталым лицом Константина Хабенского, небольшая чёрная трикотажная шапка. Короткая тёмно-синяя рабочая куртка расстёгнута поверх серой футболки, чёрные тренировочные брюки и кроссовки. В опущенной руке маленький фонарик. Лёгкий атлетический торс и крепкие предплечья, без гипертрофии, магии, оружия и декораций. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nImage2: IDENTITY ONLY, Konstantin Khabensky as Anton Gorodetsky. Narrow mature face, high forehead, prominent long nose, tired hooded brown eyes, receding curly dark hair. Preserve this actor's distinct facial geometry, NOT Rocky's young boxer face. Translate into Image1 pixel style. No phone, photo lighting or background. Full-body fit but lightly built gym visitor, black knit beanie, short blue jacket, dark joggers and a small unlit flashlight in a lowered hand.\nCaption for mood only, do NOT print it: Ночной дозор закончен. Дневной жим сам себя не сделает.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/gorodetsky.jpg"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "edff7bdd5a099280c624d18368e6cfe3fdc5255389e990df7e8df203aef59a4c"
     },
     {
       "id": 22,
@@ -388,19 +425,21 @@
     },
     {
       "id": 24,
-      "name": "Дэниел у стойки",
+      "name": "Кот из «Бумера»",
       "sourceCatalogId": 14,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-f78dab90-6880-4798-bc5b-3280e180fa4a.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-79a5c150-0d6d-4211-9bac-6429d92b2402.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-24.png",
-      "sha256": "7c5d95078449b919e61b6fe9d5bb78e9f5fb1ef2667f3fb34a3632857ff97fb4",
+      "sha256": "032e1f9e98a6b858be07b81714ff8876a5ebab013642c97fb22aed4b39fb2205",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Дэниел у стойки; Взрослый Дэниел ЛаРуссо, Cobra Kai, а не подросток из The Karate Kid. Мужчина средних лет, тёмные волосы с лёгкой сединой, светлая тренировочная форма. Снятую куртку держит на локте, дневник в руке, нормальные взрослые черты лица. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Куртку снял, куртку надел. Подход всё-таки записал.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Кот из «Бумера»; Костян по прозвищу Кот, «Бумер» (2003), Владимир Вдовиченков. Взрослый мужчина с короткими тёмными волосами, квадратным мужественным лицом и узнаваемыми чертами Владимира Вдовиченкова. Короткая чёрная кожаная куртка поверх серой футболки, чёрные тренировочные брюки и закрытые кроссовки. Небольшой старый кнопочный мобильный телефон в опущенной руке. Спортивные плечи и крепкие ноги без культуристской массы. Без автомобиля, оружия и денег. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nImage2: IDENTITY ONLY, Vladimir Vdovichenkov as Kostyan Kot from Bumer. Mature broad forehead, very short straight light-brown hair, strong nose, square jaw, heavy brow and reserved tired expression. Preserve recognizable facial geometry, not Rocky's face. No car, scenery or photography in output. Fit light-athletic full-body gym visitor in short black leather jacket over gray T-shirt and black joggers; small old button phone in a lowered hand. Render only in Image1 pixel style.\nCaption for mood only, do NOT print it: Четверо в машине. У стойки всё равно очередь.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/kot.png"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "7c5d95078449b919e61b6fe9d5bb78e9f5fb1ef2667f3fb34a3632857ff97fb4"
     },
     {
       "id": 25,
@@ -516,19 +555,21 @@
     },
     {
       "id": 32,
-      "name": "Нейтан за блинами",
+      "name": "Саймон из «Жмурок»",
       "sourceCatalogId": 23,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-8efc0a36-e2fb-4115-97de-d64ad1c04aa7.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-dfde76bf-3336-4ff4-aacc-3758b72ea16e.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-32.png",
-      "sha256": "025f3fe87687786dd766c8c54746a6a9bff4c87b69f49357aaf838144abe8d24",
+      "sha256": "71f2f99d15b7bcef25f2876c98601a1acb021b6a3613fe7c09eab46bc666971e",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand3/8: well-trained human athlete. Developed rounded shoulders, muscular chest and upper arms, dense forearms, strong thighs; visibly more powerful than an ordinary beginner at the SAME body height.\nSubject: Нейтан за блинами; Взрослый Нейтан Дрейк, игры Uncharted. Взрослый искатель приключений с короткими каштановыми волосами и щетиной, светлая футболка с синими рукавами, свободные коричневые шорты, маленький рюкзак. Победно показывает пружинный замок грифа, без кобуры и оружия. Силуэт ступени: Хорошо тренированный взрослый атлет: выраженная грудь, развитые плечи и руки, плотные ноги. На той же высоте тела явно мощнее героя уровня 1. Стойка: Устойчивая атлетическая стойка, открытый читаемый торс, без искусственного увеличения кадра.\nCaption for mood only, do NOT print it: Древний артефакт найден. Это второй замок от грифа.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand3/8: well-trained human athlete. Developed rounded shoulders, muscular chest and upper arms, dense forearms, strong thighs; visibly more powerful than an ordinary beginner at the SAME body height.\nSubject: Саймон из «Жмурок»; Семён по прозвищу Саймон, «Жмурки» (2005), Дмитрий Дюжев. Взрослый высокий атлет с короткими зачёсанными тёмно-русыми волосами, сильной челюстью и узнаваемым лицом Дмитрия Дюжева. Короткая открытая чёрная кожаная спортивная куртка, тёмно-красная футболка, чёрные тренировочные брюки и кроссовки. Маленькие кистевые бинты в опущенной руке. Развитые плечи и руки, плотный атлетический торс, но не сверхчеловек. Без оружия, насилия и декораций. Силуэт ступени: Хорошо тренированный взрослый атлет: выраженная грудь, развитые плечи и руки, плотные ноги. На той же высоте тела явно мощнее героя уровня 1. Стойка: Устойчивая атлетическая стойка, открытый читаемый торс, без искусственного увеличения кадра.\nImage2: IDENTITY ONLY. Portray ONLY Dmitry Dyuzhev as Simon, the LARGE MAN IN THE LEFT FOREGROUND, NOT Alexey Panin smiling on the right. Simon has dark straight fringe, a long strong adult face, prominent nose, heavy brows and big jaw. No second person, car, cigar, map, gun or background. Full-body well-trained athletic man in short black leather jacket, dark red T-shirt, black joggers and closed gym shoes, small wrist wraps in lowered hand. Match Image1 coarse pixel rendering and adult proportions, not photo detail.\nCaption for mood only, do NOT print it: Жмурки отменяются. Здесь страхуют с открытыми глазами.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/simon.jpg"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "025f3fe87687786dd766c8c54746a6a9bff4c87b69f49357aaf838144abe8d24"
     },
     {
       "id": 33,
@@ -548,19 +589,21 @@
     },
     {
       "id": 34,
-      "name": "Хадсон на смене",
+      "name": "Артём Колчин",
       "sourceCatalogId": 29,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-3bba3296-f20f-4cb8-9ed8-406d581fb488.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-4a003507-6c58-43cf-a996-4c4cff238efd.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-34.png",
-      "sha256": "86055f62a577b606d6712a651c561d5706e8963369ac40522d83abdcb1112c4a",
+      "sha256": "9e2fe7415a19c1d3132c9d7e2d6a7aeb6a03aa7a65d79c236192a3839ec45cdd",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand3/8: well-trained human athlete. Developed rounded shoulders, muscular chest and upper arms, dense forearms, strong thighs; visibly more powerful than an ordinary beginner at the SAME body height.\nSubject: Хадсон на смене; Хадсон, Aliens. Взрослый темноволосый мужчина с характерной иронично-тревожной мимикой, серо-синий рабочий комбинезон. Компактным жёлтым промышленным захватом на одной руке держит маленький диск, никаких монстров и оружия. Силуэт ступени: Хорошо тренированный взрослый атлет: выраженная грудь, развитые плечи и руки, плотные ноги. На той же высоте тела явно мощнее героя уровня 1. Стойка: Устойчивая атлетическая стойка, открытый читаемый торс, без искусственного увеличения кадра.\nCaption for mood only, do NOT print it: Тяжёлая техника. Блин оказался самым маленьким.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand3/8: well-trained human athlete. Developed rounded shoulders, muscular chest and upper arms, dense forearms, strong thighs; visibly more powerful than an ordinary beginner at the SAME body height.\nSubject: Артём Колчин; Артём Колчин, «Бой с тенью» (2005), Денис Никифоров. Взрослый коротко стриженный темноволосый боксёр с узнаваемыми чертами Дениса Никифорова. Тёмно-синяя боксёрская безрукавка, тёмные спортивные шорты, белые закрытые боксёрки, короткие красные бинты на кистях. Развитые округлые плечи, грудь и руки, крепкие ноги; спокойная устойчивая стойка с опущенными руками. Без ринга, травм, крови и боевой сцены. Силуэт ступени: Хорошо тренированный взрослый атлет: выраженная грудь, развитые плечи и руки, плотные ноги. На той же высоте тела явно мощнее героя уровня 1. Стойка: Устойчивая атлетическая стойка, открытый читаемый торс, без искусственного увеличения кадра.\nImage2: IDENTITY ONLY, Denis Nikiforov as boxer Artyom Kolchin. Short light-brown crew cut, mature athletic face, strong jaw, straight nose, compact focused eyes. No cigarette, car, buildings or photo texture. Full-body calm powerful human boxer, navy sleeveless athletic top, dark boxing shorts, red hand wraps, white closed boxing shoes; hands relaxed at sides, developed shoulders/chest/arms/legs. Pixel rendering and scale strictly from Image1.\nCaption for mood only, do NOT print it: С тенью разобрался. Тренер опять отправил к зеркалу.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/kolchin.png"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "86055f62a577b606d6712a651c561d5706e8963369ac40522d83abdcb1112c4a"
     },
     {
       "id": 35,
@@ -827,19 +870,21 @@
     },
     {
       "id": 51,
-      "name": "Крис без тревоги",
+      "name": "Гудвин",
       "sourceCatalogId": 66,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-7d6c3c3b-5ac7-4498-8a4b-6698a3ecf5ab.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-c184c8c4-85ba-498a-b232-ce57e835d018.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-51.png",
-      "sha256": "d1ad91646185cc363adcb3402bdb8e99ef4556e9d8fdccc6d54ecd2a3cc36d56",
+      "sha256": "58462a71337be52b7b6d7c4843391eb2930140feb1296f238805d781eda01d99",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand5/8: powerful large strength athlete, broad chest, heavy shoulders, large arms and strong legs. Visibly greater muscular bulk than lower bands without zooming.\nSubject: Крис без тревоги; Крис Редфилд, игры Resident Evil. Крупный взрослый темноволосый атлет, тёмно-синяя тренировочная футболка, оливковые брюки, простые напульсники. Держит небольшую схему зала, без кобуры, патронов и монстров. Силуэт ступени: Мощный силовой атлет: широкая грудь, тяжёлые плечи, объёмные руки и ноги. Разница с группами 0-2 видна в силуэте без реквизита. Стойка: Спокойная уверенная опора; массивность создаёт тело, а не куртка, сумка или вынесенные в стороны руки.\nCaption for mood only, do NOT print it: Выход найден. Но тренировку ещё не закончили.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand5/8: powerful large strength athlete, broad chest, heavy shoulders, large arms and strong legs. Visibly greater muscular bulk than lower bands without zooming.\nSubject: Гудвин; Гудвин, «Параграф 78» (2007), Гоша Куценко. Взрослый лысый силовой атлет с широким лицом, короткой тёмной щетиной и узнаваемыми чертами Гоши Куценко. Тёмная оливковая спортивная безрукавка, чёрные тренировочные брюки, тяжелоатлетический пояс и закрытые кроссовки. Широкая грудь, тяжёлые плечи, крупные предплечья и сильные ноги. Маленькое сложенное полотенце в опущенной руке. Никакой брони, оружия, военной сцены или эффектов. Силуэт ступени: Мощный силовой атлет: широкая грудь, тяжёлые плечи, объёмные руки и ноги. Разница с группами 0-2 видна в силуэте без реквизита. Стойка: Спокойная уверенная опора; массивность создаёт тело, а не куртка, сумка или вынесенные в стороны руки.\nImage2: IDENTITY ONLY, Gosha Kutsenko as Goodwin in Paragraph78, at his adult 2007 age around40. Recognizable broad bald head, strong rounded nose, deep-set eyes, compact broad jaw and short stubble, not an old elderly man or Rocky. No photo rendering, scenery, formal suit, text or jewelry. Full-body powerful large strength athlete in olive sleeveless sports top, black joggers, lifting belt and closed trainers, small folded towel in a lowered hand. Heavy shoulders, chest, forearms and thighs; broad but human, not a giant. Image1 controls coarse pixel rendering.\nCaption for mood only, do NOT print it: Отряд за спиной. Тяжёлая работа снова на тебе.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/goodwin.jpg"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "d1ad91646185cc363adcb3402bdb8e99ef4556e9d8fdccc6d54ecd2a3cc36d56"
     },
     {
       "id": 52,
@@ -972,19 +1017,21 @@
     },
     {
       "id": 60,
-      "name": "Гатс со страховкой",
+      "name": "Волкодав",
       "sourceCatalogId": 69,
-      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-330a9df0-32fa-42ad-ae41-9d0dfa723829.png",
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-d9e8bbf8-562b-4ae4-b26f-d497e0109ebe.png",
       "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-60.png",
-      "sha256": "43c76a3bbcd787b16814998d1adf4645978878ea5398237f5e6e2ee9388872da",
+      "sha256": "68bfa4602e67ded6d32a90f9ae7f018c3414e403dd128b14c88bffa7283237fb",
       "args": {
-        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand6/8: heroic muscular anatomy, broad dense torso and strong limbs. Recognizable character and mature face; strength evident even without magic, weapons or background.\nSubject: Level60: mature muscular Guts / Berserk gym parody, recognizable short spiky black hair and serious adult face. Black sleeveless athletic top, charcoal training trousers, one metallic prosthetic hand. Strong heroic chest, broad dense shoulders and powerful limbs. A big but COMPACT rolled dark towel rests LOW beside one shoulder, its top never above the hair. One prop, no sword, cloak, wounds, blood, furniture or scenery. Same full-body height/head scale as other portraits; towel must not shrink the man or exceed frame.\nCaption for mood only, do NOT print it: Меч огромный. Полотенце почему-то ещё больше.",
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand6/8: heroic muscular anatomy, broad dense torso and strong limbs. Recognizable character and mature face; strength evident even without magic, weapons or background.\nSubject: Level60: Wolfhound from the 2006 Russian movie, portrayed by Aleksandr Bukharov, a distinct adult gym interpretation. Mature broad face, long DARK-BLOND wavy hair with two short front braids, short fair beard. Dark sleeveless rough-linen athletic tunic with a small simple woven trim, leather-like weightlifting belt, dark training trousers and closed shoes. Heroic dense muscular torso, large shoulders, strong forearms and legs, stable calm full-body stance. One small rolled chalk pouch in a lowered hand. No sword, cloak, scars, animal, scenery, effects or lettering. Clearly stronger and broader than early civilian men, same human height and head scale. Not Guts, Aragorn or Geralt; a distinct Russian film hero.\nImage2: IDENTITY ONLY. Portray the central adult hero Alexander Bukharov as Wolfhound: long tousled DARK-BLOND wavy hair with small front braids, short fair beard, strong broad mature face and serious blue eyes. Do NOT copy other people, horse, cart, knife, forest or scene. Hair must be blond-brown, NOT Aragorn's dark hair. Full-body heroic muscular gym warrior, dark sleeveless linen sports tunic, lifting belt, dark joggers and closed shoes, small chalk pouch only. Mature broad dense chest and limbs, planted stance. Match Image1 coarse pixel style/scale, no photorealism or weapons.\nCaption for mood only, do NOT print it: Меч сдал в гардероб. Силу сдавать некуда.",
         "referenced_image_paths": [
-          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/wolfhound.jpg"
         ],
         "transparent_background": true
       },
-      "reviewed": true
+      "reviewed": true,
+      "supersedes": "43c76a3bbcd787b16814998d1adf4645978878ea5398237f5e6e2ee9388872da"
     },
     {
       "id": 61,
@@ -1440,6 +1487,235 @@
         "transparent_background": true
       },
       "reviewed": false
+    },
+    {
+      "id": 18,
+      "name": "Уэймонд без аврала",
+      "sourceCatalogId": 56,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-3d53d569-1275-4d75-9bf9-f445891fc8a7.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-18.png",
+      "sha256": "b35e751886872de10a7cbdbcedb5419edcc8c500ffb5979fb92ca9b95610c734",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Уэймонд без аврала; Уэймонд Ван, Everything Everywhere All at Once. Мужчина средних лет с чёрными волосами и доброжелательным взрослым лицом, очки, светлая футболка и зелёная тренировочная куртка. Поясная сумка и свёрнутое полотенце, без боевого реквизита. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Вселенных много. Свободная скамья пока одна.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 13,
+      "name": "Данте после смены",
+      "sourceCatalogId": 11,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-4f781778-6552-4974-a854-b2d0e0a3d45e.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-13.png",
+      "sha256": "cab627fd87568586b6ff3a0b2f67271fdf696c92b815f852c5d283cbef85c88e",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Данте после смены; Данте Хикс, Clerks. Взрослый темноволосый мужчина с бородкой в чёрно-белой свободной спортивной футболке и тёмных шортах. Смотрит в дневник с усталой иронией офисного человека, без огромных мышц. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Смена закончилась. В расписании внезапно ещё три подхода.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 14,
+      "name": "Ганнибал по плану",
+      "sourceCatalogId": 61,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-122c2b49-602c-4ac8-9ca8-0f938549ee2d.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-14.png",
+      "sha256": "7f317d3724f55f1e549c1072807e4a492129d2e01386e5192eaa084e19d1d3d5",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Ганнибал по плану; Ганнибал Лектер, Hannibal; только мирная ироничная стилизация. Зрелый мужчина с аккуратно зачёсанными седоватыми волосами и спокойным выразительным лицом. Безупречно аккуратный тёмно-зелёный спортивный костюм, сложенное белое полотенце и таймер; без маски, крови и насилия. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Всё запланировано. Даже паузы между подходами.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 17,
+      "name": "Венкман на вечерней",
+      "sourceCatalogId": 75,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-b857a593-a93b-4bb7-bbb0-0739fa87fea8.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-17.png",
+      "sha256": "c3c554c58f4d03e95128bf7b5745a4706f9c89adfca50efe4de5aa93baf77eb7",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Венкман на вечерней; Питер Венкман, Ghostbusters. Мужчина средних лет с короткими тёмными волосами и узнаваемой невозмутимой иронией. Светло-серый рабочий комбинезон, красный пояс и маленький счётчик, без протонного оружия и призраков. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Паранормального нет. Просто штангу не убрали.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 14,
+      "name": "Генерал Иволгин",
+      "sourceCatalogId": 61,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-fff9c78f-3e69-4527-90b8-5c1eea15df16.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-14.png",
+      "sha256": "b11d623a2b46f4e5f33c5717e9b7fa6e18b06691591fc2aa29a70339f0a92dcb",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Генерал Иволгин; Генерал Иволгин, «Особенности национальной рыбалки» (1998), Алексей Булдаков. Зрелый мужчина с широким спокойным лицом, густыми усами и короткими седеющими волосами, узнаваемые черты Алексея Булдакова. Простая оливковая куртка с закатанными рукавами без знаков различия, тёмная футболка, свободные тренировочные брюки, закрытые кроссовки. В одной руке небольшая бутылка воды. Обычное умеренно плотное телосложение без мышечной гипертрофии. Никакого алкоголя, сигары и оружия. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: За технику! На этот раз речь не о тосте.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": false,
+      "supersedes": "7f317d3724f55f1e549c1072807e4a492129d2e01386e5192eaa084e19d1d3d5"
+    },
+    {
+      "id": 17,
+      "name": "Кузьмич",
+      "sourceCatalogId": 75,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-848b945e-4f88-4cd6-86b8-8ec249f4f405.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-17.png",
+      "sha256": "37c5ef54dc2be0395088778c3f9cb5d4725e51f7512d8c0fb7ea199b374cf3b2",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Кузьмич; Кузьмич, «Особенности национальной охоты» (1995), Виктор Бычков. Сухощавый взрослый мужчина с характерными усами и спокойным немного хитрым лицом Виктора Бычкова. Простая потёртая зелёная кепка, короткая оливковая жилетка поверх полосатой футболки, серые тренировочные брюки и простые кроссовки. В опущенной руке маленькая гиря без цифр. Небольшие руки и умеренные плечи, не бодибилдер. Без алкоголя, ружья и декораций. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nCaption for mood only, do NOT print it: Национальная особенность: гиря одна, советчиков пятеро.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": false,
+      "supersedes": "c3c554c58f4d03e95128bf7b5745a4706f9c89adfca50efe4de5aa93baf77eb7"
+    },
+    {
+      "id": 21,
+      "name": "Макгайвер с резинкой",
+      "sourceCatalogId": 25,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-6f412b4f-d3e7-41d1-97d4-9e6f95991e67.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-21.png",
+      "sha256": "3aeeced2e62f41974a4109596f8fc097ce7dd43253ff6061361785898f25f1cd",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Макгайвер с резинкой; Макгайвер, изобретательность без опасных самоделок. Светлые волосы, синяя куртка с закатанными рукавами. В руках обычный заводской эспандер, никаких самодельных креплений. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Тренажёр занят. Резинка уже придумала план Б.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 21,
+      "name": "Антон Городецкий",
+      "sourceCatalogId": 25,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-6ef8c587-0103-4cd6-9b19-ed190c0b054c.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-21.png",
+      "sha256": "edff7bdd5a099280c624d18368e6cfe3fdc5255389e990df7e8df203aef59a4c",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Антон Городецкий; Антон Городецкий, «Ночной дозор» (2004) и «Дневной дозор» (2006), Константин Хабенский. Взрослый темноволосый мужчина с узнаваемым усталым лицом Константина Хабенского, небольшая чёрная трикотажная шапка. Короткая тёмно-синяя рабочая куртка расстёгнута поверх серой футболки, чёрные тренировочные брюки и кроссовки. В опущенной руке маленький фонарик. Лёгкий атлетический торс и крепкие предплечья, без гипертрофии, магии, оружия и декораций. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\n\nCaption for mood only, do NOT print it: Ночной дозор закончен. Дневной жим сам себя не сделает.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": false,
+      "supersedes": "3aeeced2e62f41974a4109596f8fc097ce7dd43253ff6061361785898f25f1cd"
+    },
+    {
+      "id": 24,
+      "name": "Дэниел у стойки",
+      "sourceCatalogId": 14,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-f78dab90-6880-4798-bc5b-3280e180fa4a.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-24.png",
+      "sha256": "7c5d95078449b919e61b6fe9d5bb78e9f5fb1ef2667f3fb34a3632857ff97fb4",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand2/8: fit light athletic adult, moderate shoulder and forearm development, firm legs, no large hypertrophy. Clearly less massive than serious fighters.\nSubject: Дэниел у стойки; Взрослый Дэниел ЛаРуссо, Cobra Kai, а не подросток из The Karate Kid. Мужчина средних лет, тёмные волосы с лёгкой сединой, светлая тренировочная форма. Снятую куртку держит на локте, дневник в руке, нормальные взрослые черты лица. Силуэт ступени: Лёгкое спортивное телосложение: заметные плечи, крепкие ноги и предплечья без гипертрофии. Сильнее ранней бытовой группы, компактнее бойцов. Стойка: Уверенная, уравновешенная стойка; видна привычка двигаться.\nCaption for mood only, do NOT print it: Куртку снял, куртку надел. Подход всё-таки записал.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 32,
+      "name": "Нейтан за блинами",
+      "sourceCatalogId": 23,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-8efc0a36-e2fb-4115-97de-d64ad1c04aa7.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-32.png",
+      "sha256": "025f3fe87687786dd766c8c54746a6a9bff4c87b69f49357aaf838144abe8d24",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand3/8: well-trained human athlete. Developed rounded shoulders, muscular chest and upper arms, dense forearms, strong thighs; visibly more powerful than an ordinary beginner at the SAME body height.\nSubject: Нейтан за блинами; Взрослый Нейтан Дрейк, игры Uncharted. Взрослый искатель приключений с короткими каштановыми волосами и щетиной, светлая футболка с синими рукавами, свободные коричневые шорты, маленький рюкзак. Победно показывает пружинный замок грифа, без кобуры и оружия. Силуэт ступени: Хорошо тренированный взрослый атлет: выраженная грудь, развитые плечи и руки, плотные ноги. На той же высоте тела явно мощнее героя уровня 1. Стойка: Устойчивая атлетическая стойка, открытый читаемый торс, без искусственного увеличения кадра.\nCaption for mood only, do NOT print it: Древний артефакт найден. Это второй замок от грифа.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 34,
+      "name": "Хадсон на смене",
+      "sourceCatalogId": 29,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-3bba3296-f20f-4cb8-9ed8-406d581fb488.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-34.png",
+      "sha256": "86055f62a577b606d6712a651c561d5706e8963369ac40522d83abdcb1112c4a",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand3/8: well-trained human athlete. Developed rounded shoulders, muscular chest and upper arms, dense forearms, strong thighs; visibly more powerful than an ordinary beginner at the SAME body height.\nSubject: Хадсон на смене; Хадсон, Aliens. Взрослый темноволосый мужчина с характерной иронично-тревожной мимикой, серо-синий рабочий комбинезон. Компактным жёлтым промышленным захватом на одной руке держит маленький диск, никаких монстров и оружия. Силуэт ступени: Хорошо тренированный взрослый атлет: выраженная грудь, развитые плечи и руки, плотные ноги. На той же высоте тела явно мощнее героя уровня 1. Стойка: Устойчивая атлетическая стойка, открытый читаемый торс, без искусственного увеличения кадра.\nCaption for mood only, do NOT print it: Тяжёлая техника. Блин оказался самым маленьким.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 51,
+      "name": "Крис без тревоги",
+      "sourceCatalogId": 66,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-7d6c3c3b-5ac7-4498-8a4b-6698a3ecf5ab.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-51.png",
+      "sha256": "d1ad91646185cc363adcb3402bdb8e99ef4556e9d8fdccc6d54ecd2a3cc36d56",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand5/8: powerful large strength athlete, broad chest, heavy shoulders, large arms and strong legs. Visibly greater muscular bulk than lower bands without zooming.\nSubject: Крис без тревоги; Крис Редфилд, игры Resident Evil. Крупный взрослый темноволосый атлет, тёмно-синяя тренировочная футболка, оливковые брюки, простые напульсники. Держит небольшую схему зала, без кобуры, патронов и монстров. Силуэт ступени: Мощный силовой атлет: широкая грудь, тяжёлые плечи, объёмные руки и ноги. Разница с группами 0-2 видна в силуэте без реквизита. Стойка: Спокойная уверенная опора; массивность создаёт тело, а не куртка, сумка или вынесенные в стороны руки.\nCaption for mood only, do NOT print it: Выход найден. Но тренировку ещё не закончили.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 60,
+      "name": "Гатс со страховкой",
+      "sourceCatalogId": 69,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-330a9df0-32fa-42ad-ae41-9d0dfa723829.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-60.png",
+      "sha256": "43c76a3bbcd787b16814998d1adf4645978878ea5398237f5e6e2ee9388872da",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand6/8: heroic muscular anatomy, broad dense torso and strong limbs. Recognizable character and mature face; strength evident even without magic, weapons or background.\nSubject: Level60: mature muscular Guts / Berserk gym parody, recognizable short spiky black hair and serious adult face. Black sleeveless athletic top, charcoal training trousers, one metallic prosthetic hand. Strong heroic chest, broad dense shoulders and powerful limbs. A big but COMPACT rolled dark towel rests LOW beside one shoulder, its top never above the hair. One prop, no sword, cloak, wounds, blood, furniture or scenery. Same full-body height/head scale as other portraits; towel must not shrink the man or exceed frame.\nCaption for mood only, do NOT print it: Меч огромный. Полотенце почему-то ещё больше.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": true
+    },
+    {
+      "id": 17,
+      "name": "Кузьмич",
+      "sourceCatalogId": 75,
+      "source": "C:\\Users\\Dirg9\\.codex\\generated_images\\01a0111b-d08e-7400-873c-37ce9649d0ad\\exec-ce04a5e9-c130-490f-9ba4-757040cfd561.png",
+      "destination": "C:\\gymbeam\\artifacts\\apk\\verified\\level-art-male-v4\\level-17.png",
+      "sha256": "c26f2af113beb7716428e98ce1c8f748924b1aba62be172eda65bdcad30cdfef",
+      "args": {
+        "prompt": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n\nBand1/8: ordinary lightly active adult with modest tone, not an action hero or bodybuilder. Still slim/moderate shoulders and small arms, a little more composed than a beginner.\nSubject: Кузьмич; Кузьмич, «Особенности национальной охоты» (1995), Виктор Бычков. Сухощавый взрослый мужчина с характерной рыжей бородой и усами, узким спокойным немного хитрым лицом Виктора Бычкова. Узнаваемая серая ушанка с поднятыми ушами без эмблемы, короткая оливковая жилетка поверх полосатой футболки, серые тренировочные брюки и простые кроссовки. В опущенной руке маленькая гиря без цифр. Небольшие руки и умеренные плечи, не бодибилдер. Без алкоголя, ружья и декораций. Силуэт ступени: Подтянутый взрослый, небольшой мышечный тонус; ещё не боец или бодибилдер. Не делать плечи и предплечья мощнее средней спортивной группы. Стойка: Собраннее новичка, но остаётся обычным посетителем зала.\nImage2: IDENTITY ONLY. Match Viktor Bychkov as gamekeeper Kuzmich in the supplied movie still: narrow mature face, distinctive FULL RUST-GINGER BEARD and moustache, light thin eyebrows, squinting thoughtful eyes, gray ushanka hat with ear flaps raised. NO cap and NO young dark-haired face. Translate identity into the coarse pixel style of Image1. No emblem, scenery, extra people or photo textures. Full-body slim ordinary gym visitor in olive vest, striped T-shirt and gray joggers, small kettlebell in lowered hand. No alcohol or weapons.\nCaption for mood only, do NOT print it: Национальная особенность: гиря одна, советчиков пятеро.",
+        "referenced_image_paths": [
+          "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
+          "C:/gymbeam/artifacts/apk/verified/cinema-references/kuzmich.jpg"
+        ],
+        "transparent_background": true
+      },
+      "reviewed": false,
+      "supersedes": "37c5ef54dc2be0395088778c3f9cb5d4725e51f7512d8c0fb7ea199b374cf3b2"
     }
   ],
   "failures": [

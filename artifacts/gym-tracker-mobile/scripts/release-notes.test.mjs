@@ -92,3 +92,14 @@ test("release validation rejects mismatched versions and appVersion policy to pr
   assert.throws(() => validateRelease({ expo: { version: "1.1.0" } }, release), /versions differ/);
   assert.throws(() => validateRelease({ expo: { version: "1.1.1", android: { versionCode: 7 }, runtimeVersion: { policy: "appVersion" } } }, release), /explicit native runtime/);
 });
+
+test("local release build invalidates and verifies both embedded JS and Expo manifest", async () => {
+  const script = await readFile(new URL("./build-release.ps1", import.meta.url), "utf8");
+  assert.match(script, /createBundleReleaseJsAndAssets\/index\.android\.bundle/);
+  assert.match(script, /createReleaseUpdatesResources\/app\.manifest/);
+  assert.match(script, /foreach \(\$output in @\(\$embeddedManifest, \$embeddedBundle\)\)/);
+  assert.match(script, /Remove-Item -LiteralPath \$output -Force/);
+  assert.match(script, /manifest\.commitTime -lt \$buildStartedMs/);
+  assert.match(script, /bundle\.LastWriteTimeUtc\)\.ToUnixTimeMilliseconds\(\) -lt \$buildStartedMs/);
+  assert.ok(script.indexOf("Remove-Item") < script.indexOf("$buildStartedMs ="));
+});

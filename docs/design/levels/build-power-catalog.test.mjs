@@ -16,7 +16,7 @@ test("all 81 identities survive the art reorder; source catalog is not mutated",
   assert.equal(new Set(result.levels.map((level) => level.sourceCatalogId)).size, 81);
   assert.equal(JSON.stringify(source), before);
   assert.equal(result.integrationStatus, "integrated");
-  assert.equal(result.implementationRelease, "1.1.4");
+  assert.equal(result.implementationRelease, "1.1.6");
   assert.equal(result.normsAndProgressUnchanged, true);
   assert.equal(result.femalePolicy, "preserve-current-labels-and-original-art");
 });
@@ -27,6 +27,58 @@ test("first Rocky remains the style reference, not the rejected coarse edit", ()
   const wrong = copy();
   wrong.styleReference = "pixel-study-v4/rocky-candidate.png";
   assert.throws(() => validatePowerPlan(wrong));
+});
+
+test("ten Russian film replacements keep their existing numeric slots and power bands", () => {
+  const catalog = buildPowerCatalog(source, plan);
+  const replacements = [
+    [13, "Виктор Багров", "1997"], [14, "Генерал Иволгин", "1998"],
+    [17, "Кузьмич", "1995"], [18, "Данила Багров", "1997"],
+    [21, "Антон Городецкий", "2004"], [24, "Кот из «Бумера»", "2003"],
+    [32, "Саймон из «Жмурок»", "2005"], [34, "Артём Колчин", "2005"],
+    [51, "Гудвин", "2007"], [60, "Волкодав", "2006"],
+  ];
+  for (const [id, name, year] of replacements) {
+    const level = catalog.levels[id];
+    assert.equal(level.name, name);
+    assert.ok(level.reference.includes(year));
+    assert.ok(catalog.referenceGroups.screen.includes(id));
+    assert.equal(level.visualPower.band, Math.floor(id / 9));
+    assert.equal(level.sourceCatalogId, plan.orderedSourceIds[id]);
+  }
+  assert.equal(catalog.levels[1].visualPower.band, 0);
+  assert.equal(catalog.levels[30].visualPower.band, 3);
+  assert.equal(catalog.levels[80].name, "Атлас");
+});
+
+test("approved tone moves from beginner roasts to respect without losing unique concise copy", () => {
+  const { levels } = buildPowerCatalog(source, plan);
+  assert.equal(levels[1].name, "Спонсор фитнес-клуба");
+  assert.equal(levels[3].name, "Шейкерный чемпион");
+  assert.equal(levels[3].caption, "Шейкер качает чаще, чем бицепс.");
+  assert.equal(levels[7].caption, "Отдых между подходами длиннее трудового стажа.");
+  assert.equal(levels[48].caption, "Цепи сняты. Авторитет от этого легче не стал.");
+  assert.equal(levels[80].caption, "Мир на плечах. Дальше только прибавлять планеты.");
+  assert.equal(new Set(levels.map(({ caption }) => caption)).size, 81);
+  assert.ok(levels.every(({ caption, name }) => [...caption].length <= 80 && [...name].length <= 24));
+});
+
+test("replacements use newly reviewed art, preserve provenance and disable further generation", () => {
+  const ids = [13, 14, 17, 18, 21, 24, 32, 34, 51, 60];
+  const spec = read("./male-generation-v4.json");
+  const log = read("./male-generation-v4.sources.json");
+  assert.deepEqual(spec.allowedIds, ids);
+  assert.equal(spec.generationEnabled, false);
+  assert.equal(spec.approvedForProduction, true);
+  for (const id of ids) {
+    const entry = log.sources.find((item) => item.id === id);
+    assert.equal(entry.reviewed, true);
+    assert.equal(entry.name, buildPowerCatalog(source, plan).levels[id].name);
+    assert.match(entry.sha256, /^[a-f0-9]{64}$/);
+    assert.notEqual(entry.sha256, entry.supersedes, `Renamed old artwork at ${id}`);
+    assert.ok(log.superseded.some((old) => old.id === id && old.sha256 === entry.supersedes));
+    assert.equal(entry.args.transparent_background, true);
+  }
 });
 
 test("replacement heroes retain numeric IDs and the correct reference group", () => {

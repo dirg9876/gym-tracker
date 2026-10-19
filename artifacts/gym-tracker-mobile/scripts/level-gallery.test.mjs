@@ -99,3 +99,9 @@ test("male portrait frame uses one fixed inset, not a per-level zoom", () => {
   assert.match(screen, /size=\{216\}/);
   assert.match(screen, /width >= 400 \? 192 : 160/);
 });
+
+test("portrait upgrades bypass persistent drawable caches without clearing other app data", () => {
+  const component = readFileSync(resolve(mobile, "components/LevelPortrait.tsx"), "utf8");
+  assert.match(component, /cachePolicy="memory"/);
+  assert.doesNotMatch(component, /clearDiskCache|clearMemoryCache|AsyncStorage\.clear/);
+});

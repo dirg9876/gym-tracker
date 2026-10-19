@@ -61,7 +61,7 @@ export function buildPowerCatalog(source, plan) {
   const catalog = {
     ...structuredClone(source),
     ...(plan.implementationRelease ? { status: "integrated", integrationStatus: "integrated", implementationRelease: plan.implementationRelease } : {}),
-    galleryDecision: "2026-10-18: first Rocky selected; male artwork must show increasing physical power. Female gallery and all numeric progress/norms unchanged.",
+    galleryDecision: "2026-10-19: ten less familiar male heroes replaced by Russian film characters from the 1990s/2000s; captions progress from early roasts to earned respect. First Rocky pixel style, visual power, female gallery and numeric progress/norms unchanged.",
     artDirection: "art-direction-male-v4.md",
     sourceCatalog: plan.sourceCatalog,
     visualPowerPlan: "visual-power-v4.json",

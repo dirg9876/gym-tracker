@@ -21,6 +21,7 @@ const idOf = (value) => {
 };
 const request = (id) => {
   assert.equal(spec.generationEnabled, true, "Generation disabled");
+  if (spec.allowedIds) assert.ok(spec.allowedIds.includes(id), "Outside the explicitly authorized portrait revision");
   assert.ok(!spec.blockedIds?.includes(id), "This character is blocked pending a user-approved distinct replacement; do not retry it unchanged");
   if (spec.argumentOverrides?.[id]) return spec.argumentOverrides[id];
   if (spec.framingSources?.[id]) return {
@@ -31,8 +32,8 @@ const request = (id) => {
   const item = catalog.levels[id];
   assert.equal(item.id, id);
   return {
-    prompt: `${spec.promptPrefix}\n${spec.powerEnglish[item.visualPower.band]}\nSubject: ${spec.subjectOverrides[id] ?? `${item.name}; ${item.reference}. ${item.visual}`}\nCaption for mood only, do NOT print it: ${item.caption}`,
-    referenced_image_paths: [spec.reference],
+    prompt: `${spec.promptPrefix}\n${spec.powerEnglish[item.visualPower.band]}\nSubject: ${spec.subjectOverrides[id] ?? `${item.name}; ${item.reference}. ${item.visual}`}\n${spec.identityReferences?.[id]?.role ?? ""}\nCaption for mood only, do NOT print it: ${item.caption}`,
+    referenced_image_paths: [spec.reference, ...(spec.identityReferences?.[id] ? [spec.identityReferences[id].path] : [])],
     transparent_background: true,
   };
 };

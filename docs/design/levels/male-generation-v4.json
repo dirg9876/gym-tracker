@@ -1,15 +1,58 @@
 {
-  "status": "released-1.1.4",
+  "status": "approved-for-1.1.6",
   "generationEnabled": false,
   "approvedForProduction": true,
+  "allowedIds": [13, 14, 17, 18, 21, 24, 32, 34, 51, 60],
   "blockedIds": [],
-  "userAuthorization": "2026-10-18: внедряем. First Rocky rendering and progressive physical power accepted as direction.",
+  "userAuthorization": "2026-10-19: replace less familiar male characters with Russian cinema 1990s/2000s, improve captions. Keep first Rocky rendering and progressive power; female gallery unchanged.",
   "mode": "built-in image_gen.imagegen only",
   "catalog": "catalog-male-v4.json",
   "reference": "C:/gymbeam/docs/design/levels/pixel-study-v4/rocky-style-selected.png",
   "referenceRole": "Selected first Rocky: rendering/pixel-density reference only, NOT body power for every level. Never use rejected coarse second or old v3 batch as style.",
   "staging": "artifacts/apk/verified/level-art-male-v4",
   "masters": [1, 30, 80, 29, 0, 18, 45, 63],
+  "identityReferences": {
+    "14": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/ivolgin.jpg",
+      "url": "https://aif.ru/culture/person/nastoyashchiy_general_chem_zapomnilsya_aleksey_buldakov",
+      "role": "Image2: IDENTITY ONLY. Match Alexey Buldakov as General Ivolgin in the supplied movie still: mature broad heavy clean-shaven face, large nose, heavy jaw/chin, downturned mouth and gray temples, khaki cap. Absolutely NO moustache or beard. Not a young generic soldier. Convert facial geometry into the coarse pixel style of Image1. Do not copy table, tea set, cigarette, cigar, scenery, camera crop or photographic rendering. Full-body relaxed gym visitor with modest ordinary build, olive jacket and joggers, small WATER bottle. No alcohol or weapons."
+    },
+    "21": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/gorodetsky.jpg",
+      "url": "https://www.kinopoisk.ru/media/article/4008662/",
+      "role": "Image2: IDENTITY ONLY, Konstantin Khabensky as Anton Gorodetsky. Narrow mature face, high forehead, prominent long nose, tired hooded brown eyes, receding curly dark hair. Preserve this actor's distinct facial geometry, NOT Rocky's young boxer face. Translate into Image1 pixel style. No phone, photo lighting or background. Full-body fit but lightly built gym visitor, black knit beanie, short blue jacket, dark joggers and a small unlit flashlight in a lowered hand."
+    },
+    "24": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/kot.png",
+      "url": "https://www.domkino.tv/announce/5885",
+      "role": "Image2: IDENTITY ONLY, Vladimir Vdovichenkov as Kostyan Kot from Bumer. Mature broad forehead, very short straight light-brown hair, strong nose, square jaw, heavy brow and reserved tired expression. Preserve recognizable facial geometry, not Rocky's face. No car, scenery or photography in output. Fit light-athletic full-body gym visitor in short black leather jacket over gray T-shirt and black joggers; small old button phone in a lowered hand. Render only in Image1 pixel style."
+    },
+    "32": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/simon.jpg",
+      "url": "https://aif.ru/culture/person/pod_strahom_stat_kosmosom_bandity_i_drugie_roli_dmitriya_dyuzheva",
+      "role": "Image2: IDENTITY ONLY. Portray ONLY Dmitry Dyuzhev as Simon, the LARGE MAN IN THE LEFT FOREGROUND, NOT Alexey Panin smiling on the right. Simon has dark straight fringe, a long strong adult face, prominent nose, heavy brows and big jaw. No second person, car, cigar, map, gun or background. Full-body well-trained athletic man in short black leather jacket, dark red T-shirt, black joggers and closed gym shoes, small wrist wraps in lowered hand. Match Image1 coarse pixel rendering and adult proportions, not photo detail."
+    },
+    "34": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/kolchin.png",
+      "url": "https://24smi.org/news/126319-film-boi-s-teniu-aktery-i-roli.html",
+      "role": "Image2: IDENTITY ONLY, Denis Nikiforov as boxer Artyom Kolchin. Short light-brown crew cut, mature athletic face, strong jaw, straight nose, compact focused eyes. No cigarette, car, buildings or photo texture. Full-body calm powerful human boxer, navy sleeveless athletic top, dark boxing shorts, red hand wraps, white closed boxing shoes; hands relaxed at sides, developed shoulders/chest/arms/legs. Pixel rendering and scale strictly from Image1."
+    },
+    "51": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/goodwin.jpg",
+      "url": "https://uznayvse.ru/znamenitosti/biografiya-gosha-kucenko.html",
+      "role": "Image2: IDENTITY ONLY, Gosha Kutsenko as Goodwin in Paragraph78, at his adult 2007 age around40. Recognizable broad bald head, strong rounded nose, deep-set eyes, compact broad jaw and short stubble, not an old elderly man or Rocky. No photo rendering, scenery, formal suit, text or jewelry. Full-body powerful large strength athlete in olive sleeveless sports top, black joggers, lifting belt and closed trainers, small folded towel in a lowered hand. Heavy shoulders, chest, forearms and thighs; broad but human, not a giant. Image1 controls coarse pixel rendering."
+    },
+    "60": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/wolfhound.jpg",
+      "url": "https://www.film.ru/movies/volkodav",
+      "role": "Image2: IDENTITY ONLY. Portray the central adult hero Alexander Bukharov as Wolfhound: long tousled DARK-BLOND wavy hair with small front braids, short fair beard, strong broad mature face and serious blue eyes. Do NOT copy other people, horse, cart, knife, forest or scene. Hair must be blond-brown, NOT Aragorn's dark hair. Full-body heroic muscular gym warrior, dark sleeveless linen sports tunic, lifting belt, dark joggers and closed shoes, small chalk pouch only. Mature broad dense chest and limbs, planted stance. Match Image1 coarse pixel style/scale, no photorealism or weapons."
+    },
+    "17": {
+      "path": "C:/gymbeam/artifacts/apk/verified/cinema-references/kuzmich.jpg",
+      "url": "https://aif.ru/culture/person/vechnyy_kuzmich_zhizn_vopreki_aktera_viktora_bychkova",
+      "role": "Image2: IDENTITY ONLY. Match Viktor Bychkov as gamekeeper Kuzmich in the supplied movie still: narrow mature face, distinctive FULL RUST-GINGER BEARD and moustache, light thin eyebrows, squinting thoughtful eyes, gray ushanka hat with ear flaps raised. NO cap and NO young dark-haired face. Translate identity into the coarse pixel style of Image1. No emblem, scenery, extra people or photo textures. Full-body slim ordinary gym visitor in olive vest, striped T-shirt and gray joggers, small kettlebell in lowered hand. No alcohol or weapons."
+    }
+  },
   "promptPrefix": "Use case: style-transfer. Edit the supplied FIRST Rocky style sample into ONE NEW male gym-character sprite. Input image is STYLE ONLY: keep its moderate coarse pixel-art density, square staircase edges, mature face, adult proportions, restrained material shades and dark outlines. Replace the person completely with the requested character. Do NOT copy Rocky's gray suit, towel, shoes or boxing pose onto other characters. Do NOT simplify into the rejected very coarse version, and do NOT create a polished high-detail comic illustration. Obvious substantial square pixels, about 3 flat shade clusters per material, no realistic skin texture, individual hair strands, fine stubble, gradients or antialiasing.\nPRODUCTION FRAME: square transparent canvas, ONE centered complete full-body adult man, three-quarter front view, consistent lighting from upper left. Same head scale and human body height across the full series: body about 76 percent of canvas height, head about 11 percent, feet baseline around 89 percent. Leave generous empty transparent margins on ALL sides, minimum 8 percent including below feet and above hair/props. No clipped extremities. Props must remain compact and must not make the body smaller. No floor, background, furniture, card, frame, text, numbers, halo, aura, shadow or watermark. Genuinely transparent exterior, opaque character interior.\nPHYSICAL POWER is character anatomy, not zoom or bag size. Follow the stated power band: early men are ordinary and not muscular; later athletes have developed chest/shoulders/arms/legs; final heroes are extremely powerful. Keep all mature, no chibi or oversized childish head. Only one clearly recognizable character and one main gym joke.\n",
   "powerEnglish": [
     "Band0/8: ordinary healthy untrained man. Narrow/modest shoulders, thin normal upper arms, no visible pec or six-pack definition, not a champion body; not sickly or humiliating. Relaxed everyday posture.",
@@ -23,6 +66,7 @@
     "Band8/8: legendary physical power, most imposing adult silhouettes. Huge strong chest, shoulders and limbs, planted stance. Lean iconic heroes still clearly powerful and athletic. Atlas80 must be the mightiest silhouette of the whole series, not a small man behind a huge globe."
   ],
   "framingSources": {
+    "17": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-ce04a5e9-c130-490f-9ba4-757040cfd561.png",
     "73": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-55465852-9a04-4089-896c-78f5eefc3ea6.png",
     "74": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-6faab5d6-95ad-4839-94ad-9d9c4c64465e.png",
     "75": "C:/Users/Dirg9/.codex/generated_images/01a0111b-d08e-7400-873c-37ce9649d0ad/exec-c009d079-b494-4990-8a5e-963e1864e494.png",
@@ -50,7 +94,7 @@
     "58": "Level58: friendly nonviolent Bruce Wayne / Batman gym parody. Mature dark-haired athletic man, square jaw, completely clothed in a thick gray-and-black zipped training jacket, full-length gray joggers and closed black training shoes. Heroic broad shoulders, strong forearms and legs, healthy upright relaxed posture. In one lowered hand he holds a small folded black superhero mask with two pointed tips; other hand holds a compact gym duffel strap. No chest emblem or cape. Single fully clothed human figure at the same full-body/head scale as other portraits; everyday gym setting implied but not drawn. Calm dry humour, no dramatic action or scene.",
     "70": "Level70: Judge Dredd, distinct peaceful adult movie gym parody. Mature square-jawed man, compact red-and-black visor helmet, opaque black sports jumpsuit, green elbow pads and closed gym shoes. Heavy athletic chest, broad shoulder girdle, dense forearms and powerful legs, relaxed stable full-body stance. Holds one SMALL clipboard with blank paper in lowered hand, other hand relaxed. No text, guns, combat, scenery or effects. Same human height/head scale as the reference, compact gear must not shrink his body. Dry joke: gym rules are the law.",
     "71": "Level71: Tom Hardy's Bane from The Dark Knight Rises as a peaceful fully clothed gym visitor. Mature bald man with characteristic compact gray facial breathing mask, opaque olive zipped long-sleeve athletic jacket, full-length black joggers and closed plain trainers. Heavy strongman build, exceptionally broad shoulders, thick chest and powerful legs under clothing, adult proportions. Relaxed upright complete full-body standing pose, hands at sides, holding one small folded white towel. A single man, no scene. Maintain the reference pixel density, same body height and head scale. Transparent canvas, generous clear margins, everyday gym humour.",
-    "60": "Level60: mature muscular Guts / Berserk gym parody, recognizable short spiky black hair and serious adult face. Black sleeveless athletic top, charcoal training trousers, one metallic prosthetic hand. Strong heroic chest, broad dense shoulders and powerful limbs. A big but COMPACT rolled dark towel rests LOW beside one shoulder, its top never above the hair. One prop, no sword, cloak, wounds, blood, furniture or scenery. Same full-body height/head scale as other portraits; towel must not shrink the man or exceed frame.",
+    "60": "Level60: Wolfhound from the 2006 Russian movie, portrayed by Aleksandr Bukharov, a distinct adult gym interpretation. Mature broad face, long DARK-BLOND wavy hair with two short front braids, short fair beard. Dark sleeveless rough-linen athletic tunic with a small simple woven trim, leather-like weightlifting belt, dark training trousers and closed shoes. Heroic dense muscular torso, large shoulders, strong forearms and legs, stable calm full-body stance. One small rolled chalk pouch in a lowered hand. No sword, cloak, scars, animal, scenery, effects or lettering. Clearly stronger and broader than early civilian men, same human height and head scale. Not Guts, Aragorn or Geralt; a distinct Russian film hero.",
     "62": "Level62: mature muscular Logan / Wolverine gym interpretation. Iconic dark swept-back hair and sideburns, stern adult face, white sleeveless athletic tank top, dark training trousers and workmanlike training shoes. Broad heroic chest and shoulders, large dense upper arms and forearms, strong legs, relaxed planted stance. Ordinary hands, claws retracted. Holds one small folded white towel in lowered hand. Only the man and towel; NO bench, exercise machine, furniture, scenery, wounds, blood or claws. Body must occupy same height and head scale as other portraits.",
     "22": "Level22: adult Forrest Gump gym interpretation, recognizable mature Tom Hanks-like face, red baseball cap, plain white T-shirt, red running shorts, white socks and simple running shoes. Standing upright on an INVISIBLE floor, complete full figure at SAME scale as all other portraits. Fit runner's legs and moderate arms, not a heavyweight. In one lowered hand a TINY detached handheld treadmill remote with one red square stop button, staring at it with mild surprise. Absolutely NO treadmill, equipment, console stand, furniture, railings, floor platform or running scene anywhere. Only man and tiny remote. The character alone must fill the same height as Rocky in the reference.",
     "23": "Level23: original middle-aged moustached neighbourhood pull-up regular Petrovich. Ordinary peaked cap, simple white athletic tank top, navy training trousers, worn compact shoulder bag. Fit dense forearms and firm legs, confident relaxed stance after finishing his pull-ups. Standing upright FULL BODY, same height/head scale as reference, holding a small chalk pouch in one lowered hand. No pull-up bar, hanging, furniture, floor platform or equipment scene. Not a giant bodybuilder; clearly more trained than the very early ordinary men.",

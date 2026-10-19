@@ -16,8 +16,10 @@ export function LevelPortrait({ level, tier, sex, size, label }: Props) {
   const artSize = size - inset * 2;
   return (
     <View style={{ width: size, height: size, flexShrink: 0, borderRadius: size <= 48 ? 4 : 6, overflow: "hidden" }}>
+      {/* APK upgrades reuse drawable URIs; disk caching can retain the previous character. */}
       <Image
         source={levelImage(level, tier, sex)}
+        cachePolicy="memory"
         accessibilityLabel={label}
         contentFit="contain"
         style={{ position: "absolute", left: inset, top: inset, width: artSize, height: artSize }}
