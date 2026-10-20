@@ -1,78 +1,95 @@
 # Gym-Beam 1.1.6: Russian Cinema And Graduated Humour
 
-## Status And Goal
+## Status
 
-**READY TO PUBLISH**, 2026-10-19 Europe/Moscow, workspace `C:\gymbeam`, PowerShell. Implementation, 286 tests/typecheck, native APK upgrade/image-cache regression and exact progress comparison PASS. User requested less familiar male heroes replaced by Russian cinema characters of the 1990s/2000s and better captions. Newest direction: early levels MAY be mocking/insulting, with respect growing with level. Both implemented. Previous public release1.1.5/mastercdf8880; new source not committed/published at this snapshot. Remaining work is publication, actual OTA application/data verification and completion docs.
+COMPLETE. Released 2026-10-19, completion checkpoint finalized 2026-10-20 (Europe/Moscow). Workspace `C:\gymbeam`, PowerShell. Source **1c9d0612083c6176a198b11273bb8d55c4e8b4f1** is on `master`. Exact-source [CI39311520678](https://github.com/dirg9876/gym-tracker/actions/runs/39311520678) SUCCESS. GitHub Release and production Android OTA published, applied and verified. Do NOT repeat publication or regenerate accepted art.
 
-**Bumped ONCE:1.1.6 / Android code12 / explicit runtime1.1.0**, notes date2026-10-19; release:check PASS. Do NOT bump again for build/test/doc iterations. Next completed logical release AFTER this one:1.1.7. No native APIs/dependencies/compatibility changes; older runtime1.1.0 APKs may receive compatible JS/assets OTA. Original signing key, offline history/backups/optionalAI architecture preserved.
+Version **1.1.6 / Android code12 / native runtime1.1.0**. No native API/dependency changes. Next logical app release **1.1.7**. Documentation-only completion does not require another version/build/publication.
 
-## Decisions And Implemented Scope
+## Goal And Decisions
 
-- Ten male replacements at unchanged IDs/power bands:13Viktor Bagrov,14General Ivolgin,17Kuzmich,18Danila Bagrov,21Anton Gorodetsky,24Kot/Bumer,32Simon/Zhmurki,34Artyom Kolchin,51Goodwin/Paragraph78,60Wolfhound/2006film. Lean/civilian heroes remain low, fighters/heroic athletes higher. Numeric levels, sports norms, any-three progression, profile/history/plans/AI unchanged. SourceCatalogId is editorial provenance, NOT a data migration.
-- Ten NEW square transparent PNGs individually created with built-in image_gen. Kept first Rocky pixel density/adult proportions/common6%male inset; current160/192dp, row96dp and expanded216dp sizes retained. No bitmap crop/zoom tricks. Adult physical power checked with neighbours and1/30/80anchors. Female81labels/90originalPNG unchanged EXACT;71othermale portraits unchanged. Changed22PNGs only:10portraits+chapter1representative on EACH platform.
-- Five early names1/2/3/5/6 changed toSponsorFitnessClub/Tourist/ShakerChampion/PlateAuditor/MondayHero; existing images retained/reapproved. Total15names/78captions changed. Tone:0-8sharp habit roasts;9-17teasing;18-35camaraderie;36-53earned respect;54-80legendary respect with dry film irony. High heroes no longer mocked as helpless beginners. No unsafe/medical training advice. Examples3«Шейкер качает чаще, чем бицепс.»;7«Отдых между подходами длиннее трудового стажа.»;48«Цепи сняты. Авторитет от этого легче не стал.»;80«Мир на плечах. Дальше только прибавлять планеты.»
-- Reused design truth/pipeline v4; v3 remains archival. `build-power-catalog.mjs --write` generates catalogJSON/MD. `male-art-v4.mjs` request/record/rename/approve/audit; `sync-level-gallery.mjs --install` copies reviewed raw images/representatives and replaces ONLY male TS table via syntax nodes. No new data abstraction/framework.
-- Generation spec has explicit allowedIds10 and optional identityReferences{path,url,role}: Image1firstRockySTYLE, Image2movie/actorIDENTITY only. No paid API fallback/key used. All accepted prompts, source paths, SHA256, approvals and rejected/superseded variants preserved in `male-generation-v4.sources.json`. Generation now DISABLED/approved-for-1.1.6; don't regenerate accepted images.
-- Corrected General's first too-young/moustached probe, Kuzmich's missing ginger beard/ushanka, Gorodetsky's generic face using actual stills. Wolfhound correctly dark-blond, not Aragorn-dark. Kuzmich1.44%top margin failed2%gate; built-in framing edit fixed it without weakening acceptance. All10viewed at210/100/48px on light/dark with neighbours; official81generated/81reviewed/no-failure audit PASS.
+Replace ten less familiar male heroes with Russian cinema characters of the 1990s/2000s, improve humour, allow mocking early levels with respect growing with level. Preserve female gallery, relative visual power, offline history/backups/optional AI.
 
-## Two Cache Bugs Found And Fixed
+Ten replacements at UNCHANGED numeric IDs/power bands:
+- 13 Виктор Багров, Брат1997 / Брат2(2000).
+- 14 Генерал Иволгин, Особенности национальной рыбалки1998.
+- 17 Кузьмич, Особенности национальной охоты1995.
+- 18 Данила Багров, Брат1997/2000.
+- 21 Антон Городецкий, Ночной дозор2004 / Дневной дозор2006.
+- 24 Кот из «Бумера», Бумер2003.
+- 32 Саймон из «Жмурок», Жмурки2005, Дмитрий Дюжев.
+- 34 Артём Колчин, Бой с тенью2005.
+- 51 Гудвин, Параграф78(2007).
+- 60 Волкодав, Волкодав2006, Александр Бухаров.
 
-1. Gradle reused old JS when only shared workspace TS/JSON/PNG changed. First candidate nativecode12 but embeddedUI1.1.5; fresh Expo manifest alone was insufficient. Fixed existing `scripts/build-release.ps1`: remove ONLY known generated manifest AND `createBundleReleaseJsAndAssets/index.android.bundle`, then verify manifest commitTime plus nonempty bundle LastWriteTimeUtc after build start. New static regression guard. Final actual build reran JS and passed both freshness checks.
-2. `expo-image` default Android Glide DISK cache returned old pictures under reused drawable URIs despite new JS/PNG resources. Native screenshots showed old Waymond/Venkman labelled Danila/Kuzmich. Generated res and manifest hashes were new, and fresh OTA files contained all10new raw PNG hashes. Clearing ONLY verified emptyQA5556 proved sameAPK renders new images with clean cache. NEVER cleared protected5554. Fixed ONLY `components/LevelPortrait.tsx` with existing supported `cachePolicy="memory"`; raw Expo Updates assets/offline storage remain persisted, no global cache or user-data clearing. New gallery regression guard. Final install-r on ORIGINAL retained old cache/data correctly replaced images, proved by before/after screenshots. No native module/runtime change.
+Five early names1/2/3/5/6: «Спонсор фитнес-клуба», «Турист в раздевалке», «Шейкерный чемпион», «Ревизор блинов», «Герой понедельника». Their existing images retained/reapproved. Total15names/78captions changed. Tone0-8sharp habit roasts,9-17teasing,18-35camaraderie,36-53earned respect,54-80legendary respect/dry film irony. High heroes no longer mocked as helpless beginners. No unsafe exercise/medical advice. Examples3«Шейкер качает чаще, чем бицепс.»;7«Отдых между подходами длиннее трудового стажа.»;48«Цепи сняты. Авторитет от этого легче не стал.»;80«Мир на плечах. Дальше только прибавлять планеты.»
 
-Rejected historical candidates (do NOT publish):98596576.../152520435bytes(oldJS) andC596FD0E.../152323395bytes(freshAPK but staleportraitdiskcache). They are superseded by FINAL artifact below. Same release/code maintained throughout all iterations.
+Ten new transparent square PNGs individually generated using built-in image_gen, NOT paid CLI/API. First Rocky remains pixel density/adult proportions reference; common male inset6%. Existing main160/192dp, row96dp and expanded216dp sizes retained. Lean civilians below fighters/heroic athletes. Female81labels/90originalPNG hashes EXACT unchanged, other71male portraits unchanged. Only22PNG changed: ten portraits plus chapter1representative on EACH platform. Numeric levels, sports norms, any-three progression, profile/history/plans/AI unchanged. sourceCatalogId is editorial provenance, not a data migration.
 
-## Final Artifacts
+## Artwork Files And Reproduction
 
-- **FINAL APK** `artifacts/apk/verified/gym-beam-1.1.6.apk`, **152323387bytes**, SHA256 **B7703D0BA03B5E61C4DD6B6138B55BDB4B70613855FFCB9281C868C247AE7348**.
-- Original certificate SHA256 **dfdcf05447cf713727f87f653a702649e4bf0ba8ff9598b294d0ac26a264814a** verified. aapt com.dirg9876.gymtracker/version1.1.6/code12/arm64-v8a+x86_64 PASS. Local signing key unchanged.
-- Final build via fixedscript: `artifacts/apk/verified/release-1.1.6-build-final.log`, SUCCESS1m30s/835tasks. Earlier freshcodebuild3m20s and rejectedfirstbuild2m21s are diagnostics, not delivery. Final APK installed-r BOTH AVDs, no uninstall; primary never cleared.
-- **FINAL Expo export** `artifacts/gym-tracker-mobile/dist/_expo/static/js/android/entry-41fd9429679af1c4c601a84db7b55f47.hbc`, about5.19MB;204exportfiles; log `release-1.1.6-export-cache-fix.log`. Includes memory cache fix and final4notes. Older62a0.../0893...bundles STALE, don't publish. No source app changes since final export/build.
-- GitHub expected public asset after publication: https://github.com/dirg9876/gym-tracker/releases/download/v1.1.6/gym-beam-1.1.6.apk. NOT CREATED/PUBLIC at snapshot; must actually publish/verify, don't claim ready download yet.
+Pipeline remains v4, v3 archival. `docs/design/levels/build-power-catalog.mjs --write` generates catalog JSON/MD; `male-art-v4.mjs` requests/records/renames/approves/audits; `sync-level-gallery.mjs --install` copies accepted raw assets/representatives and replaces ONLY male TS table via syntax nodes.
+
+Exact accepted prompts/output paths/SHA256/approvals/rejected probes: **docs/design/levels/male-generation-v4.sources.json**. Spec male-generation-v4.json has allowedIds10, optional identityReferences{path,url,role}, generationEnabled=false, approved-for-1.1.6. Do not regenerate accepted assets. Image1selectedRockySTYLE; Image2movie/actorIDENTITY only. Style pixel-study-v4/rocky-style-selected.png SHA256 d0e33abfd176b7bbe4a4c74578517620e3433a9eacb6e5f031b3dbf78ebdaee6.
+
+Assets saved in BOTH mobile/web level folders, not only generated_images. Ignored raw/review sheets `artifacts/apk/verified/level-art-male-v4`; ignored public stills cinema-references/*, URLs/roles in spec. General age/clean-shaven face, Kuzmich ginger beard/ushanka, Gorodetsky likeness corrected from references. Wolfhound has dark-blond hair, not Aragorn-dark. Kuzmich1.44%top margin failed unchanged2%gate; image_gen framing edit fixed it. Ten reviewed at210/100/48px light/dark with neighbours; official81technical/manual audit PASS.
+
+## Two Bugs Found And Fixed
+
+1. Gradle reused old JS after only shared TS/JSON/PNG changes: first code12 candidate embedded1.1.5 UI. `scripts/build-release.ps1` now removes ONLY known generated Expo manifest AND createBundleReleaseJsAndAssets/index.android.bundle, verifies manifest commitTime and nonempty bundle LastWriteTimeUtc after build start. Final build reran JS, both guards PASS, regression test added.
+2. Android expo-image/Glide disk cache displayed old portraits under reused drawable URIs despite new JS/PNG. Clearing ONLY empty isolated5556 proved cause; protected5554 NEVER cleared. `components/LevelPortrait.tsx` uses existing supported `cachePolicy="memory"`; raw Expo Updates assets/offline persist, no global/user-data clearing, no new native runtime. Regression guard added. Final install-r over ORIGINAL retained cache/data showed new Danila/Kuzmich. Legacy1.1.5native +newOTA also showed newDanila offline.
+
+Rejected candidates:98596576.../152520435bytes(oldJS), C596FD0E.../152323395bytes(stale image cache). Neither is delivery. Same release/code maintained during iterations.
+
+## Published Artifacts
+
+- [Release v1.1.6](https://github.com/dirg9876/gym-tracker/releases/tag/v1.1.6), PUBLIC/draftfalse/targetsource1c9d0612083c6176a198b11273bb8d55c4e8b4f1.
+- [Public APK](https://github.com/dirg9876/gym-tracker/releases/download/v1.1.6/gym-beam-1.1.6.apk), HTTP200. Asset657227327,152323387bytes. Remote digest EXACT local SHA256 **B7703D0BA03B5E61C4DD6B6138B55BDB4B70613855FFCB9281C868C247AE7348**.
+- Local FINAL `artifacts/apk/verified/gym-beam-1.1.6.apk`. Original signing certificate SHA256 dfdcf05447cf713727f87f653a702649e4bf0ba8ff9598b294d0ac26a264814a. Package com.dirg9876.gymtracker/version1.1.6/code12/arm64-v8a+x86_64. APK in Release assets, not Git blobs.
+- Fixedscript final build log release-1.1.6-build-final.log SUCCESS1m30s/835tasks. FINAL export `artifacts/gym-tracker-mobile/dist/_expo/static/js/android/entry-41fd9429679af1c4c601a84db7b55f47.hbc`, about5.19MB/204files; release-1.1.6-export-cache-fix.log. Older62a0/0893 bundles obsolete.
+- EAS dirg9508/gym-tracker-mobile /projectId dabd3128-415f-4a2f-8c73-3b0a52585149, Android production branch/channel/runtime **1.1.0**.
+- OTA group **e3a4389e-7d76-4ca7-9827-3668e380372e**, Android update **01a155a8-a8cc-7f5f-a5bb-981ae8fdc8e3**, created2026-10-19T19:34:39.052Z/source1c9d061. [Manifest](https://u.expo.dev/update/01a155a8-a8cc-7f5f-a5bb-981ae8fdc8e3). Uploaded1bundle/10newassets, reused193. CLI16.32.0 finished; known Windows npxENOENT config warning fell back to bundled@expo/config, actual update verified.
+- Phone update without reinstall: **Обновления > Проверить обновления > Применить обновление**. Do not uninstall/clear data.
 
 ## Verification
 
-- **286tests PASS**: mobile237 +design22 +API17 +Worker10. FullworkspaceTypeScript PASS; finalnativeTS againPASS after memory-policy fix. PowerShell syntax parse PASS. release:check andgitdiff--check PASS. Logs ignored under `artifacts/apk/verified/release-1.1.6-*tests.log` andtypecheck.log.
-- New5tests total: three design guards (ten film slots/bands/dates, approved graduated copy/concise unique81captions, new reviewed art/provenance/frozen scope), one build-freshness guard, one portrait-memory-cache guard. Tests don't prove humour/likeness; manual source and native review done separately.
-- Female baseline81labels/90hashesPASS. Existing fullasset tests compare81maleimages+labels onmobile/web,9representatives andsex/fallback maps. All81technical/manual approvals PASS; rawimage scope22files. No sports/progression logic change and no new workout simulation needed.
-- Private exact-value scan PASS: **43 scopedstagedfiles /1448uncompressedFINALAPKentries /204freshOTAfiles**, actual local provider/owner values checked in memory, none printed/embedded. No keys, connections, personal backups, SDK/AVD or APK Git blobs staged. Completion doc edits after scan contain only public results.
+**286 tests PASS**: mobile237+design22+API17+Worker10. FullworkspaceTypeScript/finalnativeTypeScript/PowerShellsyntax/release:check/gitdiff--check PASS. Five new tests: three design guards (ten film slots/bands/dates; graduated concise unique81copy; approved art/provenance/frozen scope), build freshness, portrait memory cache. Full female baseline81labels/90hashes and81maleimages/labels on both platforms,9representatives,sex/fallback maps PASS;81technical/manual approvals PASS, PNG scope22files.
 
-## Native QA And Original Data
+Exact private-value scan PASS:43 scopedfiles/1448uncompressedFINALAPKentries/204freshOTAfiles, actual local provider/owner values checked in memory, never printed/shipped. No keys/connections/backups/SDK/AVD/APK Git blobs committed. No paid AI calls/consent/model/budget/Worker/gateway changes; coach OFF, saved connection unchanged.
 
-Protected **gymbeam_test / emulator-5554**, original profile male/weightfallback75 unchanged:
+## Original Progress And Native QA
 
-- Fresh baseline `before-release-1.1.6-native.json`,13842bytes:2finishedworkouts/8sets/confirmed3/nextWorkoutId11/nextSetId15/noactive,31active+3archivedexercises/plans0. No archived backup imported over newer data; always freshly verified.
-- `after-release-1.1.6-install.json` (first freshcodecandidate) AND **after-release-1.1.6-final-install.json** (FINALB770...) state+plans EXACT baseline via Nodeassert.deepEqual; exportmetadata may differ. Private ignored files atQAoutput, not committed. No user data/profile/cache clearing, QAworkouts or claims.
-- Final upgrade over existing stale-cacheinstallation PASS: beforeimagecachefix shows oldWaymond/Venkman; FINALsame-data/cache upgrade displays NEW Danila sweater/player and ginger-beardedKuzmich, with newcaptions and unchanged level3/progress. Screenshots `original-before-image-cache-fix`, `original-after-image-cache-fix`, `original-danila-final`. Final newPNG rendering visually reviewed.
-- 1.1.6notes appeared once atsafeHome, acknowledged, did not repeat on same-version upgrade/coldstart. ManualWhat'sNew displays4correctnotes. Current3ShakerChampion/roastmatches. Primary currentlyBackup after finalexport, noactive; leaveHomeafterOTAcheck. AI staysOFF/savedgatewayunchanged; no providercalls/consent/model/budget/Worker changes.
+Protected **gymbeam_test /5554**:
+- Fresh ignored baseline `artifacts/apk/verified/before-release-1.1.6-native.json`,13842bytes:2finishedworkouts/8sets/confirmed3/noactive, nextWorkoutId11/nextSetId15,31active+3deletedexercises/plans0, maleprofile/bodyweight-null fallback75 unchanged.
+- State AND plans EXACT baseline via Nodeassert.deepEqual in after-release-1.1.6-install.json, **after-release-1.1.6-final-install.json**, **after-release-1.1.6-published-ota.json**. Exportmetadata may differ. NEVER imported old backup, cleared/uninstalled primary, changed profile or created QAworkouts there.
+- Final upgrade over old image cache showed NEW gray-sweater/player Danila and ginger-beardedKuzmich. Screenshots original-before-image-cache-fix,original-after-image-cache-fix,original-danila-final.
+- Actual OTAcheck/download/APPLY/reload PASS: Updates1.1.6/Обновление01a155a8. Manual final4notes PASS; fresh postOTAexport13842bytes state/plans EXACT.
+- Notes once atsafeHome, no repeat sameversionupgrade/coldstart; manualWhat'sNew works. FinalHome/noactive/no repeatedpopup `release-1.1.6-final-home.png`. CurrentappPIDReactNativeJS:E/AndroidRuntime:E empty;ADBreverseempty.
 
-Isolated **gymbeam_visualqa /5556**:
+Isolated **gymbeam_visualqa /5556**, no personal data:
+- Female0unchanged;male0/1roasts+79/80respect at360x640dp/font1.3 wrap/nooverlap. Regular1080x2400/density420/font1.0newDanila18andWolfhound60expanded216dp visually PASS.
+- EmptyQA only cleared for cache diagnosis. Normal dimensions/font restored during first run. Later installed archived1.1.5/code11 ONLY onemptyQA, primedoldWaymond18cache and verified old embedded1.1.5captions.
+- Applied01a155a8 via Updates WITHOUT anotherAPKinstall. UI **1.1.6 / Обновление01a155a8**, Android native package still **1.1.5/code11**. Screenshot release-1.1.6-legacy-ota-running.png.
+- DisabledWiFi/data+enabledairplane ONLY on5556, cold-stopped/restarted offline. Newcaption0/newDanila18 still present. Visually reviewed `release-1.1.6-legacy-offline-danila-expanded.png` (newgraysweater/player, notoldglasses/greenjacket); rowPNG saved. Proves nativecompat/cachefix/offlineassetpersistence.
+- On2026-10-20resume adb lists no devices. If reusing QA, restore connectivity with cmd connectivity airplane-mode disable/svc data enable/svc wifi enable and verify normal dimensions/font before further QA.
+- OS SystemUIANR on two overloadedcoldboots recovered byWait, NOTappANR. Automation failures due offscreen/fastflings fixed650msdrags/clickablerowselectors, notproductbugs.
 
-- Emptyfemale0image/textunchanged, male0/1roasts and79/80respect at360x640dp/font1.3 inspected: longnames/captionswrap, nooverlap. Regular1080x2400/density420/font1.0newDanila18andWolfhound60expanded216dp visually PASS, neighbours/captions/requirements distinct, allimagesvisible.
-- Cleared app ONLY here once for diskcache diagnosis after verifying AVDname, never primary. No personaldata here; afterwardemptydefaultmale75. OS SystemUIANR once during simultaneous coldboot/build recovered byWait, not appANR. Incorrect scripted scrolls used off-screen coordinates then too-fastflings; corrected to actualwm size +slow650ms drags and clickable rowcontent-desc selectors, not appbugs.
-- QA wm/density reset VERIFIED physical1080x2400/420, font1.0 verified, then AVDSTOPPED. Final appPIDReactNativeJS:E/AndroidRuntime:E log empty. GradledaemonSTOPPED. No Metro/devserver/ADBreverse. PrimaryheadlessAVDkept running. No required execsessions/imagegencells pending at this snapshot.
-- Physicalphone/iOS not tested; currentdarktheme only. Humour/likeness subjective, ten replacements are editorial choices, not a claim every remaining reference is universally familiar. Scale is gym parody/visualpower, not canonical cross-universe combat ranking.
+No required exec/build/upload/test sessions left; Gradledaemon stopped. On nextdayresume no emulators connected. Physicalphone/iOS untested, native darktheme tested, lightartreview sheets inspected. Humour/likeness subjective; not every remaining reference guaranteed universally familiar.
 
-## Files
+## Changed Files
 
-43scopedfiles staged: rootAGENTS/CHECKPOINT/thischeckpoint; mobileapp.json/release.json, LevelPortrait.tsx, scriptsbuild-release.ps1/release-notes.test.mjs/level-gallery.test.mjs;22PNG; shared`lib/level-data/src/index.ts`;9designfiles(`art-direction-male-v4.md`,build-power-catalog.mjs/.test.mjs,catalog-male-v4.json/.md,male-art-v4.mjs,male-generation-v4.json/.sources.json,visual-power-v4.json);releasev1.1.6.md/.notes.json. CurrentAGENTS says1.1.6andboth-artifactfreshnessrule.
+Source43files: AGENTS.md,CHECKPOINT.md,thischeckpoint; mobileapp.json/release.json,LevelPortrait.tsx,build-release.ps1,release-notes.test.mjs,level-gallery.test.mjs;22PNG;sharedlib/level-data/src/index.ts;nine designfiles(art-direction-male-v4.md,build-power-catalog.mjs/test,catalog-male-v4.json/md,male-art-v4.mjs,male-generation-v4.json/sources,visual-power-v4.json);docs/releases/v1.1.6.md/notes.json. Completiondocs separately, no appsourcechange.
 
-Built-in output sources/rawstaging/review sheets in ignored`artifacts/apk/verified/level-art-male-v4`; public still references ignored`cinema-references/*`, URLs/roles in generator spec. App assets persisted in BOTHmobile/webfolders, not only defaultgenerated_images. Exact prompt set/sourcehashes in tracked sources manifest; no new generation required.
+Unrelated .agents/agent_assets_metadata.toml,mockup-sandboxgeneratedcomponent,olduntrackeddesigncheckpoints,attached_assets/* untouched/uncommitted. Private backups/signing/owner/SDK/AVD remain ignored.
 
-Unrelated `.agents/agent_assets_metadata.toml`, mockup-sandbox generatedcomponent, untracked older checkpoints and`attached_assets/*` left untouched/uncommitted. Never revert/stage those. Privateprogress/backups/signing/SDK/AVD/owner files remain ignored.
+## Next Task
 
-## Remaining Publication Steps
+1.1.6 release complete, no remaining publication work. New2026-10-20request: remove archived exercises, offer replacement by existing/new, leave no archived exercises. Investigate history/deletion semantics first; preserve history and backup compatibility, do not silently merge unrelated movements/units. NEW logical release **1.1.7**, not another1.1.6 rebuild.
 
-1. Restage latestcheckpoint, `git diff --cached --check`; sourcecommit/push establishedmaster (no force/defaultbranchchanges), recordSHA, wait exact-sourceCI SUCCESS. No1.1.6commit exists yet at snapshot.
-2. DraftGitHubReleasev1.1.6 with FINALB770...APK asset ONLY, targetexactsourceSHA, notes`docs/releases/v1.1.6.md`; finishupload thenpublish/latest. Verify remoteuploadedsize152323387/digestB770.../publicHTTP200. APK notGitblob. No1.1.6draftcreatedyet.
-3. PublishFINAL41fd...dist to existing EASproduction Android/runtime1.1.0 usingtestedCLI16.32.0(skipbundler commandbelow), recordactualnewgroup/updateIDs/sourceSHA. No1.1.6OTA publishedyet.
-4. On5554Updates:Check/download/APPLY, verifyrunning1.1.6/newupdateID (not just uploadsuccess), manualnotes/newportrait. Exportfresh`after-release-1.1.6-published-ota.json`, assertstate+plansEXACTfreshbaseline. Never import an oldbackup; noactualworkouttestneeded.
-5. FinalcoldHome/noactive/no repeatedpopup/currentPIDJSerrorcheck, noADBreverse. RewritecheckpointCOMPLETEwithactualIDs/URLs/SHA/CI andupdate rootpointer. Docs-onlycompletioncommit/push, no version bump/rebuild/republish. FinalRussianresponseconcise: ten Russianheroes, tonefromroasttorespect,286tests/dataretained,OTAsteps/APK/checkpoint. Don't claimphysicalphone/iOS tested.
+## Tooling
 
-## Commands And Tooling
+Node C:\Users\Dirg9\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe; pnpm C:\Users\Dirg9\AppData\Local\pnpm\pnpm.CMD; gh C:\Program Files\GitHub CLI\gh.exe; JDK17 C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot; SDK C:\gymbeam\artifacts\android-sdk; AVD_HOME C:\gymbeam\artifacts\android-avd. Prepend runtime paths.
 
-Node`C:\Users\Dirg9\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe`; pnpm`C:\Users\Dirg9\AppData\Local\pnpm\pnpm.CMD`; gh`C:\Program Files\GitHub CLI\gh.exe`; JDK17`C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot`;SDK`C:\gymbeam\artifacts\android-sdk`;AVD_HOME`C:\gymbeam\artifacts\android-avd`. PrependNode/pnpmPATH,buildneedsJAVA_HOME+ANDROID_HOME. EASaccountdirg9508/projectgym-tracker-mobile /projectIddabd3128-415f-4a2f-8c73-3b0a52585149. Branch/channelproduction/runtime1.1.0.
+Nativehelpers artifacts/gym-tracker-mobile/scripts/android-ui-helpers.ps1:setANDROID_SERIAL BEFORE dot-source, never concurrentUIautomationononeAVD,retrytransientRead-Uiafternavigation. Slowregularswipe5401850->5401050/650ms. Freshprotectedprogressbaselinebeforetesting; NEVER overwritewitholdbackup.
 
-Publish from mobile: `pnpm dlx eas-cli@16.32.0 update --branch production --platform android --message "Gym-Beam 1.1.6: Russian cinema and level humour" --skip-bundler --input-dir dist --environment production --non-interactive --json`. KnownWindowsnpxENOENTconfigwarning recoversvia bundled@expo/config; don'tupgradeCLI. Gitper-commandidentity`-c user.name=dirg9876 -c user.email=273524213+dirg9876@users.noreply.github.com`;pushprependghdirectoryPATH,GIT_TERMINAL_PROMPT=0,`git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin master`.
-
-Nativehelpers`artifacts/gym-tracker-mobile/scripts/android-ui-helpers.ps1`:setANDROID_SERIAL BEFORE dot-source. Read-Ui canfailtransientlyafterroute;retry4x600ms; neverduplicate taps blindly. Originalregularscreen1080x2400: slow swipe5401850->5401050/650ms, clickable rows have content-desc containing charactername +`УРОВЕНЬ N,`; boundrowtop>=240/bottom<2180. Small720x1280: swipe360910->360530/650ms,top>=180/bottom<=1060. Fastflings skiptargets. Don't run concurrenttap/dump scripts sameAVD. `Export-Backup` usesexistingDocuments/GymTrackerfolder. CompareJSON`.state` and`.plans` withassert.deepEqual, not exportmetadata. Private exactscanner`artifacts/apk/verified/scan-release-1.1.4.ps1` may be reusedinmemoryreplacing1.1.4->1.1.6;neverprintsecretvalues. Previouscomplete1.1.5checkpointhasadditionalworkflowdetails.
+Gitidentity percommand -c user.name=dirg9876 -c user.email=273524213+dirg9876@users.noreply.github.com. PushwithghonPATH/GIT_TERMINAL_PROMPT=0: git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin master. No force. Future compatibleOTA usesfreshsourceSHA/export, notthisnowstaledist.
