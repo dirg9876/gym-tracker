@@ -3,6 +3,7 @@ import * as Crypto from "expo-crypto";
 import { z } from "zod";
 import { coachCycleAssignmentSchema, coachProfileSchema, savedCoachMonthSchema } from "@workspace/ai-coach";
 import { disableAiCoach } from "./aiCoachConnection";
+import { migrateExerciseCatalog } from "./exerciseReplacement";
 import { clearCoachProposal } from "./aiCoachPlan";
 import type { OfflineState } from "./offlineApi";
 import { isTimedExercise, minimumWeight } from "./workoutMeasurement";
@@ -32,6 +33,7 @@ const stateSchema = z.object({
     isMain: z.boolean(), isCustom: z.boolean(), equipment,
     bodyweightMultiplier: amount,
     deletedAt: date.optional(),
+    replacementPending: z.boolean().optional(),
   }).extend(equipmentSettingsSchema.shape).passthrough().refine(validEquipmentSettings)),
   workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional() }).passthrough()),
   sets: z.array(z.object({
@@ -145,6 +147,7 @@ export async function parseProgressBackup(text: string): Promise<ProgressBackup>
     throw new Error("Проверка целостности не пройдена. Данные не изменены.");
   }
   checkRelations(parsed.data);
+  if (migrateExerciseCatalog(parsed.data.state)) parsed.data.checksum = await checksum(parsed.data.state, parsed.data.plans);
   return parsed.data;
 }
 
@@ -152,6 +155,7 @@ async function serializeEntries(entries: [string, string][]): Promise<string> {
   const stateText = entries.find(([key]) => key === PROGRESS_KEY)?.[1];
   if (!stateText) throw new Error("Данные приложения ещё не загружены.");
   const state = validateStoredProgress(entries);
+  migrateExerciseCatalog(state);
   const plans = Object.fromEntries(entries.filter(([key]) => key.startsWith(PLAN_PREFIX))
     .map(([key, value]) => [key.slice(PLAN_PREFIX.length), JSON.parse(value)]));
   const text = JSON.stringify({

@@ -646,7 +646,7 @@ test("used exercises cannot change measurement semantics or delete recorded prog
     assert.deepEqual(storage,before);
   }
   const workoutBefore = await request(`/api/workouts/${workout.id}`);
-  await request(`/api/exercises/${exercise.id}`, "DELETE");
+  await assert.rejects(request(`/api/exercises/${exercise.id}`, "DELETE"), { status: 409 });
   assert.deepEqual(await request(`/api/workouts/${workout.id}`),workoutBefore);
   await parseProgressBackup(await exportProgress());
 });

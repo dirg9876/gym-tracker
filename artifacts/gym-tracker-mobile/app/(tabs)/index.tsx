@@ -1,5 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getGetActiveWorkoutQueryKey, getListWorkoutsQueryKey, useCreateWorkout, useGetActiveWorkout } from "@workspace/api-client-react";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -12,6 +12,8 @@ import { useAiConnection } from "@/hooks/useAiCoach";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
 import { ProgressRecoveryRequired } from "@/lib/progressStorage";
+import { coachRequest } from "@/lib/coachApi";
+import type { ExerciseMaintenance } from "@/lib/exerciseReplacement";
 
 // Repacked APKs store new artwork as a raw asset; EAS bundles it normally.
 const logo = process.env.EXPO_PUBLIC_GYM_REPACK_ASSETS === "1"
@@ -26,6 +28,8 @@ export default function BrandScreen() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const active = useGetActiveWorkout();
+  const maintenance = useQuery({ queryKey: ["exercise-maintenance"], queryFn: () => coachRequest<ExerciseMaintenance[]>("/api/exercises/maintenance") });
+  const pendingReplacements = maintenance.data?.filter(row => row.exercise.replacementPending).length ?? 0;
   const connection = useAiConnection();
   const aiEnabled = !!connection.data?.enabled;
   const workout = active.data?.workout;
@@ -80,6 +84,7 @@ export default function BrandScreen() {
         <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ flexDirection: "row", gap: 4, height: 5, marginTop: 4 }}><View style={{ width: 56, backgroundColor: colors.accent }} /><View style={{ width: 24, backgroundColor: colors.accent }} /><View style={{ width: 8, backgroundColor: colors.primary }} /></View>
       </View>
       <View style={styles.commands}>
+        {pendingReplacements ? <Button title={`Выбрать замену упражнений: ${pendingReplacements}`} variant="secondary" icon={<Feather name="repeat" size={18} color={colors.accent} />} onPress={() => router.push("/exercises")} /> : null}
         {aiEnabled ? <Button title={workout ? "Продолжить с ИИ-тренером" : "Начать тренировку с ИИ"} size="lg" variant="secondary" style={{ borderColor: colors.successBorder, backgroundColor: colors.successSoft }} textStyle={{ color: colors.success }} icon={<Feather name="zap" size={21} color={colors.success} />} disabled={active.isPending || active.isError || createWorkout.isPending} onPress={() => router.push(workout ? `/coach-session?workoutId=${workout.id}` : "/coach-session")} /> : null}
         <Button
           title={workout ? "Продолжить тренировку" : "Начать тренировку"}

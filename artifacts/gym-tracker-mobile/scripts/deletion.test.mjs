@@ -14,7 +14,7 @@ const startPlan = async () => {
   const program = await request("/api/programs", "POST", { name: "Delete QA", exercises: [def(), def(3)] });
   return request("/api/workouts", "POST", { programId: program.id });
 };
-test("catalog deletion includes built-ins and preserves recorded sets, statistics and levels", async () => {
+test("catalog replacement includes built-ins and preserves recorded sets and statistics", async () => {
   const workout = await startPlan();
   await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 100, reps: 1, setType: "working" });
   await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 6, weightKg: 180, reps: 1, setType: "working" });
@@ -24,21 +24,25 @@ test("catalog deletion includes built-ins and preserves recorded sets, statistic
   const overview = await request("/api/stats/overview");
   const levels = await request("/api/levels");
   assert.ok(levels.currentLevel > 0);
-  await request("/api/exercises/1", "DELETE");
+  await assert.rejects(request("/api/exercises/1", "DELETE"), { status: 409 });
+  await request("/api/exercises/1/replace", "POST", { targetExerciseId: 2 });
   await request("/api/exercises/1", "DELETE");
   assert.equal((await request("/api/exercises")).some(ex => ex.id === 1), false);
-  assert.deepEqual(await request(`/api/workouts/${workout.id}`), original);
-  assert.deepEqual(await request("/api/stats/overview"), overview);
-  assert.equal((await request("/api/levels")).currentLevel, levels.currentLevel);
-  assert.deepEqual((await request("/api/programs/1")).exercises.map(ex => ex.exerciseId), [3]);
+  const transferred = await request(`/api/workouts/${workout.id}`);
+  assert.equal(transferred.totalVolume, original.totalVolume);
+  assert.equal(transferred.sets.length, original.sets.length);
+  assert.equal(transferred.sets[0].exerciseId, 2);
+  assert.equal((await request("/api/stats/overview")).totalVolume, overview.totalVolume);
+  assert.ok((await request("/api/levels")).currentLevel >= levels.currentLevel);
+  assert.deepEqual((await request("/api/programs/1")).exercises.map(ex => ex.exerciseId), [2, 3]);
   assert.equal(await loadPlan(workout.id), null);
   assert.equal((await request("/api/programs/chest")).exercises.some(ex => ex.exerciseId === 1), false);
   const text = await exportProgress();
   assert.equal(JSON.parse(text).version, 9);
   await restoreProgress(text);
   assert.equal((await request("/api/exercises")).some(ex => ex.id === 1), false);
-  assert.deepEqual(await request(`/api/workouts/${workout.id}`), original);
-  assert.equal((await request("/api/stats/exercises/1/progress")).points.length, 1);
+  assert.deepEqual(await request(`/api/workouts/${workout.id}`), transferred);
+  assert.equal((await request("/api/stats/exercises/2/progress")).points.length, 1);
 });
 test("deleted exercises cannot be recorded or reintroduced by a stale template editor", async () => {
   const workout = await startPlan();
@@ -80,7 +84,7 @@ test("active and completed workouts can be deleted with sets, timer and plan; ty
 test("interrupted catalog and workout deletions roll back the state and plans together", async () => {
   const workout = await startPlan();
   await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 20, reps: 10 });
-  for (const [url, flag] of [["/api/exercises/1", "__failMultiSetOnce"], [`/api/workouts/${workout.id}`, "__failMultiSetOnce"], [`/api/workouts/${workout.id}`, "__failMultiRemoveOnce"]]) {
+  for (const [url, flag] of [["/api/exercises/2", "__failMultiSetOnce"], [`/api/workouts/${workout.id}`, "__failMultiSetOnce"], [`/api/workouts/${workout.id}`, "__failMultiRemoveOnce"]]) {
     const original = new Map(storage);
     globalThis[flag] = true;
     await assert.rejects(request(url, "DELETE"));

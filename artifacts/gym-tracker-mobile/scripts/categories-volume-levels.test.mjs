@@ -135,12 +135,13 @@ test("every catalog threshold is monotone and every rank anchor remains exact, i
   }
 });
 
-test("deleting an exercise preserves its historical achievement; deleting its history recalculates levels", async () => {
+test("replacing a same-standard exercise preserves achievement; deleting history recalculates levels", async () => {
   const workout = await start(); for (const id of [21, 24, 27]) await add(workout.id, id, 20, 8); await finish(workout.id);
   const before = await request("/api/levels");
-  await request("/api/exercises/21", "DELETE");
+  await request("/api/exercises/21/replace", "POST", { targetExerciseId: 22 });
   assert.equal((await request("/api/levels")).currentLevel, before.currentLevel);
-  assert.equal((await request("/api/levels")).stats.mainExercises.find(ex => ex.exerciseId === 21).archived, true);
+  assert.equal((await request("/api/levels")).stats.mainExercises.some(ex => ex.exerciseId === 21), false);
+  assert.equal((await request("/api/levels")).stats.mainExercises.find(ex => ex.exerciseId === 22).archived, undefined);
   await request(`/api/workouts/${workout.id}`, "DELETE");
   assert.equal((await request("/api/levels")).currentLevel, 0);
 });

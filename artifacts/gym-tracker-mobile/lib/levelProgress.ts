@@ -5,7 +5,6 @@ import type { EquipmentSettings } from "./equipmentSettings";
 export type LevelExerciseStat = MainExerciseStat & Pick<EquipmentSettings, "loadMode"> & {
   standard: ExerciseStandard; bestValue: number; requiredValueForNextLevel: number | null;
   hasRecordedResult: boolean; achievedLevel: number;
-  archived: boolean;
 };
 export type ExerciseLevelsResponse = Omit<LevelsResponse, "stats"> & {
   stats: Omit<LevelsResponse["stats"], "mainExercises"> & { mainExercises: LevelExerciseStat[] };

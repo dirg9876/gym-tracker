@@ -3,6 +3,7 @@ import * as Crypto from "expo-crypto";
 import { coachContextSchema, coachMessagesSchema, coachProfileSchema, coachTaskSchema, defaultCoachProfile, personalCoachProfile, validateCoachReply, type CoachContext, type CoachProfile, type SavedCoachMonth } from "@workspace/ai-coach";
 import { buildCoachContext } from "./aiCoachContext";
 import { monthProgress } from "./coachMonth";
+import { canReplaceExercise, migrateExerciseCatalog, requiresExerciseReplacement } from "./exerciseReplacement";
 import { buildTrainingInsights } from "./trainingInsights";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
@@ -55,6 +56,8 @@ import type {
 
 type ExerciseRow = Exercise & EquipmentSettings & {
   bodyweightMultiplier: number;
+  replacementPending?: boolean;
+  // Legacy input only; migration removes tombstones before serving requests.
   deletedAt?: string;
 };
 
@@ -317,6 +320,10 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
   }
   if (method === "GET" && path === "/api/exercises") return listExercises(state);
   if (method === "POST" && path === "/api/exercises") return createExercise(state, body);
+  if (method === "GET" && path === "/api/exercises/maintenance") return state.exercises.map(exercise => ({ exercise: { ...enrichExercise(state, exercise), replacementPending: !!exercise.replacementPending }, recordedSets: state.sets.filter(set => set.exerciseId === exercise.id).length, requiresReplacement: requiresExerciseReplacement(state, exercise.id) }));
+
+  const replacement = /^\/api\/exercises\/(\d+)\/replace$/.exec(path);
+  if (replacement && method === "POST") return replaceExercise(state, Number(replacement[1]), body);
 
   let match = /^\/api\/exercises\/(\d+)$/.exec(path);
   if (match && method === "PATCH") return updateExercise(state, Number(match[1]), body);
@@ -482,16 +489,18 @@ async function loadState(): Promise<OfflineState> {
     await saveState(fresh);
     return fresh;
   }
+  let normalized: OfflineState;
   try {
     const unchanged = verifiedProgress?.size === entries.length && entries.every(([key, value]) => verifiedProgress!.get(key) === value);
     const state = unchanged ? JSON.parse(verifiedProgress!.get(STORAGE_KEY)!) as OfflineState : validateStoredProgress(entries);
-    const normalized = normalizeState(state);
+    normalized = normalizeState(state);
     verifiedProgress = new Map(entries);
-    return normalized;
   } catch {
     await quarantineProgress(entries, "Invalid stored progress");
     throw new ProgressRecoveryRequired();
   }
+  if (migrateExerciseCatalog(normalized)) await saveStateAndPlans(normalized);
+  return normalized;
 }
 
 async function saveState(state: OfflineState): Promise<void> {
@@ -564,6 +573,13 @@ function listExercises(state: OfflineState): Exercise[] {
 }
 
 async function createExercise(state: OfflineState, body: RequestBody): Promise<Exercise> {
+  const row = newExercise(state, body);
+  state.exercises.push(row);
+  await saveState(state);
+  return enrichExercise(state, row);
+}
+
+function newExercise(state: OfflineState, body: RequestBody): ExerciseRow {
   const name = String(body.name ?? "").trim();
   const muscleGroup = String(body.muscleGroup ?? "").trim();
   if (!name || !muscleGroup) throw httpError(400, "Заполни название и группу мышц");
@@ -586,9 +602,7 @@ async function createExercise(state: OfflineState, body: RequestBody): Promise<E
     ...settings.data,
   };
   if (!validEquipmentSettings(row)) throw httpError(400, "Противовес доступен только для тренажёров, число гантелей — только для гантелей.");
-  state.exercises.push(row);
-  await saveState(state);
-  return enrichExercise(state, row);
+  return row;
 }
 
 async function updateExercise(
@@ -643,10 +657,12 @@ async function updateExercise(
 
 async function deleteExercise(state: OfflineState, exerciseId: number): Promise<void> {
   const row = findExercise(state, exerciseId);
-  if (!row) throw httpError(404, "Упражнение не найдено");
-  if (row.deletedAt) return;
-  // Keep the exercise identity for historical sets and earned results.
-  row.deletedAt = new Date().toISOString();
+  if (!row) {
+    if (exerciseId < state.nextExerciseId) return;
+    throw httpError(404, "Упражнение не найдено");
+  }
+  if (requiresExerciseReplacement(state, exerciseId)) throw httpError(409, "Выберите замену: у упражнения есть подходы или месячный план. История не будет удалена.");
+  state.exercises = state.exercises.filter(exercise => exercise.id !== exerciseId);
   for (const workout of state.workouts) {
     if (workout.timer?.exerciseId === exerciseId) delete workout.timer;
     if (workout.draft?.exerciseId === exerciseId) { delete workout.draft; workout.draftRevision = (workout.draftRevision ?? 0) + 1; }
@@ -664,6 +680,71 @@ async function deleteExercise(state: OfflineState, exerciseId: number): Promise<
     }
   }
   await saveStateAndPlans(state, changed);
+}
+
+async function replaceExercise(state: OfflineState, exerciseId: number, body: RequestBody): Promise<Exercise> {
+  const source = findExercise(state, exerciseId);
+  if (!source) throw httpError(404, "Упражнение уже заменено или удалено. Обновите список.");
+  if ((body.targetExerciseId != null) === (body.exercise != null)) throw httpError(400, "Выберите существующее или создайте новое упражнение.");
+  const target = body.exercise && typeof body.exercise === "object" && !Array.isArray(body.exercise)
+    ? newExercise(state, body.exercise as RequestBody)
+    : typeof body.targetExerciseId === "number" ? findExercise(state, body.targetExerciseId) : null;
+  if (!target || !canReplaceExercise(source, target)) throw httpError(400, "Для переноса нужны одинаковые категория, единицы, противовес и число гантелей.");
+  if (body.exercise) state.exercises.push(target);
+
+  const remap = <T extends CustomProgramExerciseRow>(rows: T[]): T[] => {
+    const mapped = rows.map(row => row.exerciseId !== exerciseId ? { ...row } : { ...row, exerciseId: target.id,
+      ...("name" in row ? { name: target.name, muscleGroup: target.muscleGroup, equipment: target.equipment, isBodyweight: target.equipment === "bodyweight" } : {}) });
+    const result: T[] = [];
+    for (const row of mapped) {
+      const existing = result.find(item => item.exerciseId === row.exerciseId);
+      if (!existing) { result.push(row); continue; }
+      if (!!existing.setTargets !== !!row.setTargets) throw httpError(409, "В виде тренировки совпали упражнения с точными весами и без них. Укажите веса обоим или создайте отдельное упражнение.");
+      existing.sets += row.sets;
+      existing.repsMin = Math.min(existing.repsMin, row.repsMin);
+      existing.repsMax = Math.max(existing.repsMax, row.repsMax);
+      if (existing.setTargets && row.setTargets) existing.setTargets = [...existing.setTargets, ...row.setTargets];
+    }
+    return result;
+  };
+  for (const program of state.customPrograms) program.exercises = remap(program.exercises);
+  const changed: [string, string][] = [];
+  for (const [key, value] of (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX))) {
+    const plan = JSON.parse(value) as TemplatePlan;
+    if (!plan.exercises.some(ex => ex.exerciseId === exerciseId)) continue;
+    plan.exercises = remap(plan.exercises.map(ex => ({ ...ex, setTargets: ex.setTargets ?? Array.from({ length: ex.sets }, (_, i) => plannedSet(ex, i)) })));
+    changed.push([key, JSON.stringify(plan)]);
+  }
+  if (state.coachMonth) for (const plan of state.coachMonth.plan.templates) {
+    if (!plan.exercises.some(exercise => exercise.exerciseId === exerciseId)) continue;
+    const merged = new Map<number, typeof plan.exercises[number]>();
+    for (const exercise of plan.exercises) {
+      const id = exercise.exerciseId === exerciseId ? target.id : exercise.exerciseId;
+      const existing = merged.get(id);
+      if (existing) {
+        if (existing.targets.length + exercise.targets.length > 6) throw httpError(409, "После объединения в месячном плане будет больше 6 подходов на упражнение. Создайте отдельную замену или измените месячный план.");
+        existing.targets = [...existing.targets, ...exercise.targets];
+      } else merged.set(id, { ...exercise, exerciseId: id });
+    }
+    plan.exercises = [...merged.values()];
+  }
+  for (const set of state.sets) if (set.exerciseId === exerciseId) set.exerciseId = target.id;
+  for (const workout of state.workouts) {
+    if (workout.timer?.exerciseId === exerciseId) workout.timer.exerciseId = target.id;
+    if (!workout.finishedAt && (workout.draft?.exerciseId === exerciseId || workout.draft?.exerciseId === target.id)) {
+      if ((workout.draftRevision ?? 0) >= Number.MAX_SAFE_INTEGER) throw httpError(409, "Слишком много изменений черновика.");
+      workout.draftRevision = (workout.draftRevision ?? 0) + 1;
+      if (workout.draft?.exerciseId === exerciseId) {
+        workout.draft.exerciseId = target.id;
+        if (workout.draft.sourceTimer) workout.draft.sourceTimer.exerciseId = target.id;
+      }
+    }
+  }
+  if (state.coachProfile) state.coachProfile.excludedExerciseIds = [...new Set(state.coachProfile.excludedExerciseIds.map(id => id === exerciseId ? target.id : id))];
+  state.exercises = state.exercises.filter(exercise => exercise.id !== exerciseId);
+  delete target.replacementPending;
+  await saveStateAndPlans(state, changed);
+  return enrichExercise(state, target);
 }
 
 async function saveStateAndPlans(state: OfflineState, plans: [string, string][] = [], removed: string[] = []): Promise<void> {
@@ -1446,7 +1527,6 @@ async function getLevels(state: OfflineState): Promise<ExerciseLevelsResponse> {
     return {
       exerciseId: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup,
       equipment: exercise.equipment, loadMode: exercise.loadMode, maxWeightKg, standard, bestValue, achievedLevel, hasRecordedResult,
-      archived: !!exercise.deletedAt,
       requiredValueForNextLevel: nextLevel == null ? null : required,
       multiplier: mcKg == null ? 0 : mcKg / bodyWeightKg,
       requiredKgForNextLevel: nextLevel == null || standard.unit !== "kg" ? null : required,

@@ -104,12 +104,42 @@ test("unavailable exercises and wrong weight/time units cannot enter a saved mon
     const value = monthly(); mutate(value); await assert.rejects(saveMonth(context, value));
   }
 });
-test("deleting an exercise preserves saved-month history without broken backup relations", async () => {
-  await saveMonth(); await request("/api/exercises/30", "DELETE");
-  assert.equal((await ctx("next_workout")).scheduled, undefined);
-  assert.equal((await request("/api/ai-coach/month")).slots[0].unavailable, true);
+test("monthly exercises require replacement and keep the next session usable", async () => {
+  await saveMonth();
+  await assert.rejects(request("/api/exercises/30", "DELETE"), { status: 409 });
+  const replacement = await request("/api/exercises/30/replace", "POST", { exercise: { name: "Боковая планка", muscleGroup: "Пресс", equipment: "bodyweight" } });
+  assert.equal((await ctx("next_workout")).scheduled.plan.exercises[0].exerciseId, replacement.id);
+  assert.equal((await request("/api/ai-coach/month")).slots[0].unavailable, false);
   await parseProgressBackup(await exportProgress());
   assert.ok(await request("/api/ai-coach/month"));
+});
+
+test("month replacement merges duplicate targets without losing scheduled sessions or sets", async () => {
+  const side = await request("/api/exercises", "POST", { name: "Боковая планка", muscleGroup: "Пресс", equipment: "bodyweight" });
+  const month = monthly();
+  month.templates[0].exercises.push({ exerciseId: side.id, reason: "Side hold", targets: [{ ...target, durationSeconds: 45 }] });
+  await saveMonth(undefined, month);
+  await request("/api/exercises/30/replace", "POST", { targetExerciseId: side.id });
+  const saved = await request("/api/ai-coach/month");
+  assert.equal(saved.slots.length, 12);
+  assert.equal(saved.saved.plan.templates[0].exercises.length, 1);
+  assert.deepEqual(saved.saved.plan.templates[0].exercises[0].targets.map(set => set.durationSeconds), [30, 30, 45]);
+  const context = await ctx("next_workout");
+  assert.equal(context.scheduled.plan.exercises.length, 1);
+  await start(context, context.scheduled.plan);
+  await parseProgressBackup(await exportProgress());
+});
+
+test("monthly replacement beyond six targets fails atomically and suggests a separate replacement", async () => {
+  const side = await request("/api/exercises", "POST", { name: "Боковая планка", muscleGroup: "Пресс", equipment: "bodyweight" });
+  const month = monthly();
+  month.templates[0].exercises.push({ exerciseId: side.id, reason: "Side hold", targets: Array.from({ length: 5 }, () => ({ ...target })) });
+  await saveMonth(undefined, month);
+  const before = new Map(storage);
+  await assert.rejects(request("/api/exercises/30/replace", "POST", { targetExerciseId: side.id }), { status: 409 });
+  assert.deepEqual(storage, before);
+  await request("/api/exercises/30/replace", "POST", { exercise: { name: "Планка", muscleGroup: "Пресс", equipment: "bodyweight" } });
+  await parseProgressBackup(await exportProgress());
 });
 test("invalid persisted monthly relations are quarantined instead of loaded silently", async () => {
   await saveMonth(); const state = JSON.parse(storage.get(PROGRESS_KEY));

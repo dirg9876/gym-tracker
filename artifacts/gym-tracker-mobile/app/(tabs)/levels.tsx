@@ -73,7 +73,7 @@ export default function LevelsScreen() {
               <View key={item.exerciseId} style={{ gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.cardBorder }}>
                 <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
                   <Feather name={done ? "check-circle" : "target"} size={17} color={done ? colors.success : colors.accent} />
-                  <Text style={{ flex: 1, color: done ? colors.success : colors.foreground, fontSize: 14, lineHeight: 20, fontFamily: "Inter_600SemiBold" }}>{item.name}{item.archived ? " · архив" : ""}</Text>
+                  <Text style={{ flex: 1, color: done ? colors.success : colors.foreground, fontSize: 14, lineHeight: 20, fontFamily: "Inter_600SemiBold" }}>{item.name}</Text>
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
                   <Text style={{ color: done ? colors.success : colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{item.hasRecordedResult ? `${isAssisted(item) ? "Нагрузка: " : ""}${formatStandard(item.bestValue, item.standard.unit)}` : "Нет результата"}</Text>

@@ -30,7 +30,6 @@ function ExerciseInsight({ item }: { item: InsightExercise }) {
   const selectedIndex = points.findIndex(point => point.workoutId === workoutId);
   const selected = points[selectedIndex] ?? points.at(-1);
   return <View style={{ gap: 12 }}>
-    {item.archived ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Архивное упражнение</Text> : null}
     {item.series.length > 1 ? <Segmented label="Показатель" value={series.id} options={item.series.map(row => ({ value: row.id, label: metricNames[row.id] }))} onChange={value => { setMetric(value); setWorkoutId(null); }} /> : null}
     {series && selected ? <>
       <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>{series.label}</Text>

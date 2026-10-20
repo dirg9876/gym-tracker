@@ -45,7 +45,7 @@ const mockStorage = "data:text/javascript," + encodeURIComponent(`
 `);
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (["./equipmentSettings", "./trainingInsights"].includes(specifier)) return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
+    if (["./equipmentSettings", "./trainingInsights", "./exerciseReplacement"].includes(specifier)) return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
     if (specifier === "expo-secure-store") return {
       url: "data:text/javascript," + encodeURIComponent(`
         export const WHEN_UNLOCKED_THIS_DEVICE_ONLY = 6;

@@ -5,10 +5,9 @@ import { isAssisted } from "./equipmentSettings";
 
 export type InsightPeriod = 28 | 84 | null;
 type Session = { id: number; startedAt: string; finishedAt?: string | null };
-type HistoricalExercise = Exercise & { deletedAt?: string };
 export type InsightPoint = { date: string; value: number; workoutId: number; set: MeasuredSet };
 export type InsightSeries = { id: "weight" | "assistance" | "reps" | "seconds"; label: string; unit: "kg" | "reps" | "seconds"; lowerIsBetter: boolean; points: InsightPoint[] };
-export type InsightExercise = { exercise: Exercise; archived: boolean; sets: number; defaultMetric: InsightSeries["id"]; series: InsightSeries[]; unknownTimeSets: number };
+export type InsightExercise = { exercise: Exercise; sets: number; defaultMetric: InsightSeries["id"]; series: InsightSeries[]; unknownTimeSets: number };
 
 export const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const midnight = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -16,7 +15,7 @@ const offsetDay = (date: Date, days: number) => new Date(date.getFullYear(), dat
 const monday = (date: Date) => offsetDay(date, -((date.getDay() + 6) % 7));
 const countDays = (sessions: Session[]) => new Set(sessions.map(row => localDateKey(new Date(row.startedAt)))).size;
 
-export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], exercises: HistoricalExercise[], period: InsightPeriod = 28, now = new Date()) {
+export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], exercises: Exercise[], period: InsightPeriod = 28, now = new Date()) {
   if (![28, 84, null].includes(period) || !Number.isFinite(now.getTime())) throw new Error("Invalid insights period/date");
   const today = midnight(now);
   const start = period == null ? null : offsetDay(today, 1 - period);
@@ -92,7 +91,7 @@ export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], 
       return { ...definition, points };
     }).filter(row => row.points.length && !(exercise.equipment === "bodyweight" && row.id === "weight" && row.points.every(point => point.value === 0)));
     exerciseInsights.push({ exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isCustom: exercise.isCustom, isMain: exercise.isMain },
-      archived: !!exercise.deletedAt, sets: rows.length, series,
+      sets: rows.length, series,
       defaultMetric: timed ? "seconds" : exercise.equipment === "bodyweight" ? "reps" : series.some(row => row.id === "assistance") && !series.some(row => row.id === "weight") ? "assistance" : "weight",
       unknownTimeSets: timed ? rows.filter(row => !(row.durationSeconds != null && row.durationSeconds > 0)).length : 0 });
   }

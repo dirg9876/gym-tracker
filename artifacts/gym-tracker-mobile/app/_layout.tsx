@@ -65,6 +65,7 @@ export default function RootLayout() {
               <Stack.Screen name="coach-session" />
               <Stack.Screen name="coach-month" />
               <Stack.Screen name="exercises/index" />
+              <Stack.Screen name="exercise-replacement" />
               <Stack.Screen name="workout/[id]/index" />
               <Stack.Screen name="workout/[id]/report" />
               <Stack.Screen name="programs/[id]" options={{ gestureEnabled: false }} />

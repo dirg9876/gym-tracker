@@ -90,13 +90,13 @@ test("time/rep/weight and assistance series keep their own units and actual top 
   assert.deepEqual(get(4).series.find(row => row.id === "weight").points.map(row => row.value), [50]);
 });
 
-test("empty data and archived exercises stay honest; bad periods fail", () => {
+test("empty data stays honest and results have no archive state; bad periods fail", () => {
   const empty = buildTrainingInsights([], [], [], 28, now);
   assert.deepEqual(empty.totals, { workouts: 0, sets: 0, days: 0 });
   assert.equal(empty.calendar.filter(row => row.workouts).length, 0);
   assert.deepEqual(empty.exercises, []);
-  const archived = buildTrainingInsights([session(1)], [set(1, 1)], [{ ...exercise(), deletedAt: now.toISOString() }], 28, now);
-  assert.equal(archived.exercises[0].archived, true);
+  const data = buildTrainingInsights([session(1)], [set(1, 1)], [exercise()], 28, now);
+  assert.equal(data.exercises[0].archived, undefined);
   for (const period of [0, 1, 29, "28", Infinity]) assert.throws(() => buildTrainingInsights([], [], [], period, now));
 });
 
@@ -113,17 +113,18 @@ test("level gap uses the next game target, not the next rank; unknown result is 
   }
 });
 
-test("local insights endpoint is read-only, excludes the active session and retains deleted exercise history", async () => {
+test("local insights endpoint is read-only, excludes the active session and retains replaced history", async () => {
   const workout = await request("/api/workouts", "POST", {});
   await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 20, reps: 10 });
   await request(`/api/workouts/${workout.id}/finish`, "POST");
   const active = await request("/api/workouts", "POST", {});
   await request(`/api/workouts/${active.id}/sets`, "POST", { exerciseId: 1, weightKg: 30, reps: 10 });
-  await request("/api/exercises/1", "DELETE");
+  await request("/api/exercises/1/replace", "POST", { targetExerciseId: 2 });
   const before = storage.get(PROGRESS_KEY);
   const data = await request("/api/stats/insights?days=all");
   assert.deepEqual(data.totals, { workouts: 1, sets: 1, days: 1 });
-  assert.equal(data.exercises[0].archived, true);
+  assert.equal(data.exercises[0].archived, undefined);
+  assert.equal(data.exercises[0].exercise.id, 2);
   assert.equal(data.exercises[0].series[0].points[0].value, 20);
   assert.equal(storage.get(PROGRESS_KEY), before);
   await assert.rejects(request("/api/stats/insights?days=invalid"), { status: 400 });

@@ -178,7 +178,6 @@ function BackupSummary({ backup }: { backup: ProgressBackup }) {
     ["Текущая тренировка", state.workouts.filter((workout) => !workout.finishedAt).length],
     ["Подходы", state.sets.length],
     ["Упражнения", state.exercises.filter(exercise => !exercise.deletedAt).length],
-    ["Удалённые упражнения в истории", state.exercises.filter(exercise => exercise.deletedAt).length],
     ["Свои программы", state.customPrograms.length],
     ["Планы тренировок", Object.keys(plans).length],
     ["Сохранённый уровень", state.confirmedLevel],
