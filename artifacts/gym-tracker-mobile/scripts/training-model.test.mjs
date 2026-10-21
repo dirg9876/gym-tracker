@@ -75,6 +75,14 @@ test("bodyweight at zero extra load, assistance, seconds and other equipment hav
     assert.equal(value.model.status, "unsupported"); assert.equal(value.model.estimated1RMKg, null); assert.deepEqual(value.model.targets, []);
   }
 });
+test("legacy barbell loads below 20 kg neither train strength nor escape the equipment minimum", () => {
+  const history = [row(1, 2.5)], saved = structuredClone(history);
+  const value = forecastWorkingSets(history, range, { ...guard, weightKg: 2.5 }, { equipment: "barbell" }, now);
+  assert.equal(value.next.weightKg, 20); assert.equal(value.next.action, "calibrate");
+  assert.equal(value.model.estimated1RMKg, null); assert.deepEqual(history, saved);
+  const direct = controlPrediction({ strengthKg: 500, guard: { ...guard, weightKg: 2.5 }, repsMin: 8, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
+  assert.equal(direct.weightKg, 20); assert.equal(direct.predictedReps, null);
+});
 test("no historical prescription means MAE_RIR is unknown, not a fabricated quality metric", () => {
   const value = predict([row(1), row(2)]);
   assert.equal(value.model.rirErrorMAE, null); assert.equal(value.model.validationSamples, 1);

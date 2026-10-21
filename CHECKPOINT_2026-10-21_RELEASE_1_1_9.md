@@ -1,5 +1,16 @@
 # Gym-Beam 1.1.9: анализ и математическая модель
 
+САМЫЙНОВЫЙ СТАТУС (промежуточные данные ниже): sourceb42c7aa/CI39660450721PASS,
+OTA01a15fe8/group55e93e7c опубликован и фактически применён, offline/state+plans
+exactPASS. GHdraft419956374 с APKasset663541145/84275252... загружен, НЕ опубликован.
+После этого добавлена защита старой штанги<20кг: не обучать по ней e1RM,
+выдавать калибровку20кг, не менять историю. Mobile282PASS/typecheckPASS,
+итог336тестов. Финальнаяbuild64601 сейчас running. НУЖНЫ новоеsourcecommit/CI,
+свежиеAPK/export/privacy, заменитьassetвТОМЖЕdraft --clobber и опубликовать
+последнююOTA с этимfix, затемQA/apply/offline/exactcompare. СтарыеAPK/OTAниже
+теперь superseded. Runtime1.1.0/code15/version1.1.9 прежние: выпуск ещё в работе,
+никакойфинальнойпубликацииGitHub пока не было. WorkerV8 безизменений/новыйdeployне нужен.
+
 Актуально2026-10-21, C:\gymbeam, PowerShell, master. Код,334теста, nativeAPK,
 productionWorker готовы и проверены. GitHub/OTA1.1.9 ЕЩЁ НЕ опубликованы.
 Версия УЖЕ повышена:1.1.9/code15/runtime1.1.0. Не повышать повторно.

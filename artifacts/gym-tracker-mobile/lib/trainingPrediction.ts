@@ -9,14 +9,15 @@ type CurrentSet = Pick<StrengthObservation, "weightKg" | "reps" | "rir" | "techn
 export function forecastWorkingSets(history: StrengthObservation[], range: Range, guard: LoadGuard,
   equipment: { equipment: string; timed?: boolean; assisted?: boolean }, now: number, current: CurrentSet[] = []) {
   const supported = ["barbell", "dumbbell", "machine"].includes(equipment.equipment) && !equipment.timed && !equipment.assisted;
-  const fitted = estimateStrength(supported ? history : [], now);
-  const firstToday = current.find(row => qualityEstimate(row) != null);
+  const minimumKg = equipment.equipment === "barbell" ? 20 : 0;
+  const fitted = estimateStrength(supported ? history.filter(row => row.weightKg >= minimumKg) : [], now);
+  const firstToday = current.find(row => row.weightKg >= minimumKg && qualityEstimate(row) != null);
   const todayStrength = firstToday ? qualityEstimate(firstToday) : null;
   const strength = supported ? todayStrength ?? (!fitted.stale ? fitted.estimated1RMKg : null) : null;
   const last = current.at(-1) ?? history.at(-1);
   const hasFeedback = last?.rir != null && last.technique != null;
   const latestSession = history.filter(row => row.workoutId === history.at(-1)?.workoutId);
-  const latestMeasured = current.length ? firstToday != null : latestSession.some(row => qualityEstimate(row) != null);
+  const latestMeasured = current.length ? firstToday != null : latestSession.some(row => row.weightKg >= minimumKg && qualityEstimate(row) != null);
   const status = !supported ? "unsupported" : strength != null && latestMeasured ? "ready" : fitted.stale && fitted.estimated1RMKg != null ? "stale" : "insufficient";
   const targets: Array<{ weightKg: number; reps: number }> = [];
   let first = { ...guard, predictedReps: null as number | null, unroundedWeightKg: null as number | null };
