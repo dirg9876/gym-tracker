@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/Button";
 import { AiCoachPanel } from "@/components/AiCoachPanel";
+import { WorkoutAnalysis } from "@/components/WorkoutAnalysis";
 import { Card } from "@/components/Card";
 import { PRBadge } from "@/components/PRBadge";
 import { SaveWorkoutTemplate } from "@/components/SaveWorkoutTemplate";
@@ -95,12 +96,13 @@ export default function WorkoutReportScreen() {
         </View>
 
         <SaveWorkoutTemplate workout={w} />
+        <WorkoutAnalysis workoutId={w.id} />
         <AiCoachPanel task="review" workoutId={w.id} />
         <AiCoachPanel task="next_workout" workoutId={w.id} />
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {[
             { l: "Тоннаж", v: formatKg(w.totalVolume) },
-            { l: "Время", v: report ? formatDuration(report.durationMinutes) : "—" },
+            { l: "Время записи", v: report ? formatDuration(report.durationMinutes) : "—" },
             { l: "Повторы", v: formatNumber(w.totalReps) },
             { l: "Подходы", v: String(w.totalSets) },
             ...(durationOf(w) > 0 ? [{ l: "Удержания", v: formatSeconds(durationOf(w)) }] : []),

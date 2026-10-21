@@ -7,7 +7,7 @@ import { once } from "node:events";
 import { spawnSync } from "node:child_process";
 import { writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { defaultCoachProfile, coachContextSchema } from "@workspace/ai-coach";
+import { defaultCoachProfile, coachContextSchema, trainingAnalysisSchema } from "@workspace/ai-coach";
 import { CoachLedger } from "../src/coach/ledger.ts";
 import { createCoachGateway, hash } from "../src/coach/app.ts";
 import { reserveCost, coachBody, openAiProvider } from "../src/coach/provider.ts";
@@ -36,6 +36,59 @@ async function gateway(run, provider, limit = 5_000_000_000) {
   try { await run({ ledger, call, url }); } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); ledger.close(); }
 }
 const output = () => ({ text: JSON.stringify(reply), inputTokens: 1000, outputTokens: 100, completed: true });
+
+test("the gateway returns and caches local math targets instead of provider-invented loads", async () => {
+  const context = ctx(); context.task = "next_set"; context.focus.finished = false;
+  context.catalog = [{ id: 1, name: "Bench", muscleGroup: "Chest", equipment: "barbell", timed: false, weightStepKg: 2.5 }];
+  context.focus.draft = { exerciseId: 1, weightKg: 70, reps: 8, durationSeconds: null, rir: 2, technique: "good" };
+  context.sessions = [{ id: 1, finishedAt: null, sets: [context.focus.draft] }];
+  context.nextSetTarget = { exerciseId: 1, weightKg: 70, reps: 8, action: "hold", reason: "Local mathematical controller", model: { version: "epley-rir-ema-v1", status: "ready", estimated1RMKg: 93.333, sessions: 0, targetRir: 2, source: "today", validationSamples: 0, repErrorMAE: null, rirErrorMAE: null, fatigueBeta: null, fatigueSamples: 0, unroundedWeightKg: 70, predictedReps: 8, targets: [{ weightKg: 70, reps: 8 }], note: "Estimate, not a lifted record" } };
+  const canonical = coachContextSchema.parse(context);
+  let calls = 0;
+  await gateway(async ({ call }) => {
+    assert.ok(coachBody(context).instructions.includes("mathematical model owns numeric"));
+    for (const id of ["math-gateway-00001", "math-gateway-00002"]) {
+      const response = await call(id, canonical); assert.equal(response.status, 200);
+      const result = await response.json();
+      assert.equal(result.result.nextSet.weightKg, 70); assert.equal(result.result.nextSet.reps, 8);
+    }
+    assert.equal(calls, 1);
+  }, async () => { calls++; return { ...output(), text: JSON.stringify({ ...reply, nextSet: { exerciseId: 1, weightKg: 500, reps: 30, durationSeconds: null, reason: "Wrong proposed numbers" } }) }; });
+});
+
+const analysis = () => trainingAnalysisSchema.parse({ version: 1, asOf: "2026-10-21", from: "2026-09-24",
+  totals: { workouts: 1, sets: 0, reps: 0, seconds: 0, repSets: 0, rirKnown: 0, techniqueKnown: 0, failureSets: 0, breakdownSets: 0, rirBuckets: [0, 0, 0, 0, 0, 0, 0] },
+  focus: { workoutId: 1, totals: { workouts: 1, sets: 0, reps: 0, seconds: 0, repSets: 0, rirKnown: 0, techniqueKnown: 0, failureSets: 0, breakdownSets: 0, rirBuckets: [0, 0, 0, 0, 0, 0, 0] } },
+  groups: [], exercises: [], omittedExercises: 0, limitations: ["No data"] });
+const structured = () => ({ ...reply, review: { overview: "No completed sets", progress: [], workload: "No logged volume", effort: "No feedback", priorities: [{ title: "Record", action: "Log completed sets", reason: "Insufficient history" }], limitations: ["Recovery unknown"] } });
+
+test("structured reviews select a dedicated strict schema, use bounded output and preserve the legacy contract", async () => {
+  const context = ctx(); context.analysis = analysis();
+  const body = coachBody(context);
+  assert.equal(body.text.format.name, "gymbeam_review");
+  assert.equal(body.max_output_tokens, 4800);
+  assert.ok(body.text.format.schema.required.includes("review"));
+  assert.ok(body.instructions.includes("two full comparable sessions"));
+  assert.ok(body.instructions.includes("hold means repeat the target, not add reps"));
+  assert.equal(coachBody(ctx()).text.format.name, "gymbeam_coach");
+  let calls = 0;
+  await gateway(async ({ call, ledger }) => {
+    for (const id of ["structured-review-0001", "structured-review-0002"]) {
+      const response = await call(id, context); assert.equal(response.status, 200);
+      assert.deepEqual((await response.json()).result, structured());
+    }
+    assert.equal(calls, 1); assert.equal(ledger.budget().usedUsd, 0.00015);
+  }, async () => { calls++; return { ...output(), text: JSON.stringify(structured()) }; });
+});
+
+test("invalid structured evidence is charged but never returned or cached as a valid answer", async () => {
+  const context = ctx(); context.analysis = analysis();
+  const bad = structured(); bad.review.progress = [{ exerciseKey: "invented", observation: "Fake", interpretation: "Fake", action: "Fake" }];
+  await gateway(async ({ call, ledger }) => {
+    assert.equal((await call("structured-invalid-01", context)).status, 502);
+    assert.equal(ledger.budget().usedUsd, 0.00015); assert.equal(ledger.budget().reservedUsd, 0);
+  }, async () => ({ ...output(), text: JSON.stringify(bad) }));
+});
 test("dialogue is fingerprinted, bounded and cached without conflating different messages", async () => {
   let calls = 0;
   const context = ctx(); context.task = "adjust_workout"; context.focus.finished = false;

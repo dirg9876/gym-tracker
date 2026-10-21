@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { z } from "zod";
-import { coachContextSchema, coachEnvelopeSchema, validateCoachReply, type CoachContext, type CoachEnvelope } from "@workspace/ai-coach";
+import { coachContextSchema, coachEnvelopeSchema, jsonByteLength, validateCoachReply, type CoachContext, type CoachEnvelope } from "@workspace/ai-coach";
 import { DEFAULT_COACH_URL, coachGatewayUrl, readAiCoachCredential, saveAiCoachCredential, validateAiCoachCredential } from "./aiCoachCredentials";
 export { DEFAULT_COACH_URL, coachGatewayUrl } from "./aiCoachCredentials";
 
@@ -171,12 +171,12 @@ export async function requestAiCoach(rawContext: CoachContext): Promise<CoachEnv
   const fingerprint = await coachFingerprint(context);
   if (epoch !== generation) throw new Error("Настройки тренера изменились.");
   const body = { context, fingerprint, id: `${fingerprint}:${Date.now()}:${++sequence}` };
-  if (JSON.stringify(body).length > 48000) throw new Error("Слишком большой контекст. Сократите историю для анализа.");
+  if (jsonByteLength(body) > 65536) throw new Error("Слишком большой контекст для шлюза. Дневник сохранён.");
   const result = coachEnvelopeSchema.parse(await send(`${current.url}/v1/coach`, token, body));
   const latest = await readAiConnection();
   if (epoch !== generation || !latest.enabled || !latest.consent || ownerToken !== token) throw new Error("Тренер отключён. Ответ не применён.");
   if (result.fingerprint !== fingerprint) throw new Error("Шлюз ответил для другой тренировки.");
-  validateCoachReply(result.result, context);
+  result.result = validateCoachReply(result.result, context);
   answerGenerations.set(result, epoch);
   return result;
 }
@@ -185,5 +185,5 @@ export async function assertCoachAnswerCurrent(answer: CoachEnvelope, latestCont
   if (!settings.enabled || !settings.consent || !settings.connected || answerGenerations.get(answer) !== generation) throw new Error("Тренер отключён или подключение изменилось.");
   if (await coachFingerprint(latestContext) !== answer.fingerprint) throw new Error("Тренировка или профиль изменились. Запросите новый совет.");
   if (answerGenerations.get(answer) !== generation) throw new Error("Настройки тренера изменились.");
-  validateCoachReply(answer.result, latestContext);
+  answer.result = validateCoachReply(answer.result, latestContext);
 }

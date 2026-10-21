@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
 import { AiCoachPanel } from "@/components/AiCoachPanel";
+import { WorkoutAnalysis } from "@/components/WorkoutAnalysis";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SaveWorkoutTemplate } from "@/components/SaveWorkoutTemplate";
 import { DeleteWorkoutButton } from "@/components/DeleteWorkoutButton";
@@ -85,6 +86,7 @@ export default function HistoryDetailScreen() {
         }}
       >
         <SaveWorkoutTemplate workout={workout} />
+        <WorkoutAnalysis workoutId={workout.id} />
         <AiCoachPanel task="review" workoutId={workout.id} />
         <AiCoachPanel task="next_workout" workoutId={workout.id} />
         <View style={{ flexDirection: "row", gap: 10 }}>

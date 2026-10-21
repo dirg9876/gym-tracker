@@ -1,10 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
-import { coachContextSchema, coachMessagesSchema, coachProfileSchema, coachTaskSchema, defaultCoachProfile, personalCoachProfile, validateCoachReply, type CoachContext, type CoachProfile, type SavedCoachMonth } from "@workspace/ai-coach";
+import { coachContextSchema, coachMessagesSchema, coachNeedsCalibration, coachProfileSchema, coachTaskSchema, defaultCoachProfile, personalCoachProfile, validateCoachReply, type CoachContext, type CoachProfile, type SavedCoachMonth } from "@workspace/ai-coach";
 import { buildCoachContext } from "./aiCoachContext";
 import { monthProgress } from "./coachMonth";
 import { canReplaceExercise, migrateExerciseCatalog, requiresExerciseReplacement } from "./exerciseReplacement";
 import { buildTrainingInsights } from "./trainingInsights";
+import { buildTrainingAnalysis } from "./trainingAnalysis";
+import { buildActivePrediction } from "./trainingPrediction";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
@@ -351,7 +353,8 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     if (method === "GET" && !match[2]) return draftResponse(workout);
     if (workout.finishedAt) throw httpError(409, "Тренировка уже завершена");
     if (method === "PUT" && body.coachFingerprint != null) {
-      const fingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, JSON.stringify(buildCoachContext(state, "next_set", workout.id)));
+      const rawPlan = await AsyncStorage.getItem(PLAN_PREFIX + workout.id);
+      const fingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, JSON.stringify(buildCoachContext(state, "next_set", workout.id, undefined, rawPlan ? JSON.parse(rawPlan) as TemplatePlan : null)));
       if (body.coachFingerprint !== fingerprint) throw httpError(409, "Контекст изменился. Запросите новый совет.");
     }
     if (!draftRevisionSchema.safeParse(body.revision).success) throw httpError(400, "Неверная версия черновика");
@@ -433,6 +436,17 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
 
   match = /^\/api\/workouts\/(\d+)\/comparison$/.exec(path);
   if (match && method === "GET") return getWorkoutComparison(state, Number(match[1]));
+
+  match = /^\/api\/workouts\/(\d+)\/analysis$/.exec(path);
+  if (match && method === "GET") return buildTrainingAnalysis(state, Number(match[1]));
+
+  match = /^\/api\/workouts\/(\d+)\/prediction\/(\d+)$/.exec(path);
+  if (match && method === "GET") {
+    const workoutId = Number(match[1]), exerciseId = Number(match[2]);
+    const rawPlan = await AsyncStorage.getItem(PLAN_PREFIX + workoutId);
+    const planned = rawPlan ? (JSON.parse(rawPlan) as TemplatePlan).exercises.find(row => row.exerciseId === exerciseId) : undefined;
+    return buildActivePrediction(state, workoutId, exerciseId, Date.now(), planned);
+  }
 
   match = /^\/api\/workouts\/(\d+)\/exercise-breakdown$/.exec(path);
   if (match && method === "GET") return getWorkoutExerciseBreakdown(state, Number(match[1]));
@@ -937,7 +951,7 @@ async function currentCoachContext(state: OfflineState, body: RequestBody): Prom
   if (!task.success || !messages.success) throw httpError(400, "Проверьте сообщение тренеру (до 300 символов).");
   if (body.trainingMode != null && body.trainingMode !== "regular" && body.trainingMode !== "office") throw httpError(400, "Неизвестный сценарий тренировки.");
   const workoutId = typeof body.workoutId === "number" ? body.workoutId : undefined;
-  const raw = task.data === "adjust_workout" && workoutId ? await AsyncStorage.getItem(PLAN_PREFIX + workoutId) : null;
+  const raw = (task.data === "adjust_workout" || task.data === "next_set") && workoutId ? await AsyncStorage.getItem(PLAN_PREFIX + workoutId) : null;
   return buildCoachContext(state, task.data, workoutId, messages.data, raw ? JSON.parse(raw) as TemplatePlan : null, body.trainingMode as "regular" | "office" | undefined);
 }
 
@@ -980,7 +994,7 @@ async function applyCoachPlan(state: OfflineState, body: RequestBody): Promise<W
     rows.set(ex.exerciseId, makeRow(ex.exerciseId, [...(rows.get(ex.exerciseId)?.setTargets ?? []), ...targets], ex.note));
     const row = rows.get(ex.exerciseId)!;
     row.intent = context.preferences.goal === "strength" ? "strength" : "hypertrophy";
-    row.calibration = !isTimedExercise(row.name) && !state.sets.some(set => set.exerciseId === row.exerciseId);
+    row.calibration = coachNeedsCalibration(context, row.exerciseId);
   }
   if (performed.length + input.exercises.reduce((sum, ex) => sum + ex.sets, 0) > Math.floor(context.preferences.sessionMinutes / 2)) throw httpError(400, "Слишком много подходов для выбранной длительности.");
   const first = input.exercises[0];
@@ -1055,7 +1069,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
   }
   const rawPlan = (await readProgressEntries()).find(([key]) => key === PLAN_PREFIX + workout.id)?.[1];
   const plan = rawPlan ? JSON.parse(rawPlan) as TemplatePlan : null;
-  const calibration = !isAssisted(exercise) && plan?.exercises.find(ex => ex.exerciseId === exercise.id && ex.calibration && !state.sets.some(set => set.workoutId === workout.id && set.exerciseId === exercise.id));
+  const calibration = !isAssisted(exercise) && plan?.exercises.find(ex => ex.exerciseId === exercise.id && ex.calibration && !state.sets.some(set => set.workoutId === workout.id && set.exerciseId === exercise.id && sameLoadCategory(set, exercise) && (exercise.equipment !== "dumbbell" || (set.dumbbellCount ?? 1) === (exercise.dumbbellCount ?? 1))));
   if (calibration && (coach.data.rir == null || coach.data.technique == null)) throw httpError(400, "После подборочного подхода отметьте запас повторений и технику.");
   const set: SetRow = {
     equipment: exercise.equipment,
@@ -1073,7 +1087,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
     createdAt: new Date().toISOString(),
   };
   state.sets.push(set);
-  if (calibration && plan) plan.exercises = plan.exercises.map(ex => ex === calibration ? calibrateRemaining({ ...ex, weightStepKg: exercise.weightStepKg ?? ex.weightStepKg }, { ...set, setType: "working" }, 1) : ex);
+  if (calibration && plan) plan.exercises = plan.exercises.map(ex => ex === calibration ? calibrateRemaining({ ...ex, weightStepKg: exercise.weightStepKg ?? ex.weightStepKg }, { ...set, setType: "working" }, completedTargets(ex, state.sets.filter(row => row.workoutId === workout.id))) : ex);
   if (workout.draft) {
     const { sourceTimer: _sourceTimer, ...draft } = workout.draft;
     workout.draft = draft.exerciseId === set.exerciseId ? { ...draft, rir: set.rir ?? null, technique: set.technique ?? null } : undefined;

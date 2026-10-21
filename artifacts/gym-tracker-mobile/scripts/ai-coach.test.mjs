@@ -48,7 +48,7 @@ test("context is bounded, uses actual nullable profile, and never includes stora
   assert.equal(ctx.athlete.sex, null);
   assert.equal(ctx.sessions[0].sets[0].rir, 2);
   assert.ok(!JSON.stringify(ctx).includes(token));
-  assert.deepEqual(Object.keys(ctx).sort(), ["version", "task", "preferences", "athlete", "catalog", "sessions", "focus", "programs", "truncated", "loadSelection"].sort());
+  assert.deepEqual(Object.keys(ctx).sort(), ["version", "task", "preferences", "athlete", "catalog", "sessions", "focus", "programs", "truncated", "loadSelection", "nextSetTarget"].sort());
 });
 test("owner token is only in SecureStore; profile round-trips in v7, import disables AI", async () => {
   await context();
@@ -75,6 +75,7 @@ test("invalid AI profile cannot overwrite progress; old backups remain accepted"
 });
 test("barbell, plank, excessive jumps, unknown/deleted/excluded exercises are rejected", async () => {
   const ctx = await context();
+  delete ctx.nextSetTarget; // Old clients retain the original numerical validator.
   for (const values of [{ weightKg: 2.5 }, { weightKg: 100 }, { weightKg: 41 }, { exerciseId: 999 }, { durationSeconds: 30 }]) assert.throws(() => validateCoachReply({ ...reply(), nextSet: { ...reply().nextSet, ...values } }, ctx));
   const noRir = structuredClone(ctx); noRir.sessions[0].sets[0].rir = null;
   assert.throws(() => validateCoachReply(reply(), noRir));
@@ -90,9 +91,9 @@ test("a validated next set only changes the draft after confirmation, never reco
   const answer = await connection.requestAiCoach(ctx);
   await connection.assertCoachAnswerCurrent(answer, ctx);
   const before = JSON.parse(await exportProgress()).state.sets.length;
-  await request(`/api/workouts/${ctx.focus.workoutId}/draft`, "PUT", { revision: ctx.focus.draftRevision, coachFingerprint: answer.fingerprint, draft: { exerciseId: 1, weightKg: 42.5, reps: 10, rir: null, technique: null } });
+  await request(`/api/workouts/${ctx.focus.workoutId}/draft`, "PUT", { revision: ctx.focus.draftRevision, coachFingerprint: answer.fingerprint, draft: { exerciseId: 1, weightKg: answer.result.nextSet.weightKg, reps: answer.result.nextSet.reps, rir: null, technique: null } });
   assert.equal(JSON.parse(await exportProgress()).state.sets.length, before);
-  assert.equal((await request(`/api/workouts/${ctx.focus.workoutId}/draft`)).draft.weightKg, 42.5);
+  assert.equal((await request(`/api/workouts/${ctx.focus.workoutId}/draft`)).draft.weightKg, ctx.nextSetTarget.weightKg);
 });
 test("changed profile/draft and disable-reenable reject stale recommendations", async () => {
   const ctx = await context(); await enable();

@@ -84,14 +84,19 @@ test("saving a completed workout counts all approaches in its rep range", async 
 test("double progression requires the full comparable session, RIR and technique", () => {
   const goal = { ...definition(), equipment: "barbell" };
   const sets = Array.from({ length: 3 }, (_, i) => ({ exerciseId: 1, workoutId: 1, createdAt: new Date(2026, 9, 10, 10, i).toISOString(), weightKg: 40, reps: 12, rir: 2, technique: "good", setType: "working" }));
-  assert.equal(nextWorkingLoad(sets, goal).weightKg, 42.5);
-  assert.equal(nextWorkingLoad([...sets].reverse(), goal).weightKg, 42.5);
+  const two = [...sets, ...sets.map(row => ({ ...row, workoutId: 2, createdAt: row.createdAt.replace("10T", "11T") }))];
+  assert.equal(nextWorkingLoad(sets, goal).weightKg, 40);
+  assert.equal(nextWorkingLoad(two, goal).weightKg, 42.5);
+  assert.equal(nextWorkingLoad([...two].reverse(), goal).weightKg, 42.5);
   assert.equal(nextWorkingLoad([...sets, { ...sets[0], setType: "warmup", weightKg: 20 }], goal).weightKg, 40);
   for (const changed of [{ reps: 11 }, { rir: 1 }, { rir: null }, { technique: "breakdown" }, { technique: null }, { weightKg: 35 }]) assert.equal(nextWorkingLoad([sets[0], sets[1], { ...sets[2], ...changed }], goal).increase, false);
   assert.equal(nextWorkingLoad(sets.slice(0, 2), goal).increase, false);
   assert.equal(nextWorkingLoad([...sets, { ...sets[0], workoutId: 2, reps: 8, createdAt: new Date(2026, 9, 11).toISOString() }], goal).increase, false);
-  assert.equal(nextWorkingLoad(sets.map(({ setType, ...old }) => old), goal).weightKg, 42.5);
-  assert.equal(nextWorkingLoad(sets, { ...goal, weightStepKg: 1.25 }).weightKg, 41.25);
+  assert.equal(nextWorkingLoad(two.map(({ setType, ...old }) => old), goal).weightKg, 42.5);
+  assert.equal(nextWorkingLoad(two, { ...goal, weightStepKg: 1.25 }).weightKg, 41.25);
+  assert.equal(nextWorkingLoad(two, { ...goal, weightStepKg: 5 }).weightKg, 40);
+  assert.equal(nextWorkingLoad(two, goal, new Date(2027, 0, 1).getTime()).increase, false);
+  assert.equal(nextWorkingLoad(two.map(({ workoutId, ...row }) => row), goal).increase, false);
 });
 
 test("weekly volume includes all approaches and counts local training days", async () => {
@@ -149,7 +154,7 @@ test("deleting a live custom plank clears its timer and preserves backup referen
 test("training journey: 3x12 leads to the next load, a difficult session holds it", async () => {
   const template = await request("/api/programs", "POST", { name: "Journey", exercises: [definition()] });
   const goal = (await request(`/api/programs/${template.id}`)).exercises[0];
-  for (const [reps, rir, expected] of [[12, 2, 22.5], [9, 1, 20]]) {
+  for (const [reps, rir, expected] of [[12, 2, 20], [12, 2, 22.5], [9, 1, 20]]) {
     const workout = await request("/api/workouts", "POST", { programId: template.id });
     for (let i = 0; i < 3; i++) await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 20, reps, rir, technique: "good", setType: "working" });
     await request(`/api/workouts/${workout.id}/finish`, "POST");
@@ -157,7 +162,7 @@ test("training journey: 3x12 leads to the next load, a difficult session holds i
     assert.equal(nextWorkingLoad(recorded.sets, goal).weightKg, expected);
   }
   const stats = await request("/api/stats/weekly");
-  assert.equal(stats.groups[0].workingSets, 6);
+  assert.equal(stats.groups[0].workingSets, 9);
   const before = JSON.parse(storage.get(PROGRESS_KEY));
   const snapshot = await exportProgress();
   await restoreProgress(snapshot);

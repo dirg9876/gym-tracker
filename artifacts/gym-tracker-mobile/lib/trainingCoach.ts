@@ -41,16 +41,20 @@ export function extendTimer(timer: TrainingTimer, seconds: number, now = Date.no
 
 type RecordedSet = CoachFields & { exerciseId: number; workoutId?: number; workoutFinishedAt?: string; createdAt: string; weightKg: number; reps: number; durationSeconds?: number };
 type Goal = Progression & { exerciseId: number; sets: number; repsMin: number; repsMax: number; equipment: string };
-export function nextWorkingLoad(sets: RecordedSet[], goal: Goal) {
+export function nextWorkingLoad(sets: RecordedSet[], goal: Goal, now = Date.now()) {
   const eligible = sets.filter(set => set.exerciseId === goal.exerciseId && set.durationSeconds == null).sort((a, b) => (a.workoutFinishedAt ?? a.createdAt).localeCompare(b.workoutFinishedAt ?? b.createdAt) || a.createdAt.localeCompare(b.createdAt));
   const latest = eligible.at(-1);
   if (!latest) return { weightKg: null, increase: false, reason: "Нет записанных рабочих подходов" };
   const session = eligible.filter(set => set.workoutId === latest.workoutId);
-  const sameLoad = session.length === goal.sets && session.every(set => set.weightKg === latest.weightKg);
-  const quality = session.every(set => set.technique === "good" && set.rir != null && set.rir >= (goal.targetRir ?? 2));
-  const increase = sameLoad && quality && session.every(set => set.reps >= goal.repsMax);
+  const previousId = eligible.filter(set => set.workoutId !== latest.workoutId).at(-1)?.workoutId;
+  const previous = previousId == null ? [] : eligible.filter(set => set.workoutId === previousId);
+  const success = (rows: RecordedSet[]) => rows.length === goal.sets && rows.every(set => set.weightKg === latest.weightKg && set.reps >= goal.repsMax && set.technique === "good" && set.rir != null && set.rir >= Math.max(2, goal.targetRir ?? 2));
+  const step = goal.weightStepKg ?? (goal.equipment === "dumbbell" ? 1 : 2.5);
+  const date = (set: RecordedSet) => Date.parse(set.workoutFinishedAt ?? set.createdAt);
+  const recent = now >= date(latest) && now - date(latest) <= 28 * 86400000 && previous.length > 0 && date(latest) - date(previous.at(-1)!) <= 28 * 86400000;
+  const increase = latest.workoutId != null && recent && success(session) && success(previous) && step <= 2.5;
   const weightKg = Math.round((latest.weightKg + (increase ? (goal.weightStepKg ?? (goal.equipment === "dumbbell" ? 1 : 2.5)) : 0)) * 100) / 100;
-  return { weightKg, increase, reason: increase ? "Верх диапазона выполнен во всех рабочих подходах, техника и запас отмечены" : session.some(set => set.technique === "breakdown") ? "Без повышения. При нарушении техники уменьшите нагрузку или смените вариант упражнения" : "Без повышения: не все условия прогрессии отмечены или выполнены" };
+  return { weightKg, increase, reason: increase ? "Верх диапазона повторён во всех подходах двух тренировок с сохранённой техникой и запасом" : session.some(set => set.technique === "breakdown") ? "Без повышения. При нарушении техники уменьшите нагрузку или смените вариант упражнения" : step > 2.5 ? "Шаг оборудования больше 2,5 кг. Повышение нагрузки подтвердите вручную" : "Сначала повторы: для прибавки нужны два полных сопоставимых занятия с запасом и сохранённой техникой" };
 }
 
 export function weeklyWork(sets: Array<RecordedSet & { muscleGroup: string }>, now = new Date()) {

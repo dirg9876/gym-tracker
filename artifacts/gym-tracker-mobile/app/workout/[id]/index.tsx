@@ -42,17 +42,19 @@ import { Stepper } from "@/components/Stepper";
 import { Segmented } from "@/components/Segmented";
 import { TrainingTimer } from "@/components/TrainingTimer";
 import { PreviousExerciseSets } from "@/components/PreviousExerciseSets";
+import { ModelForecast } from "@/components/ModelForecast";
+import type { buildActivePrediction } from "@/lib/trainingPrediction";
 import { isAssisted, weightStep, weightPresets, type ConfiguredExercise } from "@/lib/equipmentSettings";
 import { useToast } from "@/components/Toast";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
 import { returnToBrand } from "@/lib/navigation";
 import { loadPlan } from "@/lib/programPlanStash";
-import { durationOf, formatSeconds, isTimedExercise, minimumWeight, weightLabel, type MeasuredSet } from "@/lib/workoutMeasurement";
+import { durationOf, formatSeconds, isTimedExercise, minimumWeight, weightLabel } from "@/lib/workoutMeasurement";
 import { exerciseRankHint } from "@/lib/rankHint";
 import { formatStandard } from "@/lib/exerciseStandards";
 import { completedTargets, plannedSet, type TemplateExercise } from "@/lib/workoutTemplates";
-import { nextWorkingLoad, type CoachFields } from "@/lib/trainingCoach";
+import type { CoachFields } from "@/lib/trainingCoach";
 import { coachRequest } from "@/lib/coachApi";
 import { makeWorkoutDraft, selectWorkoutDraft, type WorkoutDraft } from "@/lib/workoutDraft";
 import { useWorkoutDraft } from "@/hooks/useWorkoutDraft";
@@ -87,7 +89,8 @@ export default function ActiveWorkoutScreen() {
   const [showDetails, setShowDetails] = useState(false);
   const calibration = !isAssisted(exercises?.find(ex => ex.id === selectedExerciseId)) && planExercises.find(ex => ex.exerciseId === selectedExerciseId)?.calibration && !workout?.sets.some(set => set.exerciseId === selectedExerciseId);
   const selectedExercise = exercises?.find(exercise => exercise.id === selectedExerciseId) as ConfiguredExercise | undefined;
-  const { data: recorded } = useQuery({ queryKey: ["working-load", selectedExerciseId], queryFn: () => coachRequest<{ sets: MeasuredSet[] }>(`/api/exercises/${selectedExerciseId}/working-load`), enabled: !!selectedExerciseId });
+  const { data: prediction } = useQuery({ queryKey: ["training-prediction", workoutId, selectedExerciseId, workout?.sets.map(set => set.id).join(":")],
+    queryFn: () => coachRequest<ReturnType<typeof buildActivePrediction>>(`/api/workouts/${workoutId}/prediction/${selectedExerciseId}`), enabled: !!selectedExerciseId && !!workout && !workout.finishedAt });
   const timed = isTimedExercise(selectedExercise?.name ?? "");
   const { data: profile } = useGetProfile();
   const assisted = isAssisted(selectedExercise);
@@ -217,8 +220,6 @@ export default function ActiveWorkoutScreen() {
   const uniqueExercises = setsByExercise.length;
   const selectedPlan = planExercises.find(ex => ex.exerciseId === selectedExerciseId);
   const selectedSetCount = selectedPlan ? completedTargets(selectedPlan, workout?.sets ?? []) : 0;
-  const lastWorking = recorded?.sets.at(-1);
-  const advice = !timed && !assisted ? selectedPlan ? nextWorkingLoad(recorded?.sets ?? [], { ...selectedPlan, weightStepKg: selectedExercise?.weightStepKg ?? selectedPlan.weightStepKg }) : lastWorking ? { weightKg: lastWorking.weightKg, increase: false, reason: "Последний рабочий вес; без повышения вне плана" } : null : null;
   const formBusy = !draft.ready || draft.saving || addSet.isPending || deleteSet.isPending || finishWorkout.isPending || deleting;
 
   if (isLoading || isExercisesLoading) {
@@ -360,6 +361,12 @@ export default function ActiveWorkoutScreen() {
             {(selectedExercise?.equipment === "bodyweight" || assisted) && !timed ? profile?.bodyWeightKg != null
               ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Вес тела: {formatKg(profile.bodyWeightKg)} · {assisted ? "Расчётная" : "Общая"} нагрузка: {formatKg(assisted ? Math.max(0, profile.bodyWeightKg - weight) : profile.bodyWeightKg + weight)}</Text>
               : <Button title="Указать вес тела" variant="ghost" disabled={formBusy} icon={<Feather name="user" size={16} color={colors.foreground} />} onPress={() => router.push("/levels")} /> : null}
+            {prediction && prediction.model.status !== "unsupported" ? <View style={{ gap: 8, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.cardBorder }}>
+              <Text style={{ color: colors.success, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Расчёт нагрузки: {formatKg(prediction.next.weightKg)} × {prediction.next.reps}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 19 }}>{prediction.next.reason}</Text>
+              <ModelForecast model={prediction.model} perDumbbell={selectedExercise?.equipment === "dumbbell"} />
+              <Button title="Применить расчёт" variant="secondary" disabled={formBusy || !!draft.error} icon={<Feather name="check" size={16} color={colors.foreground} />} onPress={() => changeDraft({ weightKg: prediction.next.weightKg, reps: prediction.next.reps })} />
+            </View> : null}
             <View style={{ minHeight: 16 }}><Text accessibilityLiveRegion="polite" style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 16 }}>{draft.saving ? "Сохранение черновика..." : ""}</Text></View>
             {draft.error ? <View style={{ gap: 8 }}>
               <Text accessibilityRole="alert" style={{ color: colors.amber, fontSize: 13 }}>Изменения не сохранены. {draft.error}</Text>
@@ -393,7 +400,7 @@ export default function ActiveWorkoutScreen() {
                 <Segmented label="Качество техники" value={technique ?? "unknown"} options={[{ value: "unknown", label: "Не отмечено" }, { value: "good", label: "Сохранена" }, { value: "breakdown", label: "Нарушалась" }]} onChange={value => changeDraft({ technique: value === "unknown" ? null : value as CoachFields["technique"] })} disabled={formBusy} />
               </View> : null}
             </> : null}
-            {rankHint || advice?.weightKg != null ? <>
+            {rankHint ? <>
               <Pressable accessibilityRole="button" accessibilityState={{ expanded: showDetails }} accessibilityLabel="Цель и рабочий вес" onPress={() => setShowDetails(value => !value)} style={{ minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Feather name="info" size={18} color={colors.mutedForeground} />
                 <Text style={{ flex: 1, color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Цель и рабочий вес</Text>
@@ -401,11 +408,6 @@ export default function ActiveWorkoutScreen() {
               </Pressable>
               {showDetails ? <View style={{ gap: 12 }}>
                 {rankHint && profile ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{rankHint.standard.official ? "WRPF · " : "Расчётный ориентир · "}{profile.sex === "female" ? "Женщины" : "Мужчины"}{rankHint.standard.unit === "kg" ? ` · категория ${weightClass(profile.bodyWeightKg ?? 75, profile.sex ?? "male").label.replace(".", ",")} кг${profile.bodyWeightKg == null ? " (вес не задан)" : ""}` : " · за один подход"}</Text> : null}
-                {advice && advice.weightKg != null ? <View style={{ gap: 6 }}>
-                  <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>{advice.increase ? "Следующий рабочий вес" : "Последний рабочий вес"}: {formatKg(advice.weightKg)}{selectedPlan ? ` · ${selectedPlan.repsMin}-${selectedPlan.repsMax} повт.` : ""}</Text>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{advice.reason}</Text>
-                  <Button title="Взять рабочий вес" variant="secondary" disabled={formBusy} onPress={() => changeDraft({ weightKg: advice.weightKg! })} icon={<Feather name="arrow-down" size={16} color={colors.foreground} />} />
-                </View> : null}
               </View> : null}
             </> : null}
           </View>

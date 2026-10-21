@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { build } from "esbuild";
 import { Miniflare, Log, LogLevel, convertV4MiniflareOptions } from "miniflare";
-import { defaultCoachProfile } from "@workspace/ai-coach";
+import { defaultCoachProfile, coachContextSchema } from "@workspace/ai-coach";
 
 const bundle = await build({ entryPoints: ["src/index.ts"], bundle: true, write: false, format: "esm", platform: "browser", target: "es2022", external: ["node:*"] });
 const token = "test-worker-private-owner-token-1234567890123456789";
@@ -36,6 +36,46 @@ function fixture({ initial = seed, key = "sk-fake-workerd-only", root, provider 
   const call = (id, ctx = context(), fingerprint = hash(JSON.stringify(ctx))) => request("/v1/coach", { method: "POST", body: JSON.stringify({ id, context: ctx, fingerprint }) });
   return { mf, request, call, calls: () => calls };
 }
+
+test("workerd serves structured review sections, caches them and retains the same durable spend ledger", async () => {
+  const rich = { ...answer, review: { overview: "Insufficient history", progress: [], workload: "No sets logged", effort: "Feedback missing", priorities: [{ title: "Log", action: "Record actual work", reason: "No observations" }], limitations: ["Recovery unknown"] } };
+  const f = fixture({ provider: body => {
+    assert.equal(body.text.format.name, "gymbeam_review"); assert.equal(body.max_output_tokens, 4800);
+    assert.ok(body.text.format.schema.required.includes("review"));
+    return rich;
+  } });
+  try {
+    const ctx = context();
+    const totals = { workouts: 1, sets: 0, reps: 0, seconds: 0, repSets: 0, rirKnown: 0, techniqueKnown: 0, failureSets: 0, breakdownSets: 0, rirBuckets: [0, 0, 0, 0, 0, 0, 0] };
+    ctx.analysis = { version: 1, asOf: "2026-10-21", from: "2026-09-24", totals, focus: { workoutId: 1, totals }, groups: [], exercises: [], omittedExercises: 0, limitations: ["No data"] };
+    for (const id of ["review-worker-00001", "review-worker-00002"]) {
+      const response = await f.call(id, ctx); assert.equal(response.status, 200);
+      const result = await response.json(); assert.deepEqual(result.result, rich);
+      assert.equal(result.budget.usedUsd, 0.01015); assert.equal(result.budget.reservedUsd, 0);
+    }
+    assert.equal(f.calls(), 1);
+  } finally { await f.mf.dispose(); }
+});
+
+test("workerd preserves the local math decision and does not call the provider again for its cache hit", async () => {
+  const ctx = context(); ctx.task = "next_set"; ctx.focus.finished = false;
+  ctx.catalog = [{ id: 1, name: "Bench", muscleGroup: "Chest", equipment: "barbell", timed: false }];
+  ctx.focus.draft = { exerciseId: 1, weightKg: 70, reps: 8, durationSeconds: null, rir: 2, technique: "good" };
+  ctx.sessions = [{ id: 1, finishedAt: null, sets: [ctx.focus.draft] }];
+  ctx.nextSetTarget = { exerciseId: 1, weightKg: 70, reps: 8, action: "hold", reason: "Local controller", model: { version: "epley-rir-ema-v1", status: "ready", estimated1RMKg: 93.333, sessions: 0, targetRir: 2, source: "today", validationSamples: 0, repErrorMAE: null, rirErrorMAE: null, fatigueBeta: null, fatigueSamples: 0, unroundedWeightKg: 70, predictedReps: 8, targets: [{ weightKg: 70, reps: 8 }], note: "Estimate" } };
+  const canonical = coachContextSchema.parse(ctx);
+  const f = fixture({ provider: body => {
+    assert.ok(body.instructions.includes("Use nextSetTarget verbatim"));
+    return { ...answer, nextSet: { exerciseId: 1, weightKg: 500, reps: 30, durationSeconds: null, reason: "Untrusted numeric suggestion" } };
+  } });
+  try {
+    for (const id of ["math-workerd-00001", "math-workerd-00002"]) {
+      const response = await f.call(id, canonical); assert.equal(response.status, 200);
+      const result = await response.json(); assert.equal(result.result.nextSet.weightKg, 70); assert.equal(result.result.nextSet.reps, 8);
+    }
+    assert.equal(f.calls(), 1);
+  } finally { await f.mf.dispose(); }
+});
 
 test("workerd authenticates before parsing and fails closed until budget/key are configured", async () => {
   const f = fixture({ key: "" });
