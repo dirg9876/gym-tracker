@@ -41,6 +41,7 @@ function ExerciseInsight({ item }: { item: InsightExercise }) {
       <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{points.length < series.points.length ? `Последние ${points.length} из ${series.points.length} тренировок периода` : `Тренировок с результатом: ${points.length}`}</Text>
     </> : <Text style={{ color: colors.mutedForeground }}>Нет измеренных результатов за этот период</Text>}
     {item.unknownTimeSets ? <Text style={{ color: colors.amber, fontSize: 12 }}>Старые подходы без времени: {item.unknownTimeSets}</Text> : null}
+    {item.otherCategorySets ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>В истории есть подходы с другой категорией: {item.otherCategorySets}. Они не смешиваются с текущим графиком.</Text> : null}
   </View>;
 }
 

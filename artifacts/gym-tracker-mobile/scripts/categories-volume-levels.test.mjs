@@ -81,7 +81,7 @@ test("invalid body mass snapshots and body mass attached to non-bodyweight or ti
   await request("/api/profile", "PUT", { bodyWeightKg: 80 });
   const workout = await start(); await add(workout.id, 7, 0, 10);
   const original = await exportProgress();
-  for (const change of [set => set.bodyWeightKg = 0, set => set.bodyWeightKg = "80", set => set.bodyWeightKg = 501, set => set.exerciseId = 3, set => { set.exerciseId = 30; set.reps = 0; set.durationSeconds = 30; }]) {
+  for (const change of [set => set.bodyWeightKg = 0, set => set.bodyWeightKg = "80", set => set.bodyWeightKg = 501, set => { set.exerciseId = 3; set.equipment = "dumbbell"; }, set => { set.exerciseId = 30; set.reps = 0; set.durationSeconds = 30; }]) {
     const copy = JSON.parse(original); change(copy.state.sets[0]);
     await assert.rejects(parseProgressBackup(hash(copy)));
   }

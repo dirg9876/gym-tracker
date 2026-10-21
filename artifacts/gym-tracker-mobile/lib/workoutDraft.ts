@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Equipment } from "@workspace/api-client-react";
 import { coachFieldsSchema, timerSchema } from "./trainingCoach";
-import { isTimedExercise, minimumWeight } from "./workoutMeasurement";
+import { isTimedExercise, minimumWeight, sameLoadCategory } from "./workoutMeasurement";
 
 export const draftRevisionSchema = z.number().int().nonnegative().safe();
 export const workoutDraftSchema = z.object({
@@ -36,9 +36,9 @@ export function makeWorkoutDraft(exercise: { id: number; name: string; equipment
   });
 }
 
-export function selectWorkoutDraft(exercise: { id: number; name: string; equipment: Equipment }, target: { weightKg: number; reps: number; durationSeconds?: number } | undefined, current: WorkoutDraft | null, sets: Array<{ exerciseId: number; weightKg: number; reps: number; durationSeconds?: number; rir?: number | null; technique?: "good" | "breakdown" | null }>): WorkoutDraft {
+export function selectWorkoutDraft(exercise: { id: number; name: string; equipment: Equipment; loadMode?: "weight" | "assisted" }, target: { weightKg: number; reps: number; durationSeconds?: number } | undefined, current: WorkoutDraft | null, sets: Array<{ exerciseId: number; equipment?: Equipment; loadMode?: "weight" | "assisted"; weightKg: number; reps: number; durationSeconds?: number; rir?: number | null; technique?: "good" | "breakdown" | null }>): WorkoutDraft {
   if (current?.exerciseId === exercise.id) return current;
-  const previous = sets.slice().reverse().find(set => set.exerciseId === exercise.id);
+  const previous = sets.slice().reverse().find(set => set.exerciseId === exercise.id && sameLoadCategory(set, exercise));
   const recordedTarget = isTimedExercise(exercise.name) && !previous?.durationSeconds ? undefined : previous;
   return makeWorkoutDraft(exercise, target ?? recordedTarget, previous);
 }

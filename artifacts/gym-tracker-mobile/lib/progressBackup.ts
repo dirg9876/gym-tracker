@@ -38,6 +38,7 @@ const stateSchema = z.object({
   workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional() }).passthrough()),
   sets: z.array(z.object({
     id, workoutId: id, exerciseId: id, weightKg: amount,
+    equipment: equipment.optional(),
     bodyWeightKg: z.number().finite().min(20).max(500).optional(),
     loadMode: z.enum(["weight", "assisted"]).optional(), dumbbellCount: z.union([z.literal(1), z.literal(2)]).optional(),
     reps: z.number().int().nonnegative().safe(), durationSeconds: id.max(86400).optional(), createdAt: date,
@@ -67,7 +68,7 @@ const planSchema = z.object({
 
 const backupSchema = z.object({
   format: z.literal("gym-tracker-backup"),
-  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9), z.literal(10)]),
   exportedAt: date,
   state: stateSchema,
   plans: z.record(z.string().regex(/^[1-9]\d*$/), planSchema),
@@ -104,11 +105,12 @@ function checkRelations(backup: Pick<ProgressBackup, "state" | "plans">) {
   if (state.workouts.filter((workout) => !workout.finishedAt).length > 1) invalid();
   for (const set of state.sets) {
     const exercise = state.exercises.find(ex => ex.id === set.exerciseId);
+    const recordedEquipment = set.equipment ?? exercise?.equipment;
     if (!exercises.has(set.exerciseId) || !workouts.has(set.workoutId) || !Number.isFinite(set.weightKg * set.reps)) invalid();
     if (set.durationSeconds != null && !isTimedExercise(state.exercises.find(exercise => exercise.id === set.exerciseId)!.name)) invalid();
-    if (set.bodyWeightKg != null && (set.durationSeconds != null || exercise?.equipment !== "bodyweight" && !isAssisted(set))) invalid();
-    if (isAssisted(set) !== isAssisted(exercise) || isAssisted(set) && (set.bodyWeightKg == null || set.weightKg > set.bodyWeightKg || set.durationSeconds != null)) invalid();
-    if (set.dumbbellCount != null && (exercise?.equipment !== "dumbbell" || set.durationSeconds != null)) invalid();
+    if (set.bodyWeightKg != null && (set.durationSeconds != null || recordedEquipment !== "bodyweight" && !isAssisted(set))) invalid();
+    if (set.equipment == null && isAssisted(set) !== isAssisted(exercise) || isAssisted(set) && (recordedEquipment !== "machine" || set.bodyWeightKg == null || set.weightKg > set.bodyWeightKg || set.durationSeconds != null)) invalid();
+    if (set.dumbbellCount != null && (recordedEquipment !== "dumbbell" || set.durationSeconds != null)) invalid();
   }
   for (const program of state.customPrograms) {
     if (program.exercises.some((exercise) => !available.has(exercise.exerciseId))) invalid();
@@ -159,7 +161,7 @@ async function serializeEntries(entries: [string, string][]): Promise<string> {
   const plans = Object.fromEntries(entries.filter(([key]) => key.startsWith(PLAN_PREFIX))
     .map(([key, value]) => [key.slice(PLAN_PREFIX.length), JSON.parse(value)]));
   const text = JSON.stringify({
-    format: "gym-tracker-backup", version: 9, exportedAt: new Date().toISOString(),
+    format: "gym-tracker-backup", version: 10, exportedAt: new Date().toISOString(),
     state, plans, checksum: await checksum(state, plans),
   }, null, 2);
   await parseProgressBackup(text);

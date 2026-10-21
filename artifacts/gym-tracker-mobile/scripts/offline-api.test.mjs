@@ -212,7 +212,7 @@ test("planks use explicit seconds end to end, with no fake kilograms, reps or we
   const heatmap = await request("/api/stats/heatmap?days=7");
   assert.equal(heatmap.activeDays, 1);
   const backup = await exportProgress();
-  assert.equal(JSON.parse(backup).version, 9);
+  assert.equal(JSON.parse(backup).version, 10);
   await restoreProgress(backup);
   assert.equal((await request(`/api/workouts/${workout.id}`)).durationSeconds, 90);
 });
@@ -630,7 +630,7 @@ test("exercise editor rejects invalid labels and changes to built-in norm identi
     await assert.rejects(request(`/api/exercises/${exercise.id}`, "PATCH", data),{status:400});
     assert.deepEqual(storage,before);
   }
-  for (const data of [{name:"Other bench"},{equipment:"dumbbell"}]) {
+  for (const data of [{name:"Other bench"}]) {
     await assert.rejects(request("/api/exercises/1", "PATCH", data),{status:409});
     assert.deepEqual(storage,before);
   }
@@ -641,7 +641,7 @@ test("used exercises cannot change measurement semantics or delete recorded prog
   const workout = await request("/api/workouts", "POST");
   await request(`/api/workouts/${workout.id}/sets`, "POST", {exerciseId:exercise.id,weightKg:10,reps:12});
   const before = new Map(storage);
-  for (const data of [{name:"Планка"},{equipment:"bodyweight"},{equipment:"barbell"}]) {
+  for (const data of [{name:"Планка"}]) {
     await assert.rejects(request(`/api/exercises/${exercise.id}`, "PATCH", data),{status:409});
     assert.deepEqual(storage,before);
   }
@@ -651,15 +651,15 @@ test("used exercises cannot change measurement semantics or delete recorded prog
   await parseProgressBackup(await exportProgress());
 });
 
-test("unused custom equipment is editable, but template references protect measurement units", async () => {
+test("category changes recalibrate referenced templates but still protect seconds versus repetitions", async () => {
   const exercise = await request("/api/exercises", "POST", {name:"Custom",muscleGroup:"Грудь",equipment:"other"});
   const edited = await request(`/api/exercises/${exercise.id}`, "PATCH", {equipment:"dumbbell"});
   assert.equal(edited.equipment,"dumbbell");
   const template = await request("/api/programs", "POST", {name:"Custom plan",exercises:[{exerciseId:exercise.id,sets:1,repsMin:10,repsMax:10,intent:"hypertrophy",setTargets:[{weightKg:10,reps:10}]}]});
-  await assert.rejects(request(`/api/exercises/${exercise.id}`, "PATCH", {equipment:"barbell"}),{status:409});
+  await request(`/api/exercises/${exercise.id}`, "PATCH", {equipment:"barbell"});
   const workout = await request("/api/workouts", "POST", {programId:template.id});
   await request(`/api/programs/${template.id}`, "DELETE");
   await assert.rejects(request(`/api/exercises/${exercise.id}`, "PATCH", {name:"Планка"}),{status:409});
-  assert.equal((await loadPlan(workout.id)).exercises[0].setTargets[0].weightKg,10);
+  assert.equal((await loadPlan(workout.id)).exercises[0].setTargets[0].weightKg,20);
   await parseProgressBackup(await exportProgress());
 });

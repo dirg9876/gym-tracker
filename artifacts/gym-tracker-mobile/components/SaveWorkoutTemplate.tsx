@@ -7,6 +7,7 @@ import { Alert, KeyboardAvoidingView, Modal, Platform, Text, TextInput, View } f
 import { Button } from "./Button";
 import { useColors } from "@/hooks/useColors";
 import { templateFromWorkout } from "@/lib/workoutTemplates";
+import { sameLoadCategory, type MeasuredSet } from "@/lib/workoutMeasurement";
 
 export function SaveWorkoutTemplate({ workout }: { workout: Workout }) {
   const colors = useColors();
@@ -19,6 +20,7 @@ export function SaveWorkoutTemplate({ workout }: { workout: Workout }) {
   const [name, setName] = useState(workout.name || `Тренировка ${new Date(workout.startedAt).toLocaleDateString("ru-RU")}`);
   const save = async () => {
     try {
+      if (savedSets.some(set => !sameLoadCategory(set as MeasuredSet, available!.find(item => item.id === set.exerciseId)!))) throw new Error("Категория упражнения изменена. Старые веса нельзя перенести на другое оборудование. Создайте шаблон с новыми весами в разделе тренировок.");
       const data = { name: name.trim(), description: `Из тренировки ${new Date(workout.startedAt).toLocaleDateString("ru-RU")}`, exercises: templateFromWorkout({ ...workout, sets: savedSets }) };
       const result = await create.mutateAsync({ data });
       await client.invalidateQueries({ queryKey: getListProgramsQueryKey() });

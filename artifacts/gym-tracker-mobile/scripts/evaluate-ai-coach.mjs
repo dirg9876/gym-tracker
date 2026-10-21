@@ -115,7 +115,7 @@ try {
     const calibrated = proposal.exercises.map(ex => ({ ...ex, setTargets: ex.setTargets.map(target => ({ ...target, weightKg: Number.isFinite(target.weightKg) ? target.weightKg : ex.equipment === "barbell" ? 20 : 5 })) }));
     const saved = await request("/api/programs", "POST", { name: proposal.name, description: proposal.description, exercises: calibrated });
     const roundTrip = await parseProgressBackup(await exportProgress());
-    assert.equal(roundTrip.version, 8); assert.equal(roundTrip.state.customPrograms.length, 1);
+    assert.equal(roundTrip.version, 10); assert.equal(roundTrip.state.customPrograms.length, 1);
     assert.deepEqual(roundTrip.state.sets, before.sets);
     const repeated = await request("/api/workouts", "POST", { programId: saved.id });
     let draft = await request(`/api/workouts/${repeated.id}/draft`);

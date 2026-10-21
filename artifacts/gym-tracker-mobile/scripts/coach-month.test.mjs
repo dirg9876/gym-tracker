@@ -61,7 +61,7 @@ test("monthly schedule rejects missing/duplicate weeks, bad template indices and
 });
 test("month is explicit, persists in v8 and round-trips with no performed sets created", async () => {
   const saved = await saveMonth(); assert.equal(saved.slots.length, 12);
-  const backup = await exportProgress(); assert.equal(JSON.parse(backup).version, 9);
+  const backup = await exportProgress(); assert.equal(JSON.parse(backup).version, 10);
   assert.equal(JSON.parse(backup).state.workouts.length, 0);
   await restoreProgress(backup);
   assert.deepEqual((await request("/api/ai-coach/month")).saved, saved.saved);

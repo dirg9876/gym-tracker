@@ -1,6 +1,6 @@
 import { coachContextSchema, defaultCoachProfile, personalCoachProfile, type CoachContext, type CoachMessages, type CoachTask } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
-import { isTimedExercise } from "./workoutMeasurement";
+import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
 import { completedTargets, plannedSet, type TemplatePlan } from "./workoutTemplates";
 import { nextScheduledSession } from "./coachMonth";
@@ -22,7 +22,7 @@ export function buildCoachContext(state: OfflineState, task: CoachTask, workoutI
   if (focus && !sessions.some(w => w.id === focus.id)) sessions.push(focus);
   sessions.sort((a, b) => (a.finishedAt ?? "9999").localeCompare(b.finishedAt ?? "9999"));
   const sessionIds = new Set(sessions.map(w => w.id));
-  const eligible = state.sets.filter(set => sessionIds.has(set.workoutId) && ids.has(set.exerciseId));
+  const eligible = state.sets.filter(set => sessionIds.has(set.workoutId) && ids.has(set.exerciseId) && sameLoadCategory(set, available.find(ex => ex.id === set.exerciseId)!));
   const recentSets = eligible.slice(-160);
   const observation = (set: { exerciseId: number; weightKg: number; reps: number; durationSeconds?: number; rir?: number | null; technique?: "good" | "breakdown" | null }) => ({ exerciseId: set.exerciseId, weightKg: set.weightKg, reps: set.reps, durationSeconds: set.durationSeconds ?? null, rir: set.rir ?? null, technique: set.technique ?? null });
   return coachContextSchema.parse({

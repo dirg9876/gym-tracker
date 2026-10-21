@@ -8,7 +8,7 @@ import { buildTrainingInsights } from "./trainingInsights";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
-import { durationOf, isTimedExercise, setVolume, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
+import { durationOf, isTimedExercise, minimumWeight, sameLoadCategory, setVolume, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
 import { equipmentSettingsSchema, validEquipmentSettings, isAssisted, performanceWeight, type EquipmentSettings } from "./equipmentSettings";
 import { AUTO_BACKUP_JOBS_KEY, PLAN_PREFIX, PROGRESS_KEY, isProgressKey, readProgressEntries, commitProgressTransaction, quarantineProgress, ProgressRecoveryRequired, withProgressLock } from "./progressStorage";
 import { validateStoredProgress } from "./progressBackup";
@@ -76,6 +76,7 @@ type WorkoutRow = {
 };
 
 type SetRow = CoachFields & {
+  equipment?: Equipment;
   bodyWeightKg?: number;
   loadMode?: "weight" | "assisted";
   dumbbellCount?: 1 | 2;
@@ -415,7 +416,7 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     }
   }
   match = /^\/api\/exercises\/(\d+)\/working-load$/.exec(path);
-  if (match && method === "GET") return { sets: getFinishedSets(state).filter(set => set.exerciseId === Number(match![1])) };
+  if (match && method === "GET") return { sets: getFinishedSets(state).filter(set => set.exerciseId === Number(match![1]) && sameLoadCategory(set, findExercise(state, set.exerciseId)!)) };
 
   match = /^\/api\/workouts\/(\d+)$/.exec(path);
   if (match && method === "GET") return getWorkoutOrThrow(state, Number(match[1]));
@@ -629,29 +630,70 @@ async function updateExercise(
   }
   if (body.equipment !== undefined) {
     if (!isEquipment(body.equipment)) throw httpError(400, "Неизвестный тип оборудования.");
-    if (!row.isCustom && body.equipment !== row.equipment) throw httpError(409, "Оборудование встроенного упражнения закреплено за нормативами.");
     next.equipment = body.equipment;
     if (next.equipment !== "dumbbell") delete next.dumbbellCount;
+    if (next.equipment !== "machine" && body.loadMode == null) next.loadMode = "weight";
   }
   if (!validEquipmentSettings(next)) throw httpError(400, "Проверьте совместимость категории и настройки нагрузки.");
-  if (next.equipment !== row.equipment || isTimedExercise(next.name) !== isTimedExercise(row.name) || isAssisted(next) !== isAssisted(row)) {
+  const categoryChanged = next.equipment !== row.equipment;
+  if (isTimedExercise(next.name) !== isTimedExercise(row.name) || !categoryChanged && isAssisted(next) !== isAssisted(row)) {
     const plans = (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX));
     const used = state.sets.some(set => set.exerciseId === exerciseId)
       || state.workouts.some(workout => workout.timer?.exerciseId === exerciseId || workout.draft?.exerciseId === exerciseId)
       || state.customPrograms.some(program => program.exercises.some(ex => ex.exerciseId === exerciseId))
       || state.coachMonth?.plan.templates.some(plan => plan.exercises.some(ex => ex.exerciseId === exerciseId))
       || plans.some(([, value]) => (JSON.parse(value) as ProgramPlan).exercises.some(ex => ex.exerciseId === exerciseId));
-    if (used) throw httpError(409, "Упражнение уже используется. Для другого оборудования или единиц измерения создайте новое упражнение.");
+    if (used) throw httpError(409, "Упражнение уже используется. Для перехода между временем и повторами или смены режима противовеса создайте новое упражнение.");
   }
   if (typeof body.isMain === "boolean") next.isMain = body.isMain;
-  if ((next.weightStepKg ?? 2.5) !== (row.weightStepKg ?? 2.5) || (next.dumbbellCount ?? 1) !== (row.dumbbellCount ?? 1)) {
+  const changed: [string, string][] = [];
+  if (categoryChanged) {
+    for (const set of state.sets.filter(set => set.exerciseId === exerciseId && set.equipment == null)) {
+      set.equipment = row.equipment;
+      set.loadMode ??= row.loadMode ?? "weight";
+      if (row.equipment === "dumbbell" && set.durationSeconds == null) set.dumbbellCount ??= 1;
+    }
+    // Old numeric loads are not transferable between categories. Recalibrate future targets.
+    const initialWeight = isTimedExercise(next.name) || next.equipment === "bodyweight" || isAssisted(next) ? 0 : Math.max(minimumWeight(next.equipment), next.equipment === "machine" ? 5 : 2.5);
+    const resetTargets = (targets: SetTarget[]) => targets.map(set => set.durationSeconds != null ? set : { weightKg: initialWeight, reps: Math.min(set.reps, next.equipment === "bodyweight" ? 3 : 8), setType: "working" as const });
+    const resetPlan = (items: Array<CustomProgramExerciseRow & { calibration?: boolean; suggestedWeightKg?: number; equipment?: Equipment; isBodyweight?: boolean }>) => {
+      for (const item of items.filter(item => item.exerciseId === exerciseId)) {
+        if (item.setTargets) item.setTargets = resetTargets(item.setTargets);
+        item.calibration = !isTimedExercise(next.name);
+        item.note = "Категория изменена. Начните с калибровочного подхода и оцените запас и технику.";
+        if (item.equipment != null) item.equipment = next.equipment;
+        if (item.isBodyweight != null) item.isBodyweight = next.equipment === "bodyweight";
+        if (item.suggestedWeightKg != null) item.suggestedWeightKg = initialWeight;
+      }
+    };
+    for (const program of state.customPrograms) resetPlan(program.exercises);
+    for (const [key, value] of (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX))) {
+      const plan = JSON.parse(value) as TemplatePlan;
+      if (!plan.exercises.some(ex => ex.exerciseId === exerciseId)) continue;
+      resetPlan(plan.exercises);
+      changed.push([key, JSON.stringify(plan)]);
+    }
+    if (state.coachMonth) for (const plan of state.coachMonth.plan.templates) {
+      for (const item of plan.exercises.filter(item => item.exerciseId === exerciseId)) {
+        for (const target of item.targets) if (target.durationSeconds == null) {
+          target.weightKg = initialWeight;
+          target.reps = Math.min(target.reps, next.equipment === "bodyweight" ? 3 : 8);
+        }
+      }
+    }
+    for (const workout of state.workouts.filter(workout => !workout.finishedAt && workout.draft?.exerciseId === exerciseId)) {
+      if (!isTimedExercise(next.name)) workout.draft = makeWorkoutDraft(next, { weightKg: initialWeight, reps: Math.min(workout.draft!.reps, next.equipment === "bodyweight" ? 3 : 8) });
+    }
+  }
+  if (categoryChanged || (next.weightStepKg ?? 2.5) !== (row.weightStepKg ?? 2.5) || (next.dumbbellCount ?? 1) !== (row.dumbbellCount ?? 1)) {
     for (const workout of state.workouts.filter(workout => !workout.finishedAt && workout.draft?.exerciseId === exerciseId)) {
       if ((workout.draftRevision ?? 0) >= Number.MAX_SAFE_INTEGER) throw httpError(409, "Слишком много изменений черновика.");
       workout.draftRevision = (workout.draftRevision ?? 0) + 1;
     }
   }
   Object.assign(row, next);
-  await saveState(state);
+  if (next.equipment !== "dumbbell") delete row.dumbbellCount;
+  await saveStateAndPlans(state, changed);
   return enrichExercise(state, row);
 }
 
@@ -758,7 +800,7 @@ async function saveStateAndPlans(state: OfflineState, plans: [string, string][] 
 
 function enrichExercise(state: OfflineState, row: ExerciseRow): RankedExercise {
   const mc = getMcKg(state, row);
-  const sets = getFinishedSets(state).filter((set) => set.exerciseId === row.id);
+  const sets = getFinishedSets(state).filter((set) => set.exerciseId === row.id && sameLoadCategory(set, row));
   const userMaxKg = sets
     .reduce<number | null>((best, set) => (best == null || performanceWeight(set) > best ? performanceWeight(set) : best), null);
   const standard = exerciseStandard(row, state.profile);
@@ -787,7 +829,7 @@ function getExerciseNorms(state: OfflineState, exerciseId: number): ExerciseRank
   const { standard, rankBest } = enrichExercise(state, row);
   const mc = getMcKg(state, row);
   const userMaxWeightKg = getFinishedSets(state)
-    .filter((set) => set.exerciseId === exerciseId)
+    .filter((set) => set.exerciseId === exerciseId && sameLoadCategory(set, row))
     .reduce<number | null>((best, set) => (best == null || performanceWeight(set) > best ? performanceWeight(set) : best), null);
 
   if (mc.kg == null) {
@@ -831,7 +873,7 @@ function getExerciseNorms(state: OfflineState, exerciseId: number): ExerciseRank
 
 function getExerciseLastSets(state: OfflineState, exerciseId: number): ExerciseLastSets {
   const sets = getFinishedSets(state)
-    .filter((set) => set.exerciseId === exerciseId)
+    .filter((set) => set.exerciseId === exerciseId && sameLoadCategory(set, findExercise(state, exerciseId)!))
     .sort((a, b) => new Date(b.workoutStartedAt).getTime() - new Date(a.workoutStartedAt).getTime() || b.workoutId - a.workoutId);
 
   if (sets.length === 0) {
@@ -1016,6 +1058,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
   const calibration = !isAssisted(exercise) && plan?.exercises.find(ex => ex.exerciseId === exercise.id && ex.calibration && !state.sets.some(set => set.workoutId === workout.id && set.exerciseId === exercise.id));
   if (calibration && (coach.data.rir == null || coach.data.technique == null)) throw httpError(400, "После подборочного подхода отметьте запас повторений и технику.");
   const set: SetRow = {
+    equipment: exercise.equipment,
     id: state.nextSetId++,
     workoutId,
     exerciseId: exercise.id,
@@ -1119,7 +1162,8 @@ function summarizeWorkout(state: OfflineState, workout: WorkoutRow): WorkoutSumm
 function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
   const exercise = findExercise(state, set.exerciseId);
   const timed = isTimedExercise(exercise?.name ?? "") || set.durationSeconds != null;
-  const bodyweight = !timed && (exercise?.equipment === "bodyweight" || isAssisted(set));
+  const equipment = set.equipment ?? exercise?.equipment;
+  const bodyweight = !timed && (equipment === "bodyweight" || isAssisted(set));
   const bodyWeightKg = bodyweight ? set.bodyWeightKg ?? state.profile.bodyWeightKg : null;
   return {
     id: set.id,
@@ -1129,10 +1173,10 @@ function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
     muscleGroup: exercise?.muscleGroup ?? "Другое",
     weightKg: timed ? 0 : set.weightKg,
     reps: timed ? 0 : set.reps,
-    equipment: exercise?.equipment,
+    equipment,
     ...(set.loadMode ? { loadMode: set.loadMode } : {}),
     ...(set.dumbbellCount ? { dumbbellCount: set.dumbbellCount } : {}),
-    volume: setVolume(set.weightKg, set.reps, exercise?.equipment, bodyWeightKg, timed, set),
+    volume: setVolume(set.weightKg, set.reps, equipment, bodyWeightKg, timed, set),
     ...(bodyweight ? { ...(bodyWeightKg != null ? { bodyWeightKg } : {}), bodyWeightEstimated: set.bodyWeightKg == null, effectiveWeightKg: isAssisted(set) ? Math.max(0, (bodyWeightKg ?? 0) - set.weightKg) : (bodyWeightKg ?? 0) + set.weightKg } : {}),
     ...(timed ? { durationSeconds: set.durationSeconds ?? 0 } : {}),
     ...(set.setType ? { setType: set.setType } : {}),
@@ -1198,19 +1242,22 @@ function buildWorkoutReport(state: OfflineState, workout: WorkoutRow): WorkoutRe
       ].filter((item): item is NonNullable<typeof item> => item !== null)
     : [];
 
-  const previousExerciseBest = new Map<number, { maxWeight: number; maxReps: number; maxVolumeSet: number }>();
+  const categoryKey = (set: MeasuredSet) => `${set.exerciseId}:${set.equipment}:${isAssisted(set)}`;
+  const previousBest = new Map<string, { maxWeight: number; maxReps: number; maxVolumeSet: number }>();
   for (const set of previousSets) {
-    const best = previousExerciseBest.get(set.exerciseId) ?? { maxWeight: 0, maxReps: 0, maxVolumeSet: 0 };
+    const key = categoryKey(set);
+    const best = previousBest.get(key) ?? { maxWeight: 0, maxReps: 0, maxVolumeSet: 0 };
     best.maxWeight = Math.max(best.maxWeight, set.weightKg);
     best.maxReps = Math.max(best.maxReps, set.reps);
     best.maxVolumeSet = Math.max(best.maxVolumeSet, set.volume);
-    previousExerciseBest.set(set.exerciseId, best);
+    previousBest.set(key, best);
   }
-
   const currentByExercise = groupBy(full.sets, (set) => String(set.exerciseId));
   const newExerciseRecords = [...currentByExercise.entries()].flatMap(([exerciseIdText, sets]) => {
     const exerciseId = Number(exerciseIdText);
-    const prev = previousExerciseBest.get(exerciseId) ?? { maxWeight: 0, maxReps: 0, maxVolumeSet: 0 };
+    const category = sets[0] as MeasuredSet & { equipment: Equipment };
+    if (sets.some(set => !sameLoadCategory(set as MeasuredSet, category))) return [];
+    const prev = previousBest.get(categoryKey(category)) ?? { maxWeight: 0, maxReps: 0, maxVolumeSet: 0 };
     const topWeight = sets.reduce((best, set) => (set.weightKg > best.weightKg ? set : best), sets[0]);
     const topReps = sets.reduce((best, set) => (set.reps > best.reps ? set : best), sets[0]);
     const topVolume = sets.reduce((best, set) => (set.volume > best.volume ? set : best), sets[0]);
@@ -1315,7 +1362,7 @@ function computeExerciseBreakdown(
     const exerciseId = Number(exerciseIdText);
     const current = aggregateSets(sets);
     const previousSessions = groupBy(
-      previousSets.filter((set) => set.exerciseId === exerciseId),
+      previousSets.filter((set) => set.exerciseId === exerciseId && sets.every(current => sameLoadCategory(current as MeasuredSet, set as MeasuredSet & { equipment: Equipment }))),
       (set) => String(set.workoutId),
     );
     const previous = [...previousSessions.values()]
@@ -1422,7 +1469,7 @@ function getExerciseProgress(state: OfflineState, exerciseId: number): ExerciseP
   const exercise = findExercise(state, exerciseId);
   if (!exercise) throw httpError(404, "Упражнение не найдено");
   const unit = exerciseStandard(exercise, state.profile).unit;
-  const points = [...groupBy(getFinishedSets(state).filter((set) => set.exerciseId === exerciseId), (set) => String(set.workoutId)).values()]
+  const points = [...groupBy(getFinishedSets(state).filter((set) => set.exerciseId === exerciseId && sameLoadCategory(set, exercise)), (set) => String(set.workoutId)).values()]
     .map((sets) => {
       const score = (set: MeasuredSet) => unit === "seconds" ? durationOf(set) : unit === "reps" ? set.reps : performanceWeight(set);
       const topSet = sets.reduce((best, set) => (score(set) > score(best) ? set : best), sets[0]);
@@ -1503,6 +1550,7 @@ async function getLevels(state: OfflineState): Promise<ExerciseLevelsResponse> {
   const levels = buildLevels(bodyWeightKg, sex);
   const observed = new Map<number, { kg: number; reps: number; seconds: number }>();
   for (const set of getFinishedSets(state)) {
+    if (!sameLoadCategory(set, findExercise(state, set.exerciseId)!)) continue;
     const best = observed.get(set.exerciseId) ?? { kg: 0, reps: 0, seconds: 0 };
     best.kg = Math.max(best.kg, performanceWeight(set)); best.reps = Math.max(best.reps, set.reps); best.seconds = Math.max(best.seconds, durationOf(set));
     observed.set(set.exerciseId, best);
@@ -1679,7 +1727,7 @@ async function getProgramPlan(state: OfflineState, programId: string): Promise<T
         : findExercise(state, Number(def.exerciseId));
       if (!exercise || exercise.deletedAt) return null;
       const pr = getFinishedSets(state)
-        .filter((set) => set.exerciseId === exercise.id)
+        .filter((set) => set.exerciseId === exercise.id && sameLoadCategory(set, exercise))
         .reduce((best, set) => Math.max(best, set.weightKg), 0);
       const factor = INTENT_FACTOR[def.intent];
       const minimum = exercise.equipment === "barbell" ? BAR_WEIGHT_KG : 2.5;
@@ -1698,7 +1746,8 @@ async function getProgramPlan(state: OfflineState, programId: string): Promise<T
         repsMin: timed && !setTargets ? 30 : def.repsMin,
         repsMax: timed && !setTargets ? 60 : def.repsMax,
         intent: def.intent,
-        suggestedWeightKg: setTargets?.[0]?.weightKg ?? (isAssisted(exercise) ? getFinishedSets(state).filter(set => set.exerciseId === exercise.id).at(-1)?.weightKg ?? Math.min(20, state.profile.bodyWeightKg ?? 20) : suggestedWeightKg),
+        suggestedWeightKg: setTargets?.[0]?.weightKg ?? (isAssisted(exercise) ? getFinishedSets(state).filter(set => set.exerciseId === exercise.id && sameLoadCategory(set, exercise)).at(-1)?.weightKg ?? Math.min(20, state.profile.bodyWeightKg ?? 20) : suggestedWeightKg),
+        ...("calibration" in def && def.calibration ? { calibration: true } : {}),
         ...(setTargets ? { setTargets } : {}),
         ...progression,
         ...(exercise.weightStepKg != null ? { weightStepKg: exercise.weightStepKg } : {}),

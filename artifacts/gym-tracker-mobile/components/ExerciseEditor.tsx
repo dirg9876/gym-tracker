@@ -36,7 +36,7 @@ export function ExerciseEditor({ exercise, onClose, initialValues, onCreate }: {
     if (!equipment) return;
     try {
       setCustomBusy(true);
-      const data = { ...(identityEditable ? { name: name.trim(), muscleGroup: group.trim(), equipment } : {}), weightStepKg: settings.weightStepKg, loadMode: equipment === "machine" ? settings.loadMode : "weight", ...(equipment === "dumbbell" && !isTimedExercise(name) ? { dumbbellCount: settings.dumbbellCount ?? 1 } : {}) };
+      const data = { ...(identityEditable ? { name: name.trim(), muscleGroup: group.trim() } : {}), equipment, weightStepKg: settings.weightStepKg, loadMode: equipment === "machine" ? settings.loadMode : "weight", ...(equipment === "dumbbell" && !isTimedExercise(name) ? { dumbbellCount: settings.dumbbellCount ?? 1 } : {}) };
       if (exercise) await update.mutateAsync({ exerciseId: exercise.id, data });
       else if (onCreate) await onCreate({ ...data, name: name.trim(), muscleGroup: group.trim(), equipment });
       else await create.mutateAsync({ data: { ...data, name: name.trim(), muscleGroup: group.trim(), equipment } });
@@ -62,7 +62,8 @@ export function ExerciseEditor({ exercise, onClose, initialValues, onCreate }: {
           <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Группа мышц</Text>
           <MuscleGroupPicker value={group} onChange={setGroup} groups={exercises?.map(ex => ex.muscleGroup)} disabled={busy || !identityEditable} />
           <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Категория</Text>
-          <EquipmentPicker value={equipment} onChange={setEquipment} disabled={busy || !identityEditable} />
+          <EquipmentPicker value={equipment} onChange={setEquipment} disabled={busy} />
+          {exercise && equipment !== exercise.equipment ? <Text style={{ color: colors.amber, fontSize: 13 }}>История сохранит прежнюю категорию. Плановые веса и текущий черновик этого упражнения начнутся с калибровочной нагрузки.</Text> : null}
           {equipment && !isTimedExercise(name) ? <EquipmentSettingsFields equipment={equipment} value={settings} onChange={setSettings} disabled={busy} /> : null}
         </ScrollView>
       </View>

@@ -36,7 +36,7 @@ test("draft persists all confirmed fields and round-trips without inventing a pe
   assert.equal((await request(`/api/workouts/${workout.id}`)).sets.length, 0);
   assert.equal((await request("/api/levels")).currentLevel, 0);
   const backup = await exportProgress();
-  assert.equal(JSON.parse(backup).version, 9);
+  assert.equal(JSON.parse(backup).version, 10);
   await save(workout.id, plank, 1);
   await restoreProgress(backup);
   assert.deepEqual(await request(url(workout.id)), saved);
@@ -167,8 +167,9 @@ test("deleting an exercise, set or workout cannot leave broken draft references"
   const custom = await request("/api/exercises", "POST", { name: "Custom", muscleGroup: "Back", equipment: "dumbbell" });
   const workout = await create();
   await save(workout.id, { ...bench, exerciseId: custom.id, weightKg: 10 });
-  await assert.rejects(request(`/api/exercises/${custom.id}`, "PATCH", { equipment: "barbell" }), { status: 409 });
-  const result = await commit(workout.id, 1);
+  await request(`/api/exercises/${custom.id}`, "PATCH", { equipment: "barbell" });
+  await assert.rejects(commit(workout.id, 1), { status: 409 });
+  const result = await commit(workout.id, 2);
   await request(`/api/sets/${result.set.id}`, "DELETE");
   await assert.rejects(commit(workout.id, 1), { status: 409 });
   await request(`/api/exercises/${custom.id}`, "DELETE");

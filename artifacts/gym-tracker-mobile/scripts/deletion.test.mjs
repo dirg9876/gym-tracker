@@ -38,7 +38,7 @@ test("catalog replacement includes built-ins and preserves recorded sets and sta
   assert.equal(await loadPlan(workout.id), null);
   assert.equal((await request("/api/programs/chest")).exercises.some(ex => ex.exerciseId === 1), false);
   const text = await exportProgress();
-  assert.equal(JSON.parse(text).version, 9);
+  assert.equal(JSON.parse(text).version, 10);
   await restoreProgress(text);
   assert.equal((await request("/api/exercises")).some(ex => ex.id === 1), false);
   assert.deepEqual(await request(`/api/workouts/${workout.id}`), transferred);

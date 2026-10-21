@@ -76,7 +76,7 @@ test("time/rep/weight and assistance series keep their own units and actual top 
     set(5, 1, { exerciseId: 3, weightKg: 0, reps: 8 }), set(6, 2, { exerciseId: 3, weightKg: 0, reps: 12 }),
     set(7, 1, { exerciseId: 4, loadMode: "assisted", weightKg: 40 }), set(8, 1, { exerciseId: 4, loadMode: "assisted", weightKg: 35 }),
     set(9, 2, { exerciseId: 4, loadMode: "assisted", weightKg: 25 }), set(10, 2, { exerciseId: 4, weightKg: 50 })];
-  const result = buildTrainingInsights(workouts, sets, exercises, 28, now);
+  const result = buildTrainingInsights(workouts, sets.map(row => ({ ...row, equipment: exercises.find(ex => ex.id === row.exerciseId).equipment })), exercises, 28, now);
   const get = id => result.exercises.find(row => row.exercise.id === id);
   assert.deepEqual(get(1).series.find(row => row.id === "weight").points.map(row => [row.value, row.set.reps]), [[20, 10], [25, 8]]);
   assert.deepEqual(get(2).series.map(row => row.unit), ["seconds"]);
