@@ -15,18 +15,20 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
   const strength = supported ? todayStrength ?? (!fitted.stale ? fitted.estimated1RMKg : null) : null;
   const last = current.at(-1) ?? history.at(-1);
   const hasFeedback = last?.rir != null && last.technique != null;
-  const status = !supported ? "unsupported" : strength != null ? "ready" : fitted.estimated1RMKg != null ? "stale" : "insufficient";
+  const latestSession = history.filter(row => row.workoutId === history.at(-1)?.workoutId);
+  const latestMeasured = current.length ? firstToday != null : latestSession.some(row => qualityEstimate(row) != null);
+  const status = !supported ? "unsupported" : strength != null && latestMeasured ? "ready" : fitted.stale && fitted.estimated1RMKg != null ? "stale" : "insufficient";
   const targets: Array<{ weightKg: number; reps: number }> = [];
   let first = { ...guard, predictedReps: null as number | null, unroundedWeightKg: null as number | null };
   for (let i = 0; i < 6; i++) {
     const fatigueReps = (fitted.fatigueBeta ?? 0) * (current.length - (firstToday ? current.indexOf(firstToday) : 0) + i);
-    const result = controlPrediction({ strengthKg: supported && hasFeedback ? strength : null, guard,
+    const result = controlPrediction({ strengthKg: supported && hasFeedback && latestMeasured ? strength : null, guard,
       repsMin: range.repsMin, targetRir: range.targetRir, stepKg: range.weightStepKg,
       minimumKg: minimumWeight(equipment.equipment as "barbell"), fatigueReps });
     targets.push({ weightKg: result.weightKg, reps: result.reps });
     if (i === 0) first = result;
   }
-  const note = !supported ? "Формула не применяется к секундам, собственному весу, противовесу и категории «Другое». Здесь действуют обычные правила и калибровка." : status === "stale" ? "Нет качественного измерения за 28 дней. Нужна повторная оценка; старый расчёт не повышает нагрузку." : status === "insufficient" ? "Для оценки нужен подход на 2–10 повторений с RIR 0–3 и сохранённой техникой. Синглы и неизвестные оценки не используются." : "Приближённая оценка Эпли + RIR, EMA 0,2 по одному подходу на занятие. Не рекорд и не норматив. Прогноз не определяет восстановление; RIR и техника субъективны.";
+  const note = !supported ? "Формула не применяется к секундам, собственному весу, противовесу и категории «Другое». Здесь действуют обычные правила и калибровка." : status === "stale" ? "Нет качественного измерения за 28 дней. Нужна повторная оценка; старый расчёт не повышает нагрузку." : status === "insufficient" ? "В последнем занятии нет подхода для формулы: нужны 2–10 повторений, RIR 0–3 и сохранённая техника. Цель задана правилами прогрессии или калибровки, а не старым прогнозом." : "Приближённая оценка Эпли + RIR, EMA 0,2 по одному подходу на занятие. Не рекорд и не норматив. Прогноз не определяет восстановление; RIR и техника субъективны.";
   return { next: { weightKg: first.weightKg, reps: first.reps, action: first.action, reason: first.reason },
     model: modelForecastSchema.parse({ version: "epley-rir-ema-v1", status,
       estimated1RMKg: supported ? strength ?? fitted.estimated1RMKg : null, sessions: fitted.sessions,

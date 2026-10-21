@@ -80,6 +80,19 @@ test("no historical prescription means MAE_RIR is unknown, not a fabricated qual
   assert.equal(value.model.rirErrorMAE, null); assert.equal(value.model.validationSamples, 1);
   assert.doesNotThrow(() => modelForecastSchema.parse(value.model));
 });
+test("out-of-domain high reps do not let an older formula deadlock two proven full sessions", async () => {
+  let focus;
+  for (const reps of [10, 12, 12]) {
+    focus = await request("/api/workouts", "POST");
+    for (let i = 0; i < 3; i++) await request(`/api/workouts/${focus.id}/sets`, "POST", { exerciseId: 1, weightKg: 40, reps, rir: 2, technique: "good" });
+    await request(`/api/workouts/${focus.id}/finish`, "POST");
+  }
+  const analysis = await request(`/api/workouts/${focus.id}/analysis`);
+  assert.equal(analysis.exercises[0].next.weightKg, 42.5);
+  assert.equal(analysis.exercises[0].model.status, "insufficient");
+  assert.equal(analysis.exercises[0].model.predictedReps, null);
+  assert.match(analysis.exercises[0].model.note, /не старым прогнозом/);
+});
 test("today's first valid set adapts today's targets without rewriting the long-term estimate", () => {
   const value = predict([row(1, 60)], { equipment: "barbell" }, [row(9, 70)]);
   assert.equal(value.model.source, "today"); assert.ok(Math.abs(value.model.estimated1RMKg - epleyWithRir(70, 8, 2)) < 1e-8);

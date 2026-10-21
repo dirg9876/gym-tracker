@@ -106,6 +106,18 @@ AIconnection послераннегоsmokeудалён черезForget, private
 
 ## Осталось для публикации
 
+ВАЖНОЕОБНОВЛЕНИЕ: source4c0c3e29fb56effccb0598bb360c73da92ea3568 ужеpushed,
+CI39659870609SUCCESS. Но после review найден сценарий10->12->12повторов:
+старыйe1RM мог блокировать ужеразрешённую правилами прибавку, поскольку12
+внеформулы. Исправлено latestMeasuredgate в trainingPrediction.ts,
+добавлен16-йmathтест. Mobile281PASS, общийитог335. Нужныфинальныйtypecheck,
+rebuild/export/privacy/nativeSanity и дополнительныйsourcecommit+CI.
+ПредыдущийGHdraftv1.1.9 существует, target4c0c3e2, assets[]; первыйupload
+остановлен ДОзагрузки. Ничего не опубликовано. НЕсоздаватьвторойrelease,
+обновитьtargetdraftнафинальныйFULLSHA и uploadфинальныйAPK.
+APKhash0A8F... выше и dist803c... УСТАРЕВАЮТ ПОСЛЕ ЭТОГО FIX, не публиковатьих.
+WorkerV8 не менялся: дополнительныйdeployНЕнужен. ProductionOTA1.1.9ещёнет.
+
 1. Sourcecommit/pushmaster и CI PASS; commitполныйSHA использоватьвGHrelease.
 2. GHdraftv1.1.9/APKassetupload, serverdigest+size сверить, publishlatestпослеCI.
 3. ProductionAndroidOTA ONCE: eas-cli16.32.0 update --branchproduction
