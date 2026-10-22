@@ -10,6 +10,10 @@ export function validateRelease(config, release) {
   const version = release?.version;
   if (typeof version !== "string" || !versionPattern.test(version) || !version.split(".").map(Number).every(Number.isSafeInteger)) throw new Error("Invalid release version");
   if (config?.expo?.version !== version) throw new Error("app.json and release.json versions differ");
+  if (release.displayVersion != null && (typeof release.displayVersion !== "string" ||
+      !release.displayVersion.startsWith(version) ||
+      !/^[a-z]$/.test(release.displayVersion.slice(version.length)))) throw new Error("Invalid display release label");
+
   if (!Number.isSafeInteger(config.expo.android?.versionCode) || config.expo.android.versionCode < 1) throw new Error("Invalid Android versionCode");
   if (typeof config.expo.runtimeVersion !== "string" || !config.expo.runtimeVersion.trim()) throw new Error("An explicit native runtimeVersion is required for independent OTA releases");
   const date = release.releasedAt;

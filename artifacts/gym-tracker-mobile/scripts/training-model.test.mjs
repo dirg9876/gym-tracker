@@ -12,6 +12,17 @@ const guard = { weightKg: 70, reps: 9, action: "progress_reps", reason: "Fixture
 const predict = (rows, equipment = { equipment: "barbell" }, current = []) => forecastWorkingSets(rows, range, guard, equipment, now, current);
 beforeEach(() => storage.clear());
 
+test("hypertrophy controller never converts a heavy single to a working prescription", () => {
+  const original = { weightKg: 85, reps: 1, action: "hold", reason: "Heavy single" };
+  const unknown = controlPrediction({ strengthKg: null, guard: original, repsMin: 8, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
+  assert.equal(unknown.action, "calibrate");
+  assert.equal(unknown.reps, 8);
+  assert.equal(unknown.weightKg, 20);
+  const measured = controlPrediction({ strengthKg: 90, guard: original, repsMin: 8, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
+  assert.ok(measured.weightKg <= 67.5);
+  assert.ok(measured.reps >= 8);
+});
+
 test("Epley + RIR matches the document and its inverse without rounding", () => {
   assert.ok(Math.abs(epleyWithRir(70, 8, 2) - 93.3333333333) < 1e-7);
   assert.equal(predictWeight(90, 8, 2), 67.5);

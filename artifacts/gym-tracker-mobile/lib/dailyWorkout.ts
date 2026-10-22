@@ -37,7 +37,14 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
   if (scheduled) {
     definitions = scheduled.plan.exercises.filter(ex => byId.has(ex.exerciseId)).map(ex => {
       const values = ex.targets.map(set => set.durationSeconds ?? set.reps);
-      return { exerciseId: ex.exerciseId, sets: ex.targets.length, repsMin: Math.min(...values), repsMax: Math.max(...values), durationSeconds: ex.targets[0]?.durationSeconds ?? undefined, note: ex.reason };
+      // A saved AI month plan contains *suggested sets*, not authoritative rep ranges.
+      // A heavy single (e.g. 85 kg x 1) must never turn into a hypertrophy prescription.
+      const timed = isTimedExercise(byId.get(ex.exerciseId)!.name);
+      const hypertrophy = profile.goal === "hypertrophy" && !timed;
+      return { exerciseId: ex.exerciseId, sets: ex.targets.length,
+        repsMin: hypertrophy ? Math.max(6, Math.min(8, Math.min(...values))) : Math.min(...values),
+        repsMax: hypertrophy ? Math.max(12, Math.max(...values)) : Math.max(...values),
+        durationSeconds: ex.targets[0]?.durationSeconds ?? undefined, note: ex.reason };
     });
     if (definitions.length) { source = "month"; name = scheduled.plan.name; reason = `Следующее незавершённое занятие месячного плана · неделя ${scheduled.week}. Пропущенные занятия не списываются; нагрузки обновлены по истории.`; }
     else scheduled = null;

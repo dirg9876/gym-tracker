@@ -138,6 +138,23 @@ test("a first easy calibration cannot automatically add a large equipment step",
   assert.equal(result.setTargets[1].weightKg, 20); assert.match(result.note, /вручную/);
 });
 
+test("hypertrophy month with five 85 kg singles never becomes five heavy singles", async () => {
+  await record(1, 85, 1, {});
+  const context = await request("/api/ai-coach/context", "POST", { task: "month_plan" });
+  const monthly = { name: "Legacy singles", overview: "Regression", daysPerWeek: 3,
+    templates: [{ name: "Chest", description: "", exercises: [{ exerciseId: 1, reason: "Historical maximum",
+      targets: Array.from({ length: 5 }, () => ({ weightKg: 85, reps: 1, durationSeconds: null })) }] }],
+    weeks: Array.from({ length: 4 }, (_, i) => ({ week: i + 1, focus: "Train", sessions: [0, 0, 0] })) };
+  await request("/api/ai-coach/month", "PUT", { context, fingerprint: await coachFingerprint(context), monthly });
+  const proposal = await preview();
+  assert.equal(proposal.source, "month");
+  const bench = proposal.plan.exercises.find(ex => ex.exerciseId === 1);
+  assert.ok(bench);
+  assert.ok(bench.repsMin >= 6);
+  assert.ok(bench.setTargets.every(set => set.reps >= bench.repsMin));
+  assert.ok(bench.setTargets.every(set => !(set.weightKg === 85 && set.reps === 1)));
+});
+
 test("the saved month wins over custom types; only completion consumes its next slot", async () => {
   await template("Do not override the month", 1);
   const context = await request("/api/ai-coach/context", "POST", { task: "month_plan" });
