@@ -28,9 +28,10 @@ test("all proposed weights are concrete, equipment-specific; legacy clients reta
     const result = validateCoachReply(reply(id), ctx);
     assert.ok(result.plan.exercises[0].targets.every(set => set.weightKg === weight && set.reps <= (id === 7 ? 3 : 8)));
   }
-  const legacy = { ...ctx }; delete legacy.loadSelection;
+  const legacy = { ...ctx }; delete legacy.loadSelection; delete legacy.loadTargets; delete legacy.calibrationEstimates;
   assert.equal(validateCoachReply(reply(), legacy).plan.exercises[0].targets[0].weightKg, null);
-  assert.throws(() => validateCoachReply(reply(3, 50), ctx));
+  assert.equal(validateCoachReply(reply(3, 50), ctx).plan.exercises[0].targets[0].weightKg, 2.5);
+  assert.throws(() => validateCoachReply(reply(3, 50), legacy));
 });
 test("null known load is filled from this exercise's actual history, never another exercise", async () => {
   const workout = await request("/api/workouts", "POST", {});

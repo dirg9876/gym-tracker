@@ -64,6 +64,7 @@ export default function RootLayout() {
               <Stack.Screen name="coach-plan" />
               <Stack.Screen name="coach-session" />
               <Stack.Screen name="coach-month" />
+              <Stack.Screen name="start-workout" />
               <Stack.Screen name="exercises/index" />
               <Stack.Screen name="exercise-replacement" />
               <Stack.Screen name="workout/[id]/index" />

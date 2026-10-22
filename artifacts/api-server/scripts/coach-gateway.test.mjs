@@ -37,6 +37,25 @@ async function gateway(run, provider, limit = 5_000_000_000) {
 }
 const output = () => ({ text: JSON.stringify(reply), inputTokens: 1000, outputTokens: 100, completed: true });
 
+test("daily and monthly proposals preserve prepared workouts and normalize provider weights to local calibration", async () => {
+  const context = ctx(); context.task = "next_workout"; context.focus = null; context.loadSelection = "calibration-v1";
+  context.catalog = [{ id: 1, name: "Bench", muscleGroup: "Chest", equipment: "barbell", timed: false }, { id: 3, name: "DB bench", muscleGroup: "Chest", equipment: "dumbbell", timed: false }];
+  const plan = { name: "Prepared", description: "App computes the numbers", exercises: [{ exerciseId: 3, reason: "Calibration", targets: [{ weightKg: 17.5, reps: 8, durationSeconds: null }] }] };
+  context.preparedWorkout = plan;
+  context.calibrationEstimates = [{ exerciseId: 3, sourceExerciseId: 1, coefficient: 0.3, weightKg: 17.5, reps: 8, reason: "Conservative heuristic, assess first set" }];
+  context.loadTargets = [{ exerciseId: 3, targets: plan.exercises[0].targets, calibration: true, reason: "Local model" }];
+  await gateway(async ({ call }) => {
+    for (const id of ["prepared-gateway-0001", "prepared-gateway-0002"]) {
+      const response = await call(id, coachContextSchema.parse(context)); assert.equal(response.status, 200);
+      assert.equal((await response.json()).result.plan.exercises[0].targets[0].weightKg, 17.5);
+    }
+  }, async received => {
+    assert.deepEqual(received.preparedWorkout, plan);
+    assert.ok(coachBody(received).instructions.includes("preparedWorkout"));
+    return { ...output(), text: JSON.stringify({ ...reply, plan: { ...plan, exercises: [{ ...plan.exercises[0], targets: [{ weightKg: 2.5, reps: 12, durationSeconds: null }] }] } }) };
+  });
+});
+
 test("the gateway returns and caches local math targets instead of provider-invented loads", async () => {
   const context = ctx(); context.task = "next_set"; context.focus.finished = false;
   context.catalog = [{ id: 1, name: "Bench", muscleGroup: "Chest", equipment: "barbell", timed: false, weightStepKg: 2.5 }];

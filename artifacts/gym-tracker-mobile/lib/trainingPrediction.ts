@@ -1,8 +1,9 @@
-import { controlPrediction, estimateStrength, modelForecastSchema, predictReps, qualityEstimate, type LoadGuard, type StrengthObservation } from "@workspace/ai-coach";
+import { controlPrediction, estimateStrength, modelForecastSchema, predictReps, predictWeight, roundWeightDown, qualityEstimate, type LoadGuard, type StrengthObservation } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { sameLoadCategory, isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
 import { nextWorkingLoad } from "./trainingCoach";
+import { relatedCalibration } from "./relatedLoads";
 
 type Range = { sets: number; repsMin: number; repsMax: number; targetRir: number; weightStepKg: number };
 type CurrentSet = Pick<StrengthObservation, "weightKg" | "reps" | "rir" | "technique" | "durationSeconds">;
@@ -62,6 +63,31 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   if (!current.length && !progression.increase && last && last.reps >= range.repsMin && last.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) guard = { ...guard, reps: last.reps + 1, action: "progress_reps", reason: "Сначала добавьте повторение в диапазоне, сохраняя запас и технику. Формула проверит расчётный запас." };
   if (last && exercise.equipment !== "bodyweight" && !isTimedExercise(exercise.name) && !isAssisted(exercise) && !history.some(row => row.reps >= range.repsMin) && !current.some(row => row.reps >= range.repsMin)) guard = { weightKg: exercise.equipment === "barbell" ? 20 : exercise.equipment === "machine" ? 5 : 2.5, reps: 8, action: "calibrate", reason: "Нет рабочих подходов в целевом диапазоне. Сначала выполните подборочный подход с оценкой запаса и техники." };
   if (last?.technique === "breakdown") guard = { ...guard, weightKg: Math.max(minimumWeight(exercise.equipment), last.weightKg - range.weightStepKg), reps: Math.max(1, Math.min(last.reps - 1, range.repsMin)), action: "reduce", reason: "Техника нарушалась: снизьте нагрузку. При боли остановите упражнение." };
-  return { exerciseId, ...forecastWorkingSets(history, { ...range, sets: Math.max(1, range.sets - current.length) }, guard,
-    { equipment: exercise.equipment, timed: isTimedExercise(exercise.name), assisted: isAssisted(exercise) }, now, current) };
+  const forecast = forecastWorkingSets(history, { ...range, sets: Math.max(1, range.sets - current.length) }, guard,
+    { equipment: exercise.equipment, timed: isTimedExercise(exercise.name), assisted: isAssisted(exercise) }, now, current);
+  let calibrationBasis: ReturnType<typeof relatedCalibration> = null;
+  if (!current.length && forecast.next.action === "calibrate") {
+    const measured = history.filter(row => row.weightKg >= minimumWeight(exercise.equipment) && qualityEstimate(row) != null).at(-1);
+    if (measured && forecast.model.status === "ready" && forecast.model.estimated1RMKg != null) {
+      const strength = forecast.model.estimated1RMKg;
+      const targetReps = Math.min(8, range.repsMin);
+      const weightKg = Math.max(forecast.next.weightKg, roundWeightDown(Math.min(measured.weightKg, predictWeight(strength, targetReps, range.targetRir)!), range.weightStepKg, minimumWeight(exercise.equipment))!);
+      calibrationBasis = { exerciseId, sourceExerciseId: exerciseId, coefficient: 1, weightKg,
+        reps: Math.max(1, Math.min(targetReps, Math.floor(predictReps(strength, weightKg, range.targetRir)! + 1e-8))),
+        reason: "Подбор по вашим собственным подходам и оценке Эпли + RIR, а не по универсальному начальному весу. Первый подход проверочный: оцените запас и технику." };
+    } else if (!history.some(row => row.reps >= range.repsMin && row.reps <= 30 && row.weightKg >= minimumWeight(exercise.equipment))) {
+      calibrationBasis = relatedCalibration(state, exerciseId, before, Math.min(8, range.repsMin), range.weightStepKg);
+    }
+  }
+  if (calibrationBasis && (calibrationBasis.weightKg > forecast.next.weightKg || calibrationBasis.weightKg === forecast.next.weightKg && calibrationBasis.reps < forecast.next.reps)) {
+    forecast.next = { weightKg: calibrationBasis.weightKg, reps: calibrationBasis.reps, action: "calibrate", reason: calibrationBasis.reason };
+    forecast.model = { ...forecast.model, note: calibrationBasis.reason, targets: Array.from({ length: 6 }, () => ({ weightKg: calibrationBasis.weightKg, reps: calibrationBasis.reps })) };
+  }
+  return { exerciseId, ...forecast, calibrationBasis: calibrationBasis && calibrationBasis.weightKg === forecast.next.weightKg ? calibrationBasis : null };
+}
+
+export function buildNextExercisePrediction(state: OfflineState, exerciseId: number, now: number, planned?: Parameters<typeof buildActivePrediction>[4]) {
+  // A read-only prospective session reuses the same numerical policy as live sets.
+  const prospective = { id: state.nextWorkoutId, name: null, startedAt: new Date(now).toISOString(), finishedAt: null };
+  return buildActivePrediction({ ...state, workouts: [...state.workouts, prospective] }, prospective.id, exerciseId, now, planned);
 }

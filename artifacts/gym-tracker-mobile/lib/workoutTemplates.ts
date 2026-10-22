@@ -127,10 +127,10 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
   const min = minimumWeight(exercise.equipment);
   const bodyweight = exercise.equipment === "bodyweight" && performed.weightKg === 0;
   const step = exercise.weightStepKg ?? 2.5;
-  const weightKg = bodyweight ? 0 : Math.max(min, performed.weightKg + (difficult ? -step : easy ? step : 0));
+  const weightKg = bodyweight ? 0 : Math.max(min, performed.weightKg + (difficult ? -step : easy && step <= 2.5 ? step : 0));
   const reduceReps = difficult && weightKg === performed.weightKg;
   const reps = Math.max(1, performed.reps + (reduceReps ? -Math.max(1, Math.ceil(performed.reps / 4)) : bodyweight && easy ? 1 : 0));
   const targets = exercise.setTargets?.map((set, i) => i < completed ? set : { ...set, weightKg, reps });
   return { ...exercise, calibration: false, ...(targets ? { setTargets: targets } : {}), suggestedWeightKg: weightKg,
-    note: difficult && weightKg === min ? "Минимальная нагрузка. Если техника не сохраняется или есть боль, остановите упражнение и выберите более лёгкий вариант." : exercise.note };
+    note: difficult && weightKg === min ? "Минимальная нагрузка. Если техника не сохраняется или есть боль, остановите упражнение и выберите более лёгкий вариант." : easy && step > 2.5 ? "Шаг оборудования больше 2,5 кг. Повышение нагрузки подтвердите вручную." : exercise.note };
 }

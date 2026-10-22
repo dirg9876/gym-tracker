@@ -6,7 +6,8 @@ import { monthProgress } from "./coachMonth";
 import { canReplaceExercise, migrateExerciseCatalog, requiresExerciseReplacement } from "./exerciseReplacement";
 import { buildTrainingInsights } from "./trainingInsights";
 import { buildTrainingAnalysis } from "./trainingAnalysis";
-import { buildActivePrediction } from "./trainingPrediction";
+import { buildActivePrediction, buildNextExercisePrediction } from "./trainingPrediction";
+import { buildDailyWorkout, type DailyPreview } from "./dailyWorkout";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
@@ -303,6 +304,8 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     return currentCoachContext(state, body);
   }
   if (method === "POST" && path === "/api/ai-coach/apply-plan") return applyCoachPlan(state, body);
+  if (method === "GET" && path === "/api/daily-workout") return dailyPreview(state);
+  if (method === "POST" && path === "/api/daily-workout/start") return startDailyWorkout(state, body);
   if (method === "GET" && path === "/api/ai-coach/month") return monthProgress(state);
   if (method === "DELETE" && path === "/api/ai-coach/month") {
     delete state.coachMonth;
@@ -942,6 +945,40 @@ async function createWorkout(state: OfflineState, body: RequestBody): Promise<Wo
   if (plan) {
     await saveStateAndPlans(state, [[PLAN_PREFIX + workout.id, JSON.stringify(plan)]]);
   } else await saveState(state);
+  return workoutResponse(state, workout);
+}
+
+async function dailyPreview(state: OfflineState): Promise<DailyPreview> {
+  const suggestion = buildDailyWorkout(state);
+  const fingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, JSON.stringify({ date: suggestion.date, state }));
+  return { ...suggestion, fingerprint, activeWorkoutId: state.workouts.find(w => !w.finishedAt)?.id ?? null };
+}
+
+async function startDailyWorkout(state: OfflineState, body: RequestBody): Promise<Workout> {
+  const active = state.workouts.find(w => !w.finishedAt);
+  if (active) return workoutResponse(state, active);
+  const preview = await dailyPreview(state);
+  if (body.fingerprint !== preview.fingerprint) throw httpError(409, "История, настройки или дата изменились. Обновите предложение; прогресс сохранён.");
+  if (!preview.plan) throw httpError(400, "Для выбранного оборудования пока нет упражнений. Можно начать самостоятельно.");
+  const input = parseCustomProgram(state, (body.plan ?? preview.plan) as RequestBody);
+  if (input.exercises.length > 8 || input.exercises.some(ex => ex.sets > 6 || !ex.setTargets?.length) || input.exercises.reduce((n, ex) => n + ex.sets, 0) > Math.floor((state.coachProfile?.sessionMinutes ?? 75) / 2)) throw httpError(400, "Проверьте число упражнений и подходов.");
+  const allowed = state.coachProfile?.equipment;
+  const rows: TemplateExercise[] = input.exercises.map(def => {
+    const exercise = findExercise(state, def.exerciseId)!;
+    if (allowed && !allowed.includes(exercise.equipment)) throw httpError(400, "Оборудование упражнения отключено в настройках.");
+    const prepared = preview.plan!.exercises.find(ex => ex.exerciseId === def.exerciseId);
+    return { ...def, note: def.note ?? null, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment,
+      isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: def.setTargets![0].weightKg,
+      calibration: !isTimedExercise(exercise.name) && !isAssisted(exercise) && (prepared?.calibration ?? buildNextExercisePrediction(state, exercise.id, Date.now(), def).next.action === "calibrate"),
+      weightStepKg: exercise.weightStepKg ?? def.weightStepKg ?? 2.5, targetRir: def.targetRir ?? 2 };
+  });
+  const first = rows[0], exercise = findExercise(state, first.exerciseId)!;
+  const workout: WorkoutRow = { id: state.nextWorkoutId++, name: input.name, startedAt: new Date().toISOString(), finishedAt: null,
+    draft: makeWorkoutDraft(exercise, first.setTargets![0]), draftRevision: 0,
+    ...(preview.scheduled ? { coachCycle: { planId: preview.scheduled.planId, slot: preview.scheduled.slot } } : {}) };
+  const plan: TemplatePlan = { ...preview.plan, name: input.name, description: input.description ?? "", exercises: rows };
+  state.workouts.push(workout);
+  await saveStateAndPlans(state, [[PLAN_PREFIX + workout.id, JSON.stringify(plan)]]);
   return workoutResponse(state, workout);
 }
 

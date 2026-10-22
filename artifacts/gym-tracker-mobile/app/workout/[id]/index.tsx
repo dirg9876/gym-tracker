@@ -364,7 +364,7 @@ export default function ActiveWorkoutScreen() {
             {prediction && prediction.model.status !== "unsupported" ? <View style={{ gap: 8, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.cardBorder }}>
               <Text style={{ color: colors.success, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Расчёт нагрузки: {formatKg(prediction.next.weightKg)} × {prediction.next.reps}</Text>
               <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 19 }}>{prediction.next.reason}</Text>
-              <ModelForecast model={prediction.model} perDumbbell={selectedExercise?.equipment === "dumbbell"} />
+              {prediction.model.note !== prediction.next.reason || prediction.model.status === "ready" ? <ModelForecast model={prediction.model} perDumbbell={selectedExercise?.equipment === "dumbbell"} /> : null}
               <Button title="Применить расчёт" variant="secondary" disabled={formBusy || !!draft.error} icon={<Feather name="check" size={16} color={colors.foreground} />} onPress={() => changeDraft({ weightKg: prediction.next.weightKg, reps: prediction.next.reps })} />
             </View> : null}
             <View style={{ minHeight: 16 }}><Text accessibilityLiveRegion="polite" style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 16 }}>{draft.saving ? "Сохранение черновика..." : ""}</Text></View>

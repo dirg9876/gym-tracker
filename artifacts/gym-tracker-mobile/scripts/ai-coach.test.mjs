@@ -119,7 +119,8 @@ test("new weighted exercises need calibration and proposed plans remain unrecord
   const ctx = await context("next_workout");
   const planned = { summary: "Plan", cautions: [], nextSet: null, plan: { name: "AI plan", description: "Editable", exercises: [{ exerciseId: 3, reason: "Test", targets: [{ weightKg: null, reps: 8, durationSeconds: null }] }] } };
   assert.doesNotThrow(() => validateCoachReply(planned, ctx));
-  assert.throws(() => validateCoachReply({ ...planned, plan: { ...planned.plan, exercises: [{ ...planned.plan.exercises[0], targets: [{ weightKg: 50, reps: 8, durationSeconds: null }] }] } }, ctx));
+  const arbitrary = validateCoachReply({ ...planned, plan: { ...planned.plan, exercises: [{ ...planned.plan.exercises[0], targets: [{ weightKg: 50, reps: 8, durationSeconds: null }] }] } }, ctx);
+  assert.equal(arbitrary.plan.exercises[0].targets[0].weightKg, 2.5);
   const draft = setCoachProposal(planned, ctx);
   assert.equal(draft.exercises[0].setTargets[0].weightKg, 2.5);
   assert.equal(draft.exercises[0].calibration, true);

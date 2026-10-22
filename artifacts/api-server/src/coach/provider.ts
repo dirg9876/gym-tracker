@@ -3,7 +3,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { COACH_EVIDENCE, COACH_INSTRUCTIONS, coachMonthReplySchema, coachReplySchema, coachReviewReplySchema, type CoachContext } from "@workspace/ai-coach";
 
 export const MODEL = "gpt-6-luna";
-export const PROMPT_VERSION = "coach-v8-local-math";
+export const PROMPT_VERSION = "coach-v9-prepared-workout";
 export const MAX_OUTPUT_TOKENS = 2400;
 export const maxOutputTokens = (context: CoachContext) => context.task === "month_plan" ? 6000 : context.task === "review" && context.analysis ? 4800 : MAX_OUTPUT_TOKENS;
 export type ProviderResult = { text: string; inputTokens: number; outputTokens: number; completed: boolean };
@@ -21,6 +21,7 @@ export function coachBody(context: CoachContext) {
   return {
     model: MODEL, service_tier: "default" as const, store: false, reasoning: { effort: "none" as const }, max_output_tokens: maxOutputTokens(context),
     instructions: `${COACH_INSTRUCTIONS}
+When preparedWorkout is supplied, analyze that already computed workout instead of designing an unrelated one. Explain its fit to the history and goal. Return plan=null if no justified change is needed; otherwise return the complete corrected workout, not a fragment. The user can start the local workout without waiting for your answer. Do not claim that it is their appointed weekday when no actual calendar schedule exists. For new movements, use calibrationEstimates verbatim, including the per-dumbbell convention. Their coefficients are explicitly conservative calibration heuristics, not validated personal ratios or official ranks. They require a first assessed set. Prioritize own exercise observations over analogs; never infer a leg press or a lateral raise from an unrelated muscle group or a heavy single. For month_plan fill numeric targets from local estimates, not generic 2.5 kg when a supported estimate exists. No arbitrary weekly weight increments.
 Use focusEvidence as a deterministic index of the recorded observations, not as additional measurements. When recordedSetCount>0, never claim there is no performed set for that exercise. Timed observations with positive durationSeconds are completed work even though reps=0. Distinguish the current unperformed draft from recorded sets. Refer to supplied durations and counts accurately; do not invent missing feedback.
 sessionMinutes is a preference, not a verified duration estimate. Allow for preparation, rests and transitions. Choose a conservative plan and do not claim it fits an exact duration when rest times are unknown.
 For a structured review, reviewEvidence is the authoritative next-session decision. Follow permittedAction exactly: hold means repeat the target, not add reps; progress_reps means the supplied one-rep target; reduce means the supplied lighter target; calibrate means assess the first set. Do not advise adding reps beyond range.repsMax, including when the observed set already exceeded that range. Explain why the action is appropriate. The UI shows the exact numeric target, so do not invent or contradict it. When currentCategory=false, discuss historical performance only and say the changed equipment needs fresh calibration.

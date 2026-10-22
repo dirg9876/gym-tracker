@@ -1,8 +1,8 @@
 import Feather from "@expo/vector-icons/Feather";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getGetActiveWorkoutQueryKey, getListWorkoutsQueryKey, useCreateWorkout, useGetActiveWorkout } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { useGetActiveWorkout } from "@workspace/api-client-react";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +25,6 @@ export default function BrandScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [artworkSize, setArtworkSize] = useState(0);
-  const queryClient = useQueryClient();
   const toast = useToast();
   const active = useGetActiveWorkout();
   const maintenance = useQuery({ queryKey: ["exercise-maintenance"], queryFn: () => coachRequest<ExerciseMaintenance[]>("/api/exercises/maintenance") });
@@ -33,22 +32,10 @@ export default function BrandScreen() {
   const connection = useAiConnection();
   const aiEnabled = !!connection.data?.enabled;
   const workout = active.data?.workout;
-  const createWorkout = useCreateWorkout({
-    mutation: {
-      onSuccess: (created) => {
-        queryClient.setQueryData(getGetActiveWorkoutQueryKey(), { workout: created });
-        void queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
-        void queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
-        router.push(`/workout/${created.id}`);
-      },
-      onError: () => toast.show("error", "Не удалось начать тренировку", "Попробуйте ещё раз"),
-    },
-  });
-
   const start = () => {
-    if (active.isPending || active.isError || createWorkout.isPending) return;
+    if (active.isPending || active.isError) return;
     if (workout) router.push(`/workout/${workout.id}`);
-    else createWorkout.mutate({ data: {} });
+    else router.push("/start-workout" as Href);
   };
 
   return (
@@ -85,11 +72,10 @@ export default function BrandScreen() {
       </View>
       <View style={styles.commands}>
         {pendingReplacements ? <Button title={`Выбрать замену упражнений: ${pendingReplacements}`} variant="secondary" icon={<Feather name="repeat" size={18} color={colors.accent} />} onPress={() => router.push("/exercises")} /> : null}
-        {aiEnabled ? <Button title={workout ? "Продолжить с ИИ-тренером" : "Начать тренировку с ИИ"} size="lg" variant="secondary" style={{ borderColor: colors.successBorder, backgroundColor: colors.successSoft }} textStyle={{ color: colors.success }} icon={<Feather name="zap" size={21} color={colors.success} />} disabled={active.isPending || active.isError || createWorkout.isPending} onPress={() => router.push(workout ? `/coach-session?workoutId=${workout.id}` : "/coach-session")} /> : null}
         <Button
           title={workout ? "Продолжить тренировку" : "Начать тренировку"}
           size="lg"
-          loading={active.isPending || createWorkout.isPending}
+          loading={active.isPending}
           disabled={active.isError}
           icon={<Feather name={workout ? "activity" : "play"} size={21} color={colors.primaryForeground} />}
           onPress={start}

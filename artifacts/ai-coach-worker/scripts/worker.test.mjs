@@ -14,6 +14,29 @@ const seed = { month: new Date().toISOString().slice(0, 7), usedNanoUsd: 10_000_
 const context = () => ({ version: 1, task: "review", preferences: defaultCoachProfile(), athlete: { sex: null, bodyWeightKg: null }, catalog: [], sessions: [], focus: { workoutId: 1, finished: true, draftRevision: 0, draft: null }, programs: [], truncated: false });
 const answer = { summary: "Mock provider only, no OpenAI calls", cautions: [], nextSet: null, plan: null };
 const hash = text => createHash("sha256").update(text).digest("hex");
+
+test("workerd accepts the prepared workout contract and returns locally calibrated loads, including cache hits", async () => {
+  const ctx = context(); ctx.task = "next_workout"; ctx.focus = null; ctx.loadSelection = "calibration-v1";
+  ctx.catalog = [{ id: 1, name: "Bench", muscleGroup: "Chest", equipment: "barbell", timed: false }, { id: 3, name: "DB bench", muscleGroup: "Chest", equipment: "dumbbell", timed: false }];
+  const plan = { name: "Prepared", description: "Daily model", exercises: [{ exerciseId: 3, reason: "Assess first set", targets: [{ weightKg: 17.5, reps: 8, durationSeconds: null }] }] };
+  ctx.preparedWorkout = plan;
+  ctx.calibrationEstimates = [{ exerciseId: 3, sourceExerciseId: 1, coefficient: 0.3, weightKg: 17.5, reps: 8, reason: "Conservative heuristic" }];
+  ctx.loadTargets = [{ exerciseId: 3, targets: plan.exercises[0].targets, calibration: true, reason: "Local model" }];
+  const canonical = coachContextSchema.parse(ctx);
+  const f = fixture({ provider: body => {
+    assert.deepEqual(JSON.parse(body.input).context.preparedWorkout, plan);
+    assert.ok(body.instructions.includes("preparedWorkout"));
+    return { ...answer, plan: { ...plan, exercises: [{ ...plan.exercises[0], targets: [{ weightKg: 2.5, reps: 12, durationSeconds: null }] }] } };
+  } });
+  try {
+    for (const id of ["prepared-workerd-0001", "prepared-workerd-0002"]) {
+      const response = await f.call(id, canonical); assert.equal(response.status, 200);
+      const result = await response.json(); assert.equal(result.result.plan.exercises[0].targets[0].weightKg, 17.5);
+      assert.equal(result.result.plan.exercises[0].targets[0].reps, 8);
+    }
+    assert.equal(f.calls(), 1);
+  } finally { await f.mf.dispose(); }
+});
 function fixture({ initial = seed, key = "sk-fake-workerd-only", root, provider } = {}) {
   let calls = 0;
   const mf = new Miniflare({ ...convertV4MiniflareOptions({

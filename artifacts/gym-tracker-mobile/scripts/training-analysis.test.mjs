@@ -104,6 +104,7 @@ test("plans cannot exceed the local next-session ceiling, and context sizes coun
   const result = weightKg => ({ summary: "Next", cautions: [], nextSet: null, plan: { name: "Fixture", description: "Fixture", exercises: [{ exerciseId: 1, reason: "Fixture", targets: [{ weightKg, reps: 10, durationSeconds: null }] }] } });
   assert.equal(validateCoachReply(result(42.5), context).plan.exercises[0].targets[0].weightKg, 40);
   context.analysis.exercises.forEach(row => { delete row.model; });
+  delete context.loadTargets;
   assert.throws(() => validateCoachReply(result(42.5), context));
   assert.doesNotThrow(() => validateCoachReply(result(40), context));
   assert.equal(jsonByteLength({ text: "Привет" }), Buffer.byteLength(JSON.stringify({ text: "Привет" })));

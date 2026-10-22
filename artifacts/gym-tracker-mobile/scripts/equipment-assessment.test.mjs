@@ -192,7 +192,7 @@ test("AI cannot confuse counterweight with external load; ordinary exercise cali
   const current=await request(`/api/workouts/${workout.id}/draft`);
   const saved=await save(workout.id,{...current.draft,rir:4,technique:"good"});
   const next=await commit(workout.id,saved.revision);
-  assert.equal(next.draft.weightKg,current.draft.weightKg+5);
+  assert.equal(next.draft.weightKg,current.draft.weightKg);
   assert.equal(next.draft.rir,4); assert.equal(next.draft.technique,"good");
   const picked=await save(workout.id,makeWorkoutDraft(assisted));
   await assert.rejects(request("/api/ai-coach/context","POST",{task:"next_set",workoutId:workout.id}),/вручную/);
