@@ -32,7 +32,7 @@ export default function UpdatesScreen() {
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScreenHeader title="Обновления" />
     <ScrollView contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: Math.max(insets.bottom, 16) }}>
-      <Text style={{ color: colors.foreground, fontSize: 18, fontFamily: "Inter_700Bold" }}>Gym-Beam {release.displayVersion ?? release.version}</Text>
+      <Text style={{ color: colors.foreground, fontSize: 18, fontFamily: "Inter_700Bold" }}>Gym-Beam {release.version}</Text>
       <Text selectable style={{ color: colors.mutedForeground, fontSize: 12 }}>{Updates.isEmbeddedLaunch ? "Встроенная версия" : `Обновление ${Updates.updateId?.slice(0, 8) ?? "—"}`}</Text>
       <Button title="Что нового" variant="secondary" icon={<Feather name="file-text" size={18} color={colors.foreground} />} onPress={openReleaseNotes} />
       {!Updates.isEnabled ? <Text style={{ color: colors.amber, fontSize: 14 }}>Обновления доступны в установленном APK, не в режиме разработки.</Text> : <>
