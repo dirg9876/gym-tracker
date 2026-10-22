@@ -62,6 +62,7 @@ test("release acknowledgement does not alter progress; importing progress does n
 test("checked-in app version, notes, Android code and explicit OTA runtime are consistent", async () => {
   const { config, release } = await checkRelease();
   assert.equal(config.expo.version, release.version);
+  if (release.displayVersion) assert.match(release.displayVersion, new RegExp("^" + release.version.replaceAll(".", "\\.") + "[a-z]$"));
   assert.ok(release.changes.length > 0);
 });
 
@@ -90,6 +91,9 @@ test("patch release increments version and Android code together while retaining
 test("release validation rejects mismatched versions and appVersion policy to protect old OTA clients", () => {
   const release = { version: "1.1.1", releasedAt: "2026-10-17", changes: ["Update"] };
   assert.throws(() => validateRelease({ expo: { version: "1.1.0" } }, release), /versions differ/);
+  assert.throws(() => validateRelease({ expo: { version: "1.1.1", android: { versionCode: 7 }, runtimeVersion: "1.1.0" } }, { ...release, displayVersion: "1.1.10a" }), /Invalid display release label/);
+  assert.doesNotThrow(() => validateRelease({ expo: { version: "1.1.1", android: { versionCode: 7 }, runtimeVersion: "1.1.0" } }, { ...release, displayVersion: "1.1.1a" }));
+
   assert.throws(() => validateRelease({ expo: { version: "1.1.1", android: { versionCode: 7 }, runtimeVersion: { policy: "appVersion" } } }, release), /explicit native runtime/);
 });
 
