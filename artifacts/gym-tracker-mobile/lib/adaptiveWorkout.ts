@@ -137,7 +137,8 @@ export function buildAdaptiveSplit(
       const score = (ex: Exercise) => {
         const sessions = familiarity.get(ex.id)?.size ?? 0;
         const seen = lastSeenExercise.get(ex.id) ?? 0;
-        return (slot.main && slot.group === "Ноги" && isLegCompound(ex) ? 20 : 0) +
+        return (slot.main && slot.group === "Ноги" && isLegCompound(ex) ? 20 : 0) -
+          (sessions === 0 && /румынск|становая тяга|приседания со штангой/i.test(ex.name) ? 18 : 0) +
           Math.min(6, sessions * 2) + (seen && now - seen < 35 * DAY ? 2 : 0) +
           (ex.isMain ? 1 : 0);
       };
