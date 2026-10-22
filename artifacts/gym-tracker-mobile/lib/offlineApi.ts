@@ -970,6 +970,10 @@ async function startDailyWorkout(state: OfflineState, body: RequestBody): Promis
     return { ...def, note: def.note ?? null, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment,
       isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: def.setTargets![0].weightKg,
       calibration: !isTimedExercise(exercise.name) && !isAssisted(exercise) && (prepared?.calibration ?? buildNextExercisePrediction(state, exercise.id, Date.now(), def).next.action === "calibrate"),
+      // Keep the deferred count from the trusted local preview, not from the
+      // AI/user-edited request. Only the original one-set probe can expand.
+      ...(preview.source === "balanced" && prepared?.calibration && prepared.postCalibrationSets &&
+        def.sets === 1 && def.setTargets?.length === 1 ? { postCalibrationSets: prepared.postCalibrationSets } : {}),
       weightStepKg: exercise.weightStepKg ?? def.weightStepKg ?? 2.5, targetRir: def.targetRir ?? 2 };
   });
   const first = rows[0], exercise = findExercise(state, first.exerciseId)!;
