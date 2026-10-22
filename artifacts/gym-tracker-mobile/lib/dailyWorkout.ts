@@ -4,7 +4,7 @@ import { nextScheduledSession } from "./coachMonth";
 import { buildNextExercisePrediction } from "./trainingPrediction";
 import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
-import { buildAdaptiveDefinitions } from "./adaptiveWorkout";
+import { buildAdaptiveSplit } from "./adaptiveWorkout";
 import type { TemplatePlan, TemplateExercise, SetTarget } from "./workoutTemplates";
 
 export type DailyWorkout = {
@@ -46,7 +46,10 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
     // Without a saved month, plan a genuinely new workout from the whole
     // completed history; custom templates remain available for manual use.
     source = "balanced";
-    definitions = buildAdaptiveDefinitions(state, profile, available, timestamp);
+    const split = buildAdaptiveSplit(state, profile, available, timestamp);
+    name = split.name;
+    reason = split.reason;
+    definitions = split.definitions;
   }
   const exercises: TemplateExercise[] = [];
   let remainingSets = Math.floor(profile.sessionMinutes / 2);
