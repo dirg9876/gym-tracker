@@ -14,11 +14,11 @@ beforeEach(() => storage.clear());
 
 test("hypertrophy controller never converts a heavy single to a working prescription", () => {
   const original = { weightKg: 85, reps: 1, action: "hold", reason: "Heavy single" };
-  const unknown = controlPrediction({ strengthKg: null, guard: original, repsMin: 8, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
+  const unknown = controlPrediction({ strengthKg: null, guard: original, repsMin: 8, repsMax: 12, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
   assert.equal(unknown.action, "calibrate");
   assert.equal(unknown.reps, 8);
   assert.equal(unknown.weightKg, 20);
-  const measured = controlPrediction({ strengthKg: 90, guard: original, repsMin: 8, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
+  const measured = controlPrediction({ strengthKg: 90, guard: original, repsMin: 8, repsMax: 12, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
   assert.ok(measured.weightKg <= 67.5);
   assert.ok(measured.reps >= 8);
 });
@@ -75,7 +75,7 @@ test("long gaps reset the estimate, stale models cannot control current loads", 
 });
 test("a strong formula never overrides a hold, reduction, calibration or equipment ceiling", () => {
   for (const action of ["hold", "reduce", "calibrate", "progress_reps", "increase"]) {
-    const result = controlPrediction({ strengthKg: 500, guard: { ...guard, action }, repsMin: 8, targetRir: 2, stepKg: 5, minimumKg: 20 });
+    const result = controlPrediction({ strengthKg: 500, guard: { ...guard, action }, repsMin: 8, repsMax: 12, targetRir: 2, stepKg: 5, minimumKg: 20 });
     assert.ok(result.weightKg <= guard.weightKg); assert.ok(result.reps <= guard.reps);
     if (action === "calibrate") assert.equal(result.predictedReps, null);
   }
@@ -91,7 +91,7 @@ test("legacy barbell loads below 20 kg neither train strength nor escape the equ
   const value = forecastWorkingSets(history, range, { ...guard, weightKg: 2.5 }, { equipment: "barbell" }, now);
   assert.equal(value.next.weightKg, 20); assert.equal(value.next.action, "calibrate");
   assert.equal(value.model.estimated1RMKg, null); assert.deepEqual(history, saved);
-  const direct = controlPrediction({ strengthKg: 500, guard: { ...guard, weightKg: 2.5 }, repsMin: 8, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
+  const direct = controlPrediction({ strengthKg: 500, guard: { ...guard, weightKg: 2.5 }, repsMin: 8, repsMax: 12, targetRir: 2, stepKg: 2.5, minimumKg: 20 });
   assert.equal(direct.weightKg, 20); assert.equal(direct.predictedReps, null);
 });
 test("no historical prescription means MAE_RIR is unknown, not a fabricated quality metric", () => {

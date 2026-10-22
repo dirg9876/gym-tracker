@@ -9,6 +9,7 @@ import { formatShortDate } from "@/lib/format";
 import { formatAnalysisResult } from "@/lib/trainingAnalysis";
 import { BarChart } from "./BarChart";
 import { ModelForecast } from "./ModelForecast";
+import { TrainingBasis } from "./TrainingBasis";
 
 export function WorkoutAnalysis({ workoutId }: { workoutId: number }) {
   const colors = useColors();
@@ -58,6 +59,7 @@ export function WorkoutAnalysis({ workoutId }: { workoutId: number }) {
       {data.omittedExercises ? <Text style={muted}>Других упражнений в периоде: {data.omittedExercises}</Text> : null}
     </View>
     <View style={{ gap: 6 }}><Text style={heading}>Достоверность</Text>{data.limitations.map(text => <Text key={text} style={muted}>{text}</Text>)}</View>
+    <TrainingBasis />
     </> : null}
   </View>;
 }

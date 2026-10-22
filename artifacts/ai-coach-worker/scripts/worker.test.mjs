@@ -118,7 +118,8 @@ test("workerd supports bounded active-workout messages and passes versioned rese
   const f = fixture({ provider: body => {
     const input = JSON.parse(body.input);
     assert.equal(input.context.messages[0].text, "Тренажёр занят");
-    assert.equal(input.research.version, "acsm-2026-v1");
+    assert.equal(input.research.version, "acsm-2026-iusca-2021-v2");
+    assert.ok(input.research.sources.some(source => source.url === "https://doi.org/10.47206/ijsc.v1i1.81"));
     return answer;
   } });
   try {

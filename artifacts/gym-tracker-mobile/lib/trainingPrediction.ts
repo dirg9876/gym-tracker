@@ -1,4 +1,4 @@
-import { controlPrediction, estimateStrength, modelForecastSchema, predictReps, predictWeight, roundWeightDown, qualityEstimate, type LoadGuard, type StrengthObservation } from "@workspace/ai-coach";
+import { controlPrediction, estimateStrength, goalPrescription, modelForecastSchema, predictReps, predictWeight, roundWeightDown, qualityEstimate, type LoadGuard, type StrengthObservation } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { sameLoadCategory, isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
@@ -7,6 +7,14 @@ import { relatedCalibration } from "./relatedLoads";
 
 type Range = { sets: number; repsMin: number; repsMax: number; targetRir: number; weightStepKg: number };
 type CurrentSet = Pick<StrengthObservation, "weightKg" | "reps" | "rir" | "technique" | "durationSeconds">;
+export function explainLoadCalculation(prediction: ReturnType<typeof forecastWorkingSets>, stepKg: number): string {
+  const { model, next } = prediction;
+  const format = (value: number) => value.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
+  if (model.status === "unsupported") return "Формула к этой категории не применяется; нагрузка подбирается по выполненным подходам и обратной связи.";
+  if (next.action === "calibrate") return "Проверочный вес требует первого подхода с RIR и техникой; расчётная оценка не заменяет эту проверку.";
+  if (model.status !== "ready" || model.unroundedWeightKg == null || model.estimated1RMKg == null) return "Нет пригодного измерения для формулы; вес задан историей или подборочным подходом, не выдуманным 1ПМ.";
+  return `Оценка 1ПМ ${format(model.estimated1RMKg)} кг; расчёт при RIR ${model.targetRir}: ${format(model.unroundedWeightKg)} кг до округления. Шаг ${format(stepKg)} кг; с учётом ограничений: ${format(next.weightKg)} кг × ${next.reps}.`;
+}
 export function forecastWorkingSets(history: StrengthObservation[], range: Range, guard: LoadGuard,
   equipment: { equipment: string; timed?: boolean; assisted?: boolean }, now: number, current: CurrentSet[] = []) {
   const supported = ["barbell", "dumbbell", "machine"].includes(equipment.equipment) && !equipment.timed && !equipment.assisted;
@@ -25,7 +33,7 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
   for (let i = 0; i < 6; i++) {
     const fatigueReps = (fitted.fatigueBeta ?? 0) * (current.length - (firstToday ? current.indexOf(firstToday) : 0) + i);
     const result = controlPrediction({ strengthKg: supported && hasFeedback && latestMeasured ? strength : null, guard,
-      repsMin: range.repsMin, targetRir: range.targetRir, stepKg: range.weightStepKg,
+      repsMin: range.repsMin, repsMax: range.repsMax, targetRir: range.targetRir, stepKg: range.weightStepKg,
       minimumKg: minimumWeight(equipment.equipment as "barbell"), fatigueReps });
     targets.push({ weightKg: result.weightKg, reps: result.reps });
     if (i === 0) first = result;
@@ -44,9 +52,12 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   const workout = state.workouts.find(row => row.id === workoutId && !row.finishedAt);
   const exercise = state.exercises.find(row => row.id === exerciseId && !row.deletedAt);
   if (!workout || !exercise) throw new Error("Тренировка или упражнение недоступны.");
-  const definition = planned ?? state.customPrograms.flatMap(plan => plan.exercises).find(row => row.exerciseId === exerciseId);
-  const range = { sets: definition?.sets ?? 3, repsMin: definition?.repsMin ?? (state.coachProfile?.goal === "strength" ? 3 : 8),
-    repsMax: definition?.repsMax ?? (state.coachProfile?.goal === "strength" ? 6 : 12), targetRir: definition?.targetRir ?? 2, weightStepKg: exercise.weightStepKg ?? definition?.weightStepKg ?? 2.5 };
+  const goal = state.coachProfile?.goal ?? "general";
+  // Only an explicitly selected plan may override the muscle-growth policy.
+  const definition = planned ?? (goal === "hypertrophy" ? undefined : state.customPrograms.flatMap(plan => plan.exercises).find(row => row.exerciseId === exerciseId));
+  const defaults = goalPrescription(goal, exercise);
+  const range = { sets: definition?.sets ?? 3, repsMin: definition?.repsMin ?? defaults.repsMin,
+    repsMax: definition?.repsMax ?? defaults.repsMax, targetRir: definition?.targetRir ?? 2, weightStepKg: exercise.weightStepKg ?? definition?.weightStepKg ?? 2.5 };
   const compatible = state.sets.filter(row => row.exerciseId === exerciseId && sameLoadCategory(row, exercise) && (exercise.equipment !== "dumbbell" || (row.dumbbellCount ?? 1) === (exercise.dumbbellCount ?? 1)));
   const before = Math.min(now, Date.parse(workout.startedAt));
   const finished = new Map(state.workouts.filter(row => row.finishedAt && Date.parse(row.finishedAt) <= before).map(row => [row.id, row]));
@@ -56,9 +67,9 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   const working = [...history, ...current].filter(row => row.reps >= range.repsMin && row.reps <= 30 && row.durationSeconds == null).at(-1);
   const baseline = working ?? last;
   const progression = nextWorkingLoad(history, { ...range, equipment: exercise.equipment, exerciseId }, now);
-  let guard: LoadGuard = { weightKg: baseline?.weightKg ?? (exercise.equipment === "barbell" ? 20 : exercise.equipment === "bodyweight" ? 0 : exercise.equipment === "machine" ? 5 : 2.5), reps: Math.min(baseline?.reps ?? 8, range.repsMax), action: last ? "hold" : "calibrate", reason: "Повторите нагрузку, сохраняя целевой запас. Оцените фактическую технику и усилие." };
+  let guard: LoadGuard = { weightKg: baseline?.weightKg ?? (exercise.equipment === "barbell" ? 20 : exercise.equipment === "bodyweight" ? 0 : exercise.equipment === "machine" ? 5 : 2.5), reps: Math.min(baseline?.reps ?? 8, range.repsMax), action: last ? "hold" : "calibrate", reason: progression.reason };
   if (!current.length && progression.increase) guard = { weightKg: progression.weightKg!, reps: range.repsMin, action: "increase", reason: progression.reason };
-  if (current.length === 1 && !history.length && last?.technique === "good" && last.rir != null && last.rir >= 4 && range.weightStepKg <= 2.5 && exercise.equipment !== "bodyweight") guard = { ...guard, weightKg: last.weightKg + range.weightStepKg, action: "increase", reason: "После первого лёгкого подборочного подхода разрешён один шаг оборудования. Оцените запас и технику снова." };
+  if (current.length === 1 && !history.length && last?.technique === "good" && last.rir != null && last.rir >= 4 && range.weightStepKg <= 2.5 && exercise.equipment !== "bodyweight" && !isAssisted(exercise) && !isTimedExercise(exercise.name)) guard = { ...guard, weightKg: last.weightKg + range.weightStepKg, action: "increase", reason: "После первого лёгкого подборочного подхода разрешён один шаг оборудования. Оцените запас и технику снова." };
   const lastSession = history.filter(row => row.workoutId === last?.workoutId);
   if (!current.length && !progression.increase && last && last.reps >= range.repsMin && last.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) guard = { ...guard, reps: last.reps + 1, action: "progress_reps", reason: "Сначала добавьте повторение в диапазоне, сохраняя запас и технику. Формула проверит расчётный запас." };
   if (last && exercise.equipment !== "bodyweight" && !isTimedExercise(exercise.name) && !isAssisted(exercise) && !history.some(row => row.reps >= range.repsMin) && !current.some(row => row.reps >= range.repsMin)) guard = { weightKg: exercise.equipment === "barbell" ? 20 : exercise.equipment === "machine" ? 5 : 2.5, reps: 8, action: "calibrate", reason: "Нет рабочих подходов в целевом диапазоне. Сначала выполните подборочный подход с оценкой запаса и техники." };

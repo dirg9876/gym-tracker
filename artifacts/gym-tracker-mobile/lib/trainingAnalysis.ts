@@ -1,4 +1,4 @@
-import { trainingAnalysisSchema, calibrationWeight, type TrainingAnalysis } from "@workspace/ai-coach";
+import { trainingAnalysisSchema, calibrationWeight, goalPrescription, type TrainingAnalysis } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { isTimedExercise, minimumWeight, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
@@ -63,8 +63,10 @@ export function buildTrainingAnalysis(state: OfflineState, workoutId?: number, n
     const effortMatches = (row: Row) => row.rir != null && row.rir === best.rir && row.technique === "good" && best.technique === "good";
     const prior = comparable.sort((a, b) => Number(effortMatches(b)) - Number(effortMatches(a)) || b.reps - a.reps)[0];
     const exercise = byExercise.get(last.exerciseId)!;
-    const definition = state.customPrograms.flatMap(plan => plan.exercises).find(row => row.exerciseId === last.exerciseId);
-    const range = { exerciseId: last.exerciseId, equipment: last.equipment, sets: definition?.sets ?? 3, repsMin: definition?.repsMin ?? (state.coachProfile?.goal === "strength" ? 3 : 8), repsMax: definition?.repsMax ?? (state.coachProfile?.goal === "strength" ? 6 : 12), targetRir: definition?.targetRir ?? 2, weightStepKg: exercise.weightStepKg ?? definition?.weightStepKg ?? 2.5 };
+    const goal = state.coachProfile?.goal ?? "general";
+    const definition = goal === "hypertrophy" ? undefined : state.customPrograms.flatMap(plan => plan.exercises).find(row => row.exerciseId === last.exerciseId);
+    const defaults = goalPrescription(goal, exercise);
+    const range = { exerciseId: last.exerciseId, equipment: last.equipment, sets: definition?.sets ?? 3, repsMin: definition?.repsMin ?? defaults.repsMin, repsMax: definition?.repsMax ?? defaults.repsMax, targetRir: definition?.targetRir ?? 2, weightStepKg: exercise.weightStepKg ?? definition?.weightStepKg ?? 2.5 };
     const timed = isTimedExercise(last.name);
     const inRange = (row: Row) => row.reps >= range.repsMin && row.reps <= 30;
     const rangeSet = session.filter(inRange).at(-1) ?? all.filter(row => Date.parse(row.date) >= start && inRange(row)).at(-1);

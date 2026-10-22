@@ -105,7 +105,7 @@ export default function CoachSessionScreen() {
         </View> : null}
         {coach.answer ? <View style={{ gap: 8 }}>
           <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>ИИ · {coach.answer.envelope.model}</Text>
-          <Pressable accessibilityRole="link" onPress={() => { void Linking.openURL(COACH_EVIDENCE.url); }} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="book-open" size={16} color={colors.mutedForeground} /><Text style={{ color: colors.mutedForeground, fontSize: 12, flex: 1 }}>{COACH_EVIDENCE.title}</Text></Pressable>
+          {COACH_EVIDENCE.sources.map(source => <Pressable key={source.url} accessibilityRole="link" onPress={() => { void Linking.openURL(source.url); }} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="book-open" size={16} color={colors.mutedForeground} /><Text style={{ color: colors.mutedForeground, fontSize: 12, flex: 1 }}>{source.title}</Text></Pressable>)}
         </View> : null}
         {coach.error ? <Text accessibilityRole="alert" style={{ color: colors.amber, fontSize: 13 }}>{coach.error}</Text> : null}
         {suggestions.map(suggestion => <Button key={suggestion.label} title={suggestion.label} variant="ghost" icon={<Feather name={suggestion.icon} size={18} color={colors.success} />} disabled={coach.busy || unavailable} onPress={() => { setText(suggestion.message); scroll.current?.scrollToEnd({ animated: true }); }} />)}

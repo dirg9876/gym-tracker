@@ -1,7 +1,7 @@
-import { defaultCoachProfile, personalCoachProfile, type CoachContext } from "@workspace/ai-coach";
+import { defaultCoachProfile, goalPrescription, personalCoachProfile, type CoachContext } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { nextScheduledSession } from "./coachMonth";
-import { buildNextExercisePrediction } from "./trainingPrediction";
+import { buildNextExercisePrediction, explainLoadCalculation } from "./trainingPrediction";
 import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
 import { buildAdaptiveSplit } from "./adaptiveWorkout";
@@ -33,10 +33,11 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
       // A saved AI month plan contains *suggested sets*, not authoritative rep ranges.
       // A heavy single (e.g. 85 kg x 1) must never turn into a hypertrophy prescription.
       const timed = isTimedExercise(byId.get(ex.exerciseId)!.name);
-      const hypertrophy = profile.goal === "hypertrophy" && !timed;
+      const policy = goalPrescription(profile.goal, byId.get(ex.exerciseId)!);
       return { exerciseId: ex.exerciseId, sets: ex.targets.length,
-        repsMin: hypertrophy ? Math.max(6, Math.min(8, Math.min(...values))) : Math.min(...values),
-        repsMax: hypertrophy ? Math.max(12, Math.max(...values)) : Math.max(...values),
+        repsMin: timed ? Math.min(...values) : policy.repsMin,
+        repsMax: timed ? Math.max(...values) : policy.repsMax,
+        intent: policy.intent, targetRir: policy.targetRir,
         durationSeconds: ex.targets[0]?.durationSeconds ?? undefined, note: ex.reason };
     });
     if (definitions.length) { source = "month"; name = scheduled.plan.name; reason = `Следующее незавершённое занятие месячного плана · неделя ${scheduled.week}. Пропущенные занятия не списываются; нагрузки обновлены по истории.`; }
@@ -60,6 +61,7 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
     if (count < 1) break;
     const timed = isTimedExercise(exercise.name);
     const prediction = buildNextExercisePrediction(state, exercise.id, timestamp, definition);
+    const basis = timed ? "" : `${goalPrescription(profile.goal, exercise).basis} ${explainLoadCalculation(prediction, exercise.weightStepKg ?? 2.5)} `;
     const last = compatible.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id).at(-1);
     const calibration = !timed && !isAssisted(exercise) && (prediction.next.action === "calibrate" || !compatible.length);
     const targets: SetTarget[] = Array.from({ length: count }, (_, i) => {
@@ -78,8 +80,8 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
       intent: definition.intent ?? (profile.goal === "strength" ? "strength" : "hypertrophy"), weightStepKg: exercise.weightStepKg ?? 2.5, targetRir: definition.targetRir ?? 2,
       calibration,
       ...(oneSetProbe ? { postCalibrationSets: count - 1 } : {}),
-      note: oneSetProbe ? `Сначала один подборочный подход. После записи RIR и техники будут рассчитаны ещё ${count - 1} рабочих подхода. ${prediction.next.reason}` :
-        timed ? "Удержание в секундах, без веса." : isAssisted(exercise) ? "Противовес подбирается вручную, без автоматического повышения." : prediction.next.reason,
+      note: basis + (oneSetProbe ? `Сначала один подборочный подход. После записи RIR и техники будут рассчитаны ещё ${count - 1} рабочих подхода. ${prediction.next.reason}` :
+        timed ? "Удержание в секундах, без веса." : isAssisted(exercise) ? "Противовес подбирается вручную, без автоматического повышения." : prediction.next.reason),
       setTargets: oneSetProbe ? targets.slice(0, 1) : targets });
     remainingSets -= count;
   }

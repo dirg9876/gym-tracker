@@ -1,4 +1,4 @@
-import type { CoachProfile } from "@workspace/ai-coach";
+import { goalPrescription, type CoachProfile } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { sameLoadCategory, isTimedExercise } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
@@ -149,13 +149,11 @@ export function buildAdaptiveSplit(
     const chosen = candidates[0];
     if (!chosen) continue;
     used.add(chosen.id);
-    const strength = profile.goal === "strength" && slot.main;
-    const bodyweight = chosen.equipment === "bodyweight";
+    const prescription = goalPrescription(profile.goal, chosen);
     selected.push({
       exerciseId: chosen.id, sets: slot.sets,
-      repsMin: strength ? 3 : slot.main && bodyweight ? 6 : slot.main ? 8 : 10,
-      repsMax: strength ? 6 : slot.main && bodyweight ? 10 : slot.main ? 12 : 15,
-      targetRir: 2, intent: strength ? "strength" : slot.main ? "hypertrophy" : "accessory",
+      repsMin: prescription.repsMin, repsMax: prescription.repsMax,
+      targetRir: prescription.targetRir, intent: prescription.intent,
     });
   }
   return {

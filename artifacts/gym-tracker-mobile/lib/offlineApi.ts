@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
-import { coachContextSchema, coachMessagesSchema, coachNeedsCalibration, coachProfileSchema, coachTaskSchema, defaultCoachProfile, personalCoachProfile, validateCoachReply, type CoachContext, type CoachProfile, type SavedCoachMonth } from "@workspace/ai-coach";
+import { coachContextSchema, coachMessagesSchema, coachNeedsCalibration, coachProfileSchema, coachTaskSchema, defaultCoachProfile, goalPrescription, personalCoachProfile, validateCoachReply, type CoachContext, type CoachProfile, type SavedCoachMonth } from "@workspace/ai-coach";
 import { buildCoachContext } from "./aiCoachContext";
 import { monthProgress } from "./coachMonth";
 import { canReplaceExercise, migrateExerciseCatalog, requiresExerciseReplacement } from "./exerciseReplacement";
@@ -1020,7 +1020,8 @@ async function applyCoachPlan(state: OfflineState, body: RequestBody): Promise<W
   const makeRow = (exerciseId: number, targets: SetTarget[], note?: string | null): TemplateExercise => {
     const exercise = findExercise(state, exerciseId)!;
     const values = targets.map(set => set.durationSeconds ?? set.reps);
-    return { exerciseId, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: targets[0].weightKg, sets: targets.length, repsMin: Math.min(...values), repsMax: Math.max(...values), intent: "hypertrophy", note: note ?? null, setTargets: targets, weightStepKg: exercise.weightStepKg ?? 2.5, targetRir: 2 };
+    const policy = goalPrescription(context.preferences.goal, exercise), timed = isTimedExercise(exercise.name);
+    return { exerciseId, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: targets[0].weightKg, sets: targets.length, repsMin: timed ? Math.min(...values) : policy.repsMin, repsMax: timed ? Math.max(...values) : policy.repsMax, intent: policy.intent, note: note ?? null, setTargets: targets, weightStepKg: exercise.weightStepKg ?? 2.5, targetRir: 2 };
   };
   for (const set of performed) {
     if (!findExercise(state, set.exerciseId) || findExercise(state, set.exerciseId)!.deletedAt) continue;

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { CoachPlanEditor } from "@/components/CoachPlanEditor";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { TrainingBasis } from "@/components/TrainingBasis";
 import { useAiCoach } from "@/hooks/useAiCoach";
 import { useColors } from "@/hooks/useColors";
 import { coachRequest } from "@/lib/coachApi";
@@ -58,6 +59,7 @@ export default function StartWorkoutScreen() {
         <Text style={{ color: colors.accent, fontSize: 13 }}>{formatDate(`${preview.data.date}T12:00:00`)}</Text>
         <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20 }}>{preview.data.reason}</Text>
         {plan ? <CoachPlanEditor plan={plan} onChange={setPlan} readOnly disabled={starting} /> : <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>Нет упражнений для выбранного оборудования.</Text>}
+        {plan ? <TrainingBasis /> : null}
       </> : null}
       {coach.enabled && preview.data?.coachSupported && plan ? <View style={{ gap: 10, borderTopWidth: 1, borderColor: colors.cardBorder, paddingTop: 16 }}>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><Feather name="zap" size={18} color={colors.success} /><Text style={{ color: colors.success, fontSize: 15, fontFamily: "Inter_600SemiBold" }}>Комментарий тренера</Text>{coach.busy ? <ActivityIndicator size="small" color={colors.success} /> : null}</View>

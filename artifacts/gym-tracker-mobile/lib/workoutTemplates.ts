@@ -132,7 +132,7 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
   const step = exercise.weightStepKg ?? 2.5;
   const weightKg = bodyweight ? 0 : Math.max(min, performed.weightKg + (difficult ? -step : easy && step <= 2.5 ? step : 0));
   const reduceReps = difficult && weightKg === performed.weightKg;
-  const reps = Math.max(1, performed.reps + (reduceReps ? -Math.max(1, Math.ceil(performed.reps / 4)) : bodyweight && easy ? 1 : 0));
+  const reps = Math.min(exercise.repsMax ?? Infinity, Math.max(1, performed.reps + (reduceReps ? -Math.max(1, Math.ceil(performed.reps / 4)) : bodyweight && easy ? 1 : 0)));
   // This is the first (and currently the only) calibration set. Do not
   // pre-prescribe working sets until feedback is recorded. A technique
   // breakdown stops the exercise instead of expanding it automatically.

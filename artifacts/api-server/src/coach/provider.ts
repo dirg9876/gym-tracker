@@ -3,7 +3,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { COACH_EVIDENCE, COACH_INSTRUCTIONS, coachMonthReplySchema, coachReplySchema, coachReviewReplySchema, type CoachContext } from "@workspace/ai-coach";
 
 export const MODEL = "gpt-6-luna";
-export const PROMPT_VERSION = "coach-v9-prepared-workout";
+export const PROMPT_VERSION = "coach-v10-goal-evidence";
 export const MAX_OUTPUT_TOKENS = 2400;
 export const maxOutputTokens = (context: CoachContext) => context.task === "month_plan" ? 6000 : context.task === "review" && context.analysis ? 4800 : MAX_OUTPUT_TOKENS;
 export type ProviderResult = { text: string; inputTokens: number; outputTokens: number; completed: boolean };
