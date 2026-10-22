@@ -109,9 +109,9 @@ test("all recorded sessions, not the last workout, determine the next split day"
       weightKg: 40, rir: 2, technique: "good", createdAt: date,
     });
   };
-  done(101, 1, 72, 6); // push
-  done(102, 1, 48, 6); // push
-  done(103, 7, 36, 3); // pull
+  done(101, 1, 96, 12); // push
+  done(102, 1, 72, 12); // push
+  done(103, 7, 96, 3); // pull
   done(104, 14, 24, 6); // legs is last, but pull is least loaded
   const choice = buildDailyWorkout(raw, new Date(base));
   assert.match(choice.plan.name, /^Сплит · Спина/);
