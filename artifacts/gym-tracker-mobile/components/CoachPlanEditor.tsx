@@ -18,7 +18,7 @@ export function CoachPlanEditor({ plan, onChange, disabled, readOnly = false }: 
         <View style={{ flex: 1, gap: 5 }}>
           <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", fontSize: 15 }}>{ex.name}</Text>
           <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20 }}>{ex.equipment === "dumbbell" ? "На одну гантель: " : ""}{ex.setTargets!.map(set => set.durationSeconds != null ? `${set.durationSeconds} с` : `${formatKg(set.weightKg)} × ${set.reps}`).join(" · ")}</Text>
-          {ex.calibration ? <Text style={{ color: colors.success, fontSize: 12 }}>Первый подход — подбор нагрузки</Text> : null}
+          {ex.calibration ? <Text style={{ color: colors.success, fontSize: 12 }}>{ex.postCalibrationSets ? `Сначала 1 проверочный подход, затем до ${ex.postCalibrationSets} рабочих по результату` : "Первый подход — подбор нагрузки"}</Text> : null}
         </View>
         <Feather name={expanded === ex.exerciseId ? "chevron-up" : readOnly ? "chevron-down" : "sliders"} size={19} color={colors.mutedForeground} />
       </Pressable>

@@ -15,7 +15,7 @@ export const setTargetSchema = z.object({
   } else if (set.reps <= 0) ctx.addIssue({ code: "custom", path: ["reps"], message: "Повторы: целое число от 1." });
 });
 export type SetTarget = z.infer<typeof setTargetSchema>;
-export type TemplateExercise = PlannedExercise & Progression & { setTargets?: SetTarget[]; calibration?: boolean };
+export type TemplateExercise = PlannedExercise & Progression & { setTargets?: SetTarget[]; calibration?: boolean; postCalibrationSets?: number };
 export type TemplatePlan = Omit<ProgramPlan, "exercises"> & { exercises: TemplateExercise[] };
 export type TemplateInput = CreateCustomProgramExerciseInput & Progression & { setTargets?: SetTarget[] };
 
@@ -24,10 +24,12 @@ export const templateExerciseSchema = z.object({
   repsMin: z.number().int().positive().safe(), repsMax: z.number().int().positive().safe(),
   intent: z.enum(["strength", "hypertrophy", "accessory"]), note: z.string().nullable().optional(),
   calibration: z.boolean().optional(),
+  postCalibrationSets: z.number().int().min(1).max(5).optional(),
   setTargets: z.array(setTargetSchema).min(1).optional(),
 }).extend(progressionSchema.shape).passthrough().superRefine((item, ctx) => {
   if (item.repsMax < item.repsMin) ctx.addIssue({ code: "custom", path: ["repsMax"], message: "Верхняя граница должна быть не меньше нижней." });
   if (item.setTargets && item.setTargets.length !== item.sets) ctx.addIssue({ code: "custom", path: ["setTargets"], message: "Число подходов не совпадает с планом." });
+  if (item.postCalibrationSets != null && (!item.calibration || item.sets !== 1 || item.postCalibrationSets + item.sets > 6)) ctx.addIssue({ code: "custom", path: ["postCalibrationSets"], message: "После калибровки разрешено не более пяти дополнительных подходов." });
 });
 
 export const templateInputSchema = z.object({
@@ -122,6 +124,7 @@ export function completedTargets(exercise: TemplateExercise, sets: Array<{ exerc
 
 export function calibrateRemaining(exercise: TemplateExercise, performed: SetTarget, completed: number): TemplateExercise {
   if (!exercise.calibration || performed.durationSeconds != null || performed.rir == null || performed.technique == null) return exercise;
+  const { postCalibrationSets: pending, ...rest } = exercise;
   const difficult = performed.technique === "breakdown" || performed.rir < 2;
   const easy = performed.technique === "good" && performed.rir >= 4;
   const min = minimumWeight(exercise.equipment);
@@ -130,7 +133,22 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
   const weightKg = bodyweight ? 0 : Math.max(min, performed.weightKg + (difficult ? -step : easy && step <= 2.5 ? step : 0));
   const reduceReps = difficult && weightKg === performed.weightKg;
   const reps = Math.max(1, performed.reps + (reduceReps ? -Math.max(1, Math.ceil(performed.reps / 4)) : bodyweight && easy ? 1 : 0));
-  const targets = exercise.setTargets?.map((set, i) => i < completed ? set : { ...set, weightKg, reps });
-  return { ...exercise, calibration: false, ...(targets ? { setTargets: targets } : {}), suggestedWeightKg: weightKg,
-    note: difficult && weightKg === min ? "Минимальная нагрузка. Если техника не сохраняется или есть боль, остановите упражнение и выберите более лёгкий вариант." : easy && step > 2.5 ? "Шаг оборудования больше 2,5 кг. Повышение нагрузки подтвердите вручную." : exercise.note };
+  // This is the first (and currently the only) calibration set. Do not
+  // pre-prescribe working sets until feedback is recorded. A technique
+  // breakdown stops the exercise instead of expanding it automatically.
+  const mayContinue = performed.technique === "good" && performed.rir >= 1 && performed.reps >= exercise.repsMin;
+  const recorded = { ...performed, setType: "working" as const };
+  const targets = (exercise.setTargets ?? []).map((set, i) => i === completed - 1 ? recorded : i < completed ? set : { ...set, weightKg, reps });
+  if (pending != null && mayContinue && completed === 1) {
+    const next: SetTarget = { weightKg, reps, setType: "working" };
+    for (let i = 0; i < pending; i++) targets.push({ ...next });
+  }
+  return { ...rest, calibration: false,
+    ...(pending != null ? { sets: targets.length } : {}),
+    ...(targets.length ? { setTargets: targets } : {}),
+    suggestedWeightKg: weightKg,
+    note: !mayContinue ? "Калибровка не подтверждена: техника нарушена, нет повтора в целевом диапазоне или запас равен нулю. Рабочие подходы не назначены; остановитесь или подберите меньший вес вручную." :
+      difficult && weightKg === min ? "Минимальная нагрузка. Если техника не сохраняется или есть боль, остановите упражнение и выберите более лёгкий вариант." :
+      easy && step > 2.5 ? "Шаг оборудования больше 2,5 кг. Повышение нагрузки подтвердите вручную." :
+      pending != null ? "Калибровка завершена: остальные рабочие подходы пересчитаны по фактическому весу, RIR и технике." : exercise.note };
 }

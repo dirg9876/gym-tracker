@@ -109,7 +109,8 @@ test("split stays within its muscle families and favors main patterns over heavi
   assert.equal(result.plan.exercises[0].exerciseId, 1);
   assert.equal(result.plan.exercises[2].exerciseId, 19, "shoulder press precedes familiar lateral raise");
   assert.equal(result.plan.exercises[3].exerciseId, 21, "lateral raise remains an accessory");
-  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets, 0), 13);
+  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets + (ex.postCalibrationSets ?? 0), 0), 13,
+    "remaining working sets are reserved until the one-set calibration succeeds");
 });
 
 test("all recorded sessions, not the last workout, determine the next split day", async () => {
@@ -182,7 +183,7 @@ test("calf press catalogued under legs cannot replace a compound quad movement",
   }
   const choice = buildDailyWorkout(raw, now);
   assert.match(choice.plan.name, /^Сплит · Ноги/);
-  assert.equal(choice.plan.exercises[0].exerciseId, 12, "squat is the first quad pattern, not calf press");
+  assert.equal(choice.plan.exercises[0].exerciseId, 14, "unfamiliar squat is replaced with a safer leg press, never calf press");
   assert.ok(choice.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 99));
   assert.ok(choice.plan.exercises.every(ex => ["Ноги", "Икры", "Пресс"].includes(ex.muscleGroup)));
 });
@@ -291,6 +292,79 @@ test("a first easy calibration cannot automatically add a large equipment step",
   const exercise = { calibration: true, equipment: "dumbbell", suggestedWeightKg: 20, weightStepKg: 10, setTargets: [{ weightKg: 20, reps: 8 }, { weightKg: 20, reps: 8 }] };
   const result = calibrateRemaining(exercise, { weightKg: 20, reps: 8, rir: 4, technique: "good" }, 1);
   assert.equal(result.setTargets[1].weightKg, 20); assert.match(result.note, /вручную/);
+});
+
+test("new split exercise starts with exactly one calibration set, then expands after RIR and good technique", async () => {
+  const offered = await preview();
+  assert.equal(offered.source, "balanced");
+  const calibration = offered.plan.exercises.find(ex => ex.calibration && ex.postCalibrationSets);
+  assert.ok(calibration, "at least one unfamiliar exercise needs a probe");
+  assert.equal(calibration.sets, 1);
+  assert.equal(calibration.setTargets.length, 1);
+  assert.ok(calibration.postCalibrationSets >= 1);
+  assert.equal(calibration.repsMin <= calibration.setTargets[0].reps, true);
+  const w = await start(offered);
+  const before = await loadPlan(w.id);
+  const active = before.exercises.find(ex => ex.exerciseId === calibration.exerciseId);
+  assert.equal(active.postCalibrationSets, calibration.postCalibrationSets);
+  assert.equal(active.sets, 1);
+  const first = active.setTargets[0];
+  await assert.rejects(
+    request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: active.exerciseId, weightKg: first.weightKg, reps: first.reps }),
+    { status: 400 },
+  );
+  const weightStep = active.weightStepKg ?? 2.5;
+  await request(`/api/workouts/${w.id}/sets`, "POST", {
+    exerciseId: active.exerciseId, weightKg: first.weightKg, reps: first.reps,
+    rir: 4, technique: "good",
+  });
+  const after = (await loadPlan(w.id)).exercises.find(ex => ex.exerciseId === active.exerciseId);
+  assert.equal(after.calibration, false);
+  assert.equal(after.postCalibrationSets, undefined);
+  assert.equal(after.sets, 1 + calibration.postCalibrationSets);
+  assert.equal(after.setTargets.length, after.sets);
+  assert.equal(state().sets.length, 1, "unperformed working sets are never silently logged");
+  assert.ok(after.setTargets.slice(1).every(t => t.reps >= active.repsMin));
+  assert.ok(after.setTargets.slice(1).every(t => t.weightKg <= first.weightKg + Math.min(weightStep, 2.5)));
+  assert.equal(after.setTargets[0].weightKg, first.weightKg);
+});
+
+test("unsafe or failed calibration never schedules automatic follow-up working sets", async () => {
+  const offered = await preview();
+  const ex = offered.plan.exercises.find(e => e.postCalibrationSets);
+  assert.ok(ex);
+  const w = await start(offered);
+  const target = ex.setTargets[0];
+  await request(`/api/workouts/${w.id}/sets`, "POST", {
+    exerciseId: ex.exerciseId, weightKg: target.weightKg, reps: target.reps,
+    rir: 0, technique: "breakdown",
+  });
+  const after = (await loadPlan(w.id)).exercises.find(e => e.exerciseId === ex.exerciseId);
+  assert.equal(after.sets, 1);
+  assert.equal(after.calibration, false);
+  assert.equal(after.postCalibrationSets, undefined);
+  assert.match(after.note, /не назначены/);
+  assert.equal(state().sets.length, 1);
+});
+
+test("familiar leg curl wins over unfamiliar Romanian deadlift within posterior-chain slot", async () => {
+  await request("/api/exercises");
+  const raw = state(), now = new Date("2026-10-22T12:00:00Z");
+  const recordHistory = (workoutId, exerciseId, count) => {
+    const date = "2026-10-20T10:00:00Z";
+    raw.workouts.push({ id: workoutId, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < count; i++) raw.sets.push({
+      id: workoutId * 100 + i, workoutId, exerciseId, weightKg: 40, reps: 10,
+      rir: 2, technique: "good", createdAt: date,
+    });
+  };
+  recordHistory(701, 1, 10);
+  recordHistory(702, 7, 10);
+  recordHistory(703, 16, 3);
+  const plan = buildDailyWorkout(raw, now);
+  assert.match(plan.plan.name, /^Сплит · Ноги/);
+  assert.ok(plan.plan.exercises.some(ex => ex.exerciseId === 16), "familiar leg curl replaces unfamiliar technical deadlift");
+  assert.ok(plan.plan.exercises.every(ex => ex.exerciseId !== 13));
 });
 
 test("hypertrophy month with five 85 kg singles never becomes five heavy singles", async () => {
