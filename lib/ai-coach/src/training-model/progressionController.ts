@@ -10,7 +10,7 @@ export function controlPrediction(input: {
     reason: "Старый вес ниже массы грифа. Начните с подборочного подхода с грифом 20 кг; историческая запись не изменена.", predictedReps: null, unroundedWeightKg: null };
   // The lower repetition bound is a hard constraint for automatic prescriptions.
   // Without a trustworthy strength estimate, a single cannot become a working set.
-  if (guard.reps < input.repsMin && (strengthKg == null || guard.action === "calibrate")) {
+  if (guard.action !== "reduce" && guard.reps < input.repsMin && (strengthKg == null || guard.action === "calibrate")) {
     const calibrationKg = Math.max(input.minimumKg, input.stepKg);
     return { weightKg: Math.min(guard.weightKg, calibrationKg), reps: input.repsMin,
       action: "calibrate" as const, reason: "Нет достоверного рабочего подхода в целевом диапазоне. Нужен подборочный подход, а не повторение тяжёлого сингла.",
