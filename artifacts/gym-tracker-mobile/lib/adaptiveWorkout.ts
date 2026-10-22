@@ -38,7 +38,7 @@ function phaseForGroup(group: string): SplitDay | null {
 }
 
 const isChestPress = (ex: Exercise) => /жим|отжимани|брусь/i.test(ex.name);
-const isLegCompound = (ex: Exercise) => /присед|жим ногами|румынск|выпад/i.test(ex.name);
+const isLegCompound = (ex: Exercise) => /присед|жим ногами|жим одной ногой|румынск|выпад/i.test(ex.name);
 const isRow = (ex: Exercise) => /тяга.*(наклон|горизонталь|гантел)|гребл/i.test(ex.name);
 const isVerticalPull = (ex: Exercise) => /подтяг|верхнего блока/i.test(ex.name);
 const isShoulderPress = (ex: Exercise) => /жим/i.test(ex.name);
@@ -63,9 +63,9 @@ function slots(day: SplitDay): Slot[] {
     { group: "Спина", matches: inGroup("Спина", ex => /тяга|подтяг/i.test(ex.name)), main: false, sets: 2 },
   ];
   return [
-    { group: "Ноги", matches: inGroup("Ноги", ex => /присед|жим ногами/i.test(ex.name)), main: true, sets: 3 },
-    { group: "Ноги", matches: inGroup("Ноги", ex => /румынск|сгибани ног/i.test(ex.name)), main: true, sets: 3 },
-    { group: "Ноги", matches: inGroup("Ноги", ex => /выпад|разгибани ног/i.test(ex.name)), main: false, sets: 3 },
+    { group: "Ноги", matches: inGroup("Ноги", ex => /присед|жим ногами|жим одной ногой/i.test(ex.name)), main: true, sets: 3 },
+    { group: "Ноги", matches: inGroup("Ноги", ex => /румынск|сгибани[ея] ног/i.test(ex.name)), main: true, sets: 3 },
+    { group: "Ноги", matches: inGroup("Ноги", ex => /выпад|разгибани[ея] ног/i.test(ex.name)), main: false, sets: 3 },
     { group: "Икры", matches: inGroup("Икры", () => true), main: false, sets: 2 },
     { group: "Пресс", matches: inGroup("Пресс", () => true), main: false, sets: 2 },
     { group: "Ноги", matches: inGroup("Ноги", isLegCompound), main: false, sets: 2 },
@@ -137,7 +137,8 @@ export function buildAdaptiveSplit(
       const score = (ex: Exercise) => {
         const sessions = familiarity.get(ex.id)?.size ?? 0;
         const seen = lastSeenExercise.get(ex.id) ?? 0;
-        return Math.min(6, sessions * 2) + (seen && now - seen < 35 * DAY ? 2 : 0) +
+        return (slot.main && slot.group === "Ноги" && isLegCompound(ex) ? 20 : 0) +
+          Math.min(6, sessions * 2) + (seen && now - seen < 35 * DAY ? 2 : 0) +
           (ex.isMain ? 1 : 0);
       };
       return score(b) - score(a) || a.id - b.id;
