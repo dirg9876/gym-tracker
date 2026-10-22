@@ -81,11 +81,25 @@ test("split stays within its muscle families and favors main patterns over heavi
   await request("/api/exercises");
   const raw = state(), date = "2026-10-22T12:00:00Z";
   // Known isolation is not a reason to omit the unfamiliar compound shoulder press.
-  raw.workouts = [{ id: 101, name: null, startedAt: "2026-09-15T10:00:00Z", finishedAt: "2026-09-15T11:00:00Z" }];
-  raw.sets = Array.from({ length: 12 }, (_, i) => ({
-    id: 1000 + i, workoutId: 101, exerciseId: 21, reps: 12,
-    weightKg: 10, rir: 2, technique: "good", createdAt: "2026-09-15T10:05:00Z",
-  }));
+  raw.workouts = [
+    { id: 101, name: null, startedAt: "2026-09-15T10:00:00Z", finishedAt: "2026-09-15T11:00:00Z" },
+    { id: 102, name: null, startedAt: "2026-10-21T10:00:00Z", finishedAt: "2026-10-21T11:00:00Z" },
+    { id: 103, name: null, startedAt: "2026-10-21T12:00:00Z", finishedAt: "2026-10-21T13:00:00Z" },
+  ];
+  raw.sets = [
+    ...Array.from({ length: 12 }, (_, i) => ({
+      id: 1000 + i, workoutId: 101, exerciseId: 21, reps: 12,
+      weightKg: 10, rir: 2, technique: "good", createdAt: "2026-09-15T10:05:00Z",
+    })),
+    ...Array.from({ length: 10 }, (_, i) => ({
+      id: 2000 + i, workoutId: 102, exerciseId: 7, reps: 8,
+      weightKg: 0, rir: 2, technique: "good", createdAt: "2026-10-21T10:10:00Z",
+    })),
+    ...Array.from({ length: 10 }, (_, i) => ({
+      id: 3000 + i, workoutId: 103, exerciseId: 14, reps: 10,
+      weightKg: 80, rir: 2, technique: "good", createdAt: "2026-10-21T12:10:00Z",
+    })),
+  ];
   const result = buildDailyWorkout(raw, new Date(date));
   assert.equal(result.source, "balanced");
   assert.match(result.plan.name, /^Сплит · Грудь/);
