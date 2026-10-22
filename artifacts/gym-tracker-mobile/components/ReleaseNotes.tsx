@@ -65,7 +65,7 @@ export function ReleaseNotesProvider({ children }: { children: ReactNode }) {
           <View style={styles.header}>
             <View style={{ flex: 1, gap: 6 }}>
               <Text accessibilityRole="header" style={[styles.title, { color: colors.foreground }]}>Что нового</Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Gym-Beam {release.version} · {date}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Gym-Beam {release.displayVersion ?? release.version} · {date}</Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="Закрыть описание обновления" hitSlop={8} onPress={() => { void close(); }} style={styles.close}>
               <Feather name="x" size={22} color={colors.mutedForeground} />
