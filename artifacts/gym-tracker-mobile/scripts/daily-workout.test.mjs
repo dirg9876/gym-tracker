@@ -60,13 +60,16 @@ test("an existing active workout wins over any pending offer, preserving its set
   await request(`/api/workouts/${active.id}/sets`, "POST", { exerciseId: 1, weightKg: 40, reps: 8 });
   const saved = new Map(storage); assert.equal((await start(p)).id, active.id); assert.deepEqual(storage, saved);
 });
-test("local proposal respects equipment and alternates saved training types after completion", async () => {
+test("without a month the plan uses all history, not the previous custom template name", async () => {
   await template("Push fixture", 1); await template("Pull fixture", 8);
-  const p = await preview(); assert.equal(p.plan.name, "Push fixture");
+  const p = await preview(); assert.equal(p.source, "balanced");
+  assert.equal(p.plan.name, "Тренировка на сегодня");
   const w = await start(p);
   await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 1, weightKg: 40, reps: 8, rir: 2, technique: "good" });
   await request(`/api/workouts/${w.id}/finish`, "POST");
-  assert.equal((await preview()).plan.name, "Pull fixture");
+  const next = await preview();
+  assert.equal(next.source, "balanced");
+  assert.equal(next.plan.name, "Тренировка на сегодня");
   await request("/api/ai-coach/profile", "PUT", { ...defaultCoachProfile(), equipment: ["bodyweight"] });
   assert.ok((await preview()).plan.exercises.every(ex => ex.equipment === "bodyweight"));
 });
@@ -74,6 +77,64 @@ test("no compatible catalog still permits a manual start and does not invent exe
   await request("/api/exercises"); const raw = state(); raw.exercises = [];
   const value = buildDailyWorkout(raw); assert.equal(value.plan, null); assert.equal(raw.exercises.length, 0);
 });
+test("all-history planner favors established compound lifts over last-session isolation, and balances muscle groups", async () => {
+  await request("/api/exercises");
+  const raw = state();
+  const time = "2026-10-22T12:00:00Z";
+  const sessions = [
+    { id: 101, exerciseId: 14, date: "2026-08-20T10:00:00Z", reps: 10, weight: 90 },
+    { id: 102, exerciseId: 1, date: "2026-09-15T10:00:00Z", reps: 10, weight: 60 },
+    { id: 103, exerciseId: 10, date: "2026-09-25T10:00:00Z", reps: 10, weight: 50 },
+    { id: 104, exerciseId: 17, date: "2026-10-20T10:00:00Z", reps: 12, weight: 55 },
+    { id: 105, exerciseId: 1, date: "2026-10-21T10:00:00Z", reps: 1, weight: 85 },
+  ];
+  raw.workouts = sessions.map(x => ({ id: x.id, name: null, startedAt: x.date, finishedAt: x.date }));
+  raw.sets = sessions.flatMap(x => Array.from({ length: 3 }, (_, k) => ({
+    id: x.id * 10 + k, workoutId: x.id, exerciseId: x.exerciseId, reps: x.reps,
+    weightKg: x.weight, rir: x.reps === 1 ? null : 2,
+    technique: "good", createdAt: x.date,
+  })));
+  const result = buildDailyWorkout(raw, new Date(time));
+  assert.equal(result.source, "balanced");
+  assert.equal(result.plan.exercises.length, 5);
+  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets, 0), 14);
+  const groups = new Set(result.plan.exercises.map(ex => ex.muscleGroup));
+  for (const group of ["Ноги", "Спина", "Грудь", "Плечи"]) assert.ok(groups.has(group), group);
+  assert.ok(result.plan.exercises.some(ex => ex.exerciseId === 14), "older trained leg press outranks recent isolated leg extension");
+  const bench = result.plan.exercises.find(ex => ex.exerciseId === 1);
+  assert.ok(bench && bench.setTargets.every(target => target.reps >= 6 && !(target.weightKg === 85 && target.reps === 1)));
+  assert.match(result.reason, /всей истории/);
+});
+
+test("calf press mislabelled as legs never crowds out quad exercises", async () => {
+  await request("/api/exercises");
+  const raw = state();
+  const calf = { ...raw.exercises.find(ex => ex.id === 14), id: 99, name: "Жим ногами сидя на икры", muscleGroup: "Ноги" };
+  raw.exercises.push(calf);
+  raw.workouts = [{ id: 120, name: null, startedAt: "2026-10-20T12:00:00Z", finishedAt: "2026-10-20T12:30:00Z" }];
+  raw.sets = Array.from({ length: 4 }, (_, i) => ({
+    id: 500 + i, workoutId: 120, exerciseId: 99, reps: 15, weightKg: 80,
+    createdAt: "2026-10-20T12:05:00Z", rir: 2, technique: "good",
+  }));
+  const result = buildDailyWorkout(raw, new Date("2026-10-22T12:00:00Z"));
+  const legs = result.plan.exercises.filter(ex => ex.muscleGroup === "Ноги");
+  assert.ok(legs.length >= 1);
+  assert.ok(legs.every(ex => ex.exerciseId !== 99), "calf movement is not a legs primary");
+});
+
+test("future and unfinished workouts do not influence independent exercise selection", async () => {
+  await request("/api/exercises");
+  const raw = state();
+  raw.workouts = [
+    { id: 201, name: null, startedAt: "2026-10-23T10:00:00Z", finishedAt: "2026-10-23T11:00:00Z" },
+    { id: 202, name: null, startedAt: "2026-10-22T10:00:00Z", finishedAt: null },
+  ];
+  raw.sets = [201, 202].map(id => ({ id, workoutId: id, exerciseId: 18, reps: 12, weightKg: 100, createdAt: "2026-10-22T10:00:00Z" }));
+  const preview = buildDailyWorkout(raw, new Date("2026-10-22T12:00:00Z"));
+  const empty = buildDailyWorkout({ ...raw, workouts: [], sets: [] }, new Date("2026-10-22T12:00:00Z"));
+  assert.deepEqual(preview.plan.exercises.map(x => x.exerciseId), empty.plan.exercises.map(x => x.exerciseId));
+});
+
 test("known exercise weights come from actual working history, not the rank or a generic 2.5 kg", async () => {
   await record(3, 20, 8); await template("Dumbbell fixture", 3);
   const p = await preview(); assert.ok(p.plan.exercises[0].setTargets[0].weightKg >= 17.5);
