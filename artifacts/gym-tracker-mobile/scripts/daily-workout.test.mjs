@@ -147,6 +147,26 @@ test("stored single 85 x 1 never defines the next push day's working prescriptio
   assert.ok(bench.setTargets.every(target => target.reps >= 6 && !(target.weightKg === 85 && target.reps === 1)));
 });
 
+test("a three-session history naturally rotates push, pull and legs without a monthly plan", async () => {
+  await request("/api/exercises");
+  const raw = state(), now = new Date("2026-10-22T12:00:00Z");
+  const addFinished = (workoutId, exerciseId, hoursAgo) => {
+    const date = new Date(now.getTime() - hoursAgo * 3600000).toISOString();
+    raw.workouts.push({ id: workoutId, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < 3; i++) raw.sets.push({
+      id: workoutId * 100 + i, workoutId, exerciseId,
+      weightKg: 40, reps: 10, rir: 2, technique: "good", createdAt: date,
+    });
+  };
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Грудь/);
+  addFinished(601, 1, 72);
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Спина/);
+  addFinished(602, 7, 48);
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Ноги/);
+  addFinished(603, 14, 24);
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Грудь/);
+});
+
 test("calf press catalogued under legs cannot replace a compound quad movement", async () => {
   await request("/api/exercises");
   const raw = state(), now = new Date("2026-10-22T12:00:00Z");
