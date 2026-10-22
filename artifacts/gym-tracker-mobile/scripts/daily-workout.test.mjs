@@ -167,6 +167,35 @@ test("calf press catalogued under legs cannot replace a compound quad movement",
   assert.ok(choice.plan.exercises.every(ex => ["Ноги", "Икры", "Пресс"].includes(ex.muscleGroup)));
 });
 
+test("familiar unilateral leg press beats unknown squat, but calf press stays accessory", async () => {
+  await request("/api/exercises");
+  const raw = state(), now = new Date("2026-10-22T12:00:00Z");
+  raw.exercises.push({ ...raw.exercises.find(ex => ex.id === 14),
+    id: 43, name: "Жим одной ногой", muscleGroup: "Ноги", isMain: false });
+  raw.exercises.push({ ...raw.exercises.find(ex => ex.id === 14),
+    id: 41, name: "Жим ногами сидя на икры", muscleGroup: "Ноги", isMain: false });
+  const entries = [
+    { workoutId: 301, exerciseId: 1, sets: 9 },
+    { workoutId: 302, exerciseId: 7, sets: 9 },
+    { workoutId: 303, exerciseId: 43, sets: 3 },
+    { workoutId: 304, exerciseId: 41, sets: 2 },
+  ];
+  for (const item of entries) {
+    const date = "2026-10-20T10:00:00Z";
+    raw.workouts.push({ id: item.workoutId, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < item.sets; i++) raw.sets.push({
+      id: item.workoutId * 100 + i, workoutId: item.workoutId,
+      exerciseId: item.exerciseId, weightKg: 60, reps: 12,
+      rir: 2, technique: "good", createdAt: date,
+    });
+  }
+  const workout = buildDailyWorkout(raw, now);
+  assert.match(workout.plan.name, /^Сплит · Ноги/);
+  assert.equal(workout.plan.exercises[0].exerciseId, 43);
+  assert.ok(workout.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 41));
+  assert.ok(workout.plan.exercises.some(ex => ex.exerciseId === 17), "leg extensions remain optional accessories");
+});
+
 test("future and unfinished workouts do not influence independent exercise selection", async () => {
   await request("/api/exercises");
   const raw = state();
