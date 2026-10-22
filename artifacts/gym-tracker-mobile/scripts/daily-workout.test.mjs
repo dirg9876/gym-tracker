@@ -109,7 +109,8 @@ test("split stays within its muscle families and favors main patterns over heavi
   assert.equal(result.plan.exercises[0].exerciseId, 1);
   assert.equal(result.plan.exercises[2].exerciseId, 19, "shoulder press precedes familiar lateral raise");
   assert.equal(result.plan.exercises[3].exerciseId, 21, "lateral raise remains an accessory");
-  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets, 0), 13);
+  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets + (ex.postCalibrationSets ?? 0), 0), 13,
+    "remaining working sets are reserved until the one-set calibration succeeds");
 });
 
 test("all recorded sessions, not the last workout, determine the next split day", async () => {
@@ -182,7 +183,7 @@ test("calf press catalogued under legs cannot replace a compound quad movement",
   }
   const choice = buildDailyWorkout(raw, now);
   assert.match(choice.plan.name, /^Сплит · Ноги/);
-  assert.equal(choice.plan.exercises[0].exerciseId, 12, "squat is the first quad pattern, not calf press");
+  assert.equal(choice.plan.exercises[0].exerciseId, 14, "unfamiliar squat is replaced with a safer leg press, never calf press");
   assert.ok(choice.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 99));
   assert.ok(choice.plan.exercises.every(ex => ["Ноги", "Икры", "Пресс"].includes(ex.muscleGroup)));
 });
