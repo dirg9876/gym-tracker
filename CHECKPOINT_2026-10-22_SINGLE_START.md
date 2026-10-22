@@ -1,5 +1,8 @@
 # Gym-Beam 1.1.10: Unified Start And Local Loads
 
+ARCHIVED: release complete. Continue from CHECKPOINT_2026-10-22_RELEASE_1_1_10.md,
+not the intermediate pending steps below.
+
 ## Goal
 
 2026-10-22, Europe/Moscow, workspace C:\gymbeam, master. User wants ONE Home
