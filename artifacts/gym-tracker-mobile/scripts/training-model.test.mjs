@@ -117,6 +117,17 @@ test("today's first valid set adapts today's targets without rewriting the long-
   assert.equal(value.model.source, "today"); assert.ok(Math.abs(value.model.estimated1RMKg - epleyWithRir(70, 8, 2)) < 1e-8);
   assert.ok(Math.abs(estimateStrength([row(1, 60)], now).estimated1RMKg - epleyWithRir(60, 8, 2)) < 1e-8);
 });
+test("the next set is lighter after a low-RIR first calibration with good technique", async () => {
+  const w = await request("/api/workouts", "POST");
+  await request(`/api/workouts/${w.id}/sets`, "POST", {
+    exerciseId: 1, weightKg: 70, reps: 8, rir: 1, technique: "good",
+  });
+  const prediction = await request(`/api/workouts/${w.id}/prediction/1`);
+  assert.equal(prediction.next.action, "reduce");
+  assert.ok(prediction.next.weightKg < 70, "do not repeat an over-heavy first set");
+  assert.ok(prediction.next.reps >= 8);
+});
+
 test("online model, next-set context and manual application preserve recorded history", async () => {
   const workout = await request("/api/workouts", "POST");
   await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 70, reps: 8, rir: 2, technique: "good" });
