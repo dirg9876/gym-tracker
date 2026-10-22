@@ -179,6 +179,7 @@ test("familiar unilateral leg press beats unknown squat, but calf press stays ac
     { workoutId: 302, exerciseId: 7, sets: 9 },
     { workoutId: 303, exerciseId: 43, sets: 3 },
     { workoutId: 304, exerciseId: 41, sets: 2 },
+    { workoutId: 305, exerciseId: 17, sets: 2 },
   ];
   for (const item of entries) {
     const date = "2026-10-20T10:00:00Z";
