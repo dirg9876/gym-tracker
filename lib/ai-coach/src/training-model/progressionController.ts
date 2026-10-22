@@ -6,7 +6,7 @@ export function controlPrediction(input: {
   stepKg: number; minimumKg: number; fatigueReps?: number;
 }) {
   const { guard, strengthKg, fatigueReps = 0 } = input;
-  if (guard.weightKg < input.minimumKg) return { weightKg: input.minimumKg, reps: Math.max(1, Math.min(8, guard.reps)), action: "calibrate" as const,
+  if (guard.weightKg < input.minimumKg) return { weightKg: input.minimumKg, reps: Math.max(input.repsMin, Math.min(8, guard.reps)), action: "calibrate" as const,
     reason: "Старый вес ниже массы грифа. Начните с подборочного подхода с грифом 20 кг; историческая запись не изменена.", predictedReps: null, unroundedWeightKg: null };
   // The lower repetition bound is a hard constraint for automatic prescriptions.
   // Without a trustworthy strength estimate, a single cannot become a working set.
