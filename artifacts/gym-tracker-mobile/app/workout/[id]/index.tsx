@@ -130,7 +130,10 @@ export default function ActiveWorkoutScreen() {
 
   const addSet = useMutation({
       mutationFn: () => draft.commit(),
-      onSuccess: () => {
+      onSuccess: async () => {
+        const plan = await loadPlan(workoutId);
+        setPlanExercises((plan?.exercises ?? []).filter(ex => exercises?.some(item => item.id === ex.exerciseId)));
+        setPlanLoaded(true);
         toast.show("success", "Подход добавлен");
       },
       onError: (error) => toast.show("error", error instanceof Error ? error.message : "Не удалось добавить подход"),
