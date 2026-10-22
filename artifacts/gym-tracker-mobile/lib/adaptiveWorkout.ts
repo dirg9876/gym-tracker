@@ -131,13 +131,15 @@ export function buildAdaptiveSplit(
   const selected: AdaptiveDefinition[] = [], used = new Set<number>();
   for (const slot of slots(day).slice(0, maxSlots)) {
     const candidates = eligible.filter(ex => !used.has(ex.id) && slot.matches(ex));
+    const posteriorLegs = day === "legs" && slot.group === "Ноги" && selected.length === 1;
     // First match the movement pattern; only *within* that pattern rank
     // familiarity. A familiar fly/leg extension cannot replace a compound lift.
     candidates.sort((a, b) => {
       const score = (ex: Exercise) => {
         const sessions = familiarity.get(ex.id)?.size ?? 0;
         const seen = lastSeenExercise.get(ex.id) ?? 0;
-        return (slot.main && slot.group === "Ноги" && isLegCompound(ex) ? 20 : 0) -
+        return (posteriorLegs && sessions === 0 && /румынск|становая/i.test(ex.name) ? -40 : 0) +
+          (slot.main && slot.group === "Ноги" && isLegCompound(ex) ? 20 : 0) -
           (sessions === 0 && /румынск|становая тяга|приседания со штангой/i.test(ex.name) ? 18 : 0) +
           Math.min(6, sessions * 2) + (seen && now - seen < 35 * DAY ? 2 : 0) +
           (ex.isMain ? 1 : 0);
