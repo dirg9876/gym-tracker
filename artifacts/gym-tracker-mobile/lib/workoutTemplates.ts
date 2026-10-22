@@ -125,7 +125,7 @@ export function completedTargets(exercise: TemplateExercise, sets: Array<{ exerc
 export function calibrateRemaining(exercise: TemplateExercise, performed: SetTarget, completed: number): TemplateExercise {
   if (!exercise.calibration || performed.durationSeconds != null || performed.rir == null || performed.technique == null) return exercise;
   const { postCalibrationSets: pending, ...rest } = exercise;
-  const difficult = performed.technique === "breakdown" || performed.rir < 2;
+  const difficult = performed.technique === "breakdown" || performed.rir < (exercise.targetRir ?? 2);
   const easy = performed.technique === "good" && performed.rir >= 4;
   const min = minimumWeight(exercise.equipment);
   const bodyweight = exercise.equipment === "bodyweight" && performed.weightKg === 0;
@@ -136,7 +136,8 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
   // This is the first (and currently the only) calibration set. Do not
   // pre-prescribe working sets until feedback is recorded. A technique
   // breakdown stops the exercise instead of expanding it automatically.
-  const mayContinue = performed.technique === "good" && performed.rir >= 1 && performed.reps >= exercise.repsMin;
+  const probeReps = pending != null ? exercise.setTargets?.[0]?.reps ?? exercise.repsMin : exercise.repsMin;
+  const mayContinue = performed.technique === "good" && performed.rir >= 1 && performed.reps >= probeReps;
   const recorded = { ...performed, setType: "working" as const };
   const targets = (exercise.setTargets ?? []).map((set, i) => i === completed - 1 ? recorded : i < completed ? set : { ...set, weightKg, reps });
   if (pending != null && mayContinue && completed === 1) {
@@ -147,7 +148,7 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
     ...(pending != null ? { sets: targets.length } : {}),
     ...(targets.length ? { setTargets: targets } : {}),
     suggestedWeightKg: weightKg,
-    note: !mayContinue ? "Калибровка не подтверждена: техника нарушена, нет повтора в целевом диапазоне или запас равен нулю. Рабочие подходы не назначены; остановитесь или подберите меньший вес вручную." :
+    note: !mayContinue && pending != null ? "Калибровка не подтверждена: техника нарушена, не выполнен подборочный подход или запас равен нулю. Рабочие подходы не назначены; остановитесь или подберите меньший вес вручную." :
       difficult && weightKg === min ? "Минимальная нагрузка. Если техника не сохраняется или есть боль, остановите упражнение и выберите более лёгкий вариант." :
       easy && step > 2.5 ? "Шаг оборудования больше 2,5 кг. Повышение нагрузки подтвердите вручную." :
       pending != null ? "Калибровка завершена: остальные рабочие подходы пересчитаны по фактическому весу, RIR и технике." : exercise.note };

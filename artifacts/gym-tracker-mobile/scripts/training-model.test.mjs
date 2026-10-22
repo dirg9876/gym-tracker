@@ -128,6 +128,27 @@ test("the next set is lighter after a low-RIR first calibration with good techni
   assert.ok(prediction.next.reps >= 8);
 });
 
+test("a later reduced set or technique breakdown takes precedence over first-set effort", async () => {
+  const w = await request("/api/workouts", "POST");
+  await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 1, weightKg: 70, reps: 8, rir: 1, technique: "good" });
+  await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 1, weightKg: 50, reps: 8, rir: 3, technique: "good" });
+  assert.ok((await request(`/api/workouts/${w.id}/prediction/1`)).next.weightKg <= 50);
+  await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 1, weightKg: 50, reps: 8, rir: 0, technique: "breakdown" });
+  const prediction = await request(`/api/workouts/${w.id}/prediction/1`);
+  assert.equal(prediction.next.action, "reduce");
+  assert.ok(prediction.next.weightKg < 50, "a failed later set must not restore the first heavier load");
+});
+
+test("low RIR never automatically reduces an assisted machine's counterweight", async () => {
+  await request("/api/profile", "PUT", { bodyWeightKg: 80, sex: "male" });
+  const exercise = await request("/api/exercises", "POST", { name: "Подтягивания с противовесом QA", muscleGroup: "Спина", equipment: "machine", loadMode: "assisted" });
+  const w = await request("/api/workouts", "POST");
+  await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: exercise.id, weightKg: 30, reps: 8, rir: 1, technique: "good" });
+  const prediction = await request(`/api/workouts/${w.id}/prediction/${exercise.id}`);
+  assert.equal(prediction.model.status, "unsupported");
+  assert.equal(prediction.next.weightKg, 30);
+});
+
 test("online model, next-set context and manual application preserve recorded history", async () => {
   const workout = await request("/api/workouts", "POST");
   await request(`/api/workouts/${workout.id}/sets`, "POST", { exerciseId: 1, weightKg: 70, reps: 8, rir: 2, technique: "good" });

@@ -63,9 +63,9 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   if (!current.length && !progression.increase && last && last.reps >= range.repsMin && last.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) guard = { ...guard, reps: last.reps + 1, action: "progress_reps", reason: "Сначала добавьте повторение в диапазоне, сохраняя запас и технику. Формула проверит расчётный запас." };
   if (last && exercise.equipment !== "bodyweight" && !isTimedExercise(exercise.name) && !isAssisted(exercise) && !history.some(row => row.reps >= range.repsMin) && !current.some(row => row.reps >= range.repsMin)) guard = { weightKg: exercise.equipment === "barbell" ? 20 : exercise.equipment === "machine" ? 5 : 2.5, reps: 8, action: "calibrate", reason: "Нет рабочих подходов в целевом диапазоне. Сначала выполните подборочный подход с оценкой запаса и техники." };
   if (last?.technique === "breakdown") guard = { ...guard, weightKg: Math.max(minimumWeight(exercise.equipment), last.weightKg - range.weightStepKg), reps: Math.max(1, Math.min(last.reps - 1, range.repsMin)), action: "reduce", reason: "Техника нарушалась: снизьте нагрузку. При боли остановите упражнение." };
-  if (current.length && current[0].technique === "good" && current[0].rir != null && current[0].rir < range.targetRir && exercise.equipment !== "bodyweight") {
-    guard = { ...guard, weightKg: Math.max(minimumWeight(exercise.equipment), current[0].weightKg - range.weightStepKg),
-      reps: range.repsMin, action: "reduce", reason: "Первый подход тяжелее целевого RIR; последующие подходы облегчены." };
+  if (current.length && last?.technique === "good" && last.rir != null && last.rir < range.targetRir && exercise.equipment !== "bodyweight" && !isAssisted(exercise) && !isTimedExercise(exercise.name)) {
+    guard = { ...guard, weightKg: Math.max(minimumWeight(exercise.equipment), Math.min(guard.weightKg, last.weightKg - range.weightStepKg)),
+      reps: range.repsMin, action: "reduce", reason: "Последний подход тяжелее целевого RIR; последующие подходы облегчены." };
   }
   const forecast = forecastWorkingSets(history, { ...range, sets: Math.max(1, range.sets - current.length) }, guard,
     { equipment: exercise.equipment, timed: isTimedExercise(exercise.name), assisted: isAssisted(exercise) }, now, current);

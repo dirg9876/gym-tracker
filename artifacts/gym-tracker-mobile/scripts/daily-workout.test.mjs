@@ -347,6 +347,39 @@ test("unsafe or failed calibration never schedules automatic follow-up working s
   assert.equal(state().sets.length, 1);
 });
 
+test("a deliberately short bodyweight probe can expand without requiring unprescribed reps", () => {
+  const exercise = { exerciseId: 7, calibration: true, equipment: "bodyweight", sets: 1,
+    postCalibrationSets: 2, repsMin: 6, repsMax: 10, targetRir: 2,
+    setTargets: [{ weightKg: 0, reps: 3 }] };
+  const feedback = { weightKg: 0, reps: 3, rir: 4, technique: "good" };
+  const result = calibrateRemaining(exercise, feedback, 1);
+  assert.equal(result.sets, 3);
+  assert.deepEqual(result.setTargets.map(set => set.reps), [3, 4, 4]);
+  assert.equal(result.postCalibrationSets, undefined);
+  assert.equal(calibrateRemaining(exercise, { ...feedback, reps: 1 }, 1).sets, 1);
+});
+
+test("calibration reduction follows the exercise's target RIR rather than a fixed two", () => {
+  const result = calibrateRemaining({ calibration: true, equipment: "barbell", sets: 1,
+    postCalibrationSets: 2, repsMin: 8, repsMax: 12, targetRir: 3, weightStepKg: 2.5,
+    setTargets: [{ weightKg: 70, reps: 8 }] }, { weightKg: 70, reps: 8, rir: 2, technique: "good" }, 1);
+  assert.deepEqual(result.setTargets.map(set => set.weightKg), [70, 67.5, 67.5]);
+});
+
+test("deferred calibration survives backup and expands once after restoring", async () => {
+  const offered = await preview(), w = await start(offered);
+  const initial = await loadPlan(w.id), exercise = initial.exercises.find(ex => ex.postCalibrationSets);
+  await restoreProgress(await exportProgress());
+  assert.deepEqual(await loadPlan(w.id), initial);
+  await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: exercise.exerciseId,
+    weightKg: exercise.setTargets[0].weightKg, reps: exercise.setTargets[0].reps, rir: 3, technique: "good" });
+  const result = (await loadPlan(w.id)).exercises.find(ex => ex.exerciseId === exercise.exerciseId);
+  assert.equal(result.sets, 1 + exercise.postCalibrationSets);
+  assert.equal(result.postCalibrationSets, undefined);
+  await restoreProgress(await exportProgress());
+  assert.deepEqual((await loadPlan(w.id)).exercises.find(ex => ex.exerciseId === exercise.exerciseId), result);
+});
+
 test("familiar leg curl wins over unfamiliar Romanian deadlift within posterior-chain slot", async () => {
   await request("/api/exercises");
   const raw = state(), now = new Date("2026-10-22T12:00:00Z");
