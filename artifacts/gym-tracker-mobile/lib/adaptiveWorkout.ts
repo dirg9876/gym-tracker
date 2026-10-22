@@ -8,139 +8,154 @@ export type AdaptiveDefinition = {
   targetRir: number; intent: "strength" | "hypertrophy" | "accessory";
 };
 
+export type SplitDay = "push" | "pull" | "legs";
+export type AdaptiveSplit = { day: SplitDay; name: string; reason: string; definitions: AdaptiveDefinition[] };
 type Exercise = OfflineState["exercises"][number];
-type Stats = { recentLoad: number; lastAt: number; sessions: Set<number> };
-const DAY = 86_400_000;
-const PRIMARY = ["Ноги", "Спина", "Грудь", "Плечи"] as const;
-const SECONDARY = ["Пресс", "Бицепс", "Трицепс", "Икры"] as const;
+type SetRow = OfflineState["sets"][number];
+type Slot = {
+  group: string; matches: (exercise: Exercise) => boolean;
+  main: boolean; sets: number;
+};
 
-// Calf press can be catalogued as "Ноги" in older backups. It is not a quad movement.
+const DAY = 86_400_000;
+const SPLIT_DAYS: SplitDay[] = ["push", "pull", "legs"];
+const NAMES: Record<SplitDay, string> = {
+  push: "Сплит · Грудь, плечи и трицепс",
+  pull: "Сплит · Спина и бицепс",
+  legs: "Сплит · Ноги и пресс",
+};
+
+// Older catalog entries may classify a seated calf press as a "Ноги" movement.
 export function planningGroup(exercise: Pick<Exercise, "name" | "muscleGroup">): string {
   return /икр|подъ[её]м.*на носки/i.test(exercise.name) ? "Икры" : exercise.muscleGroup;
 }
 
-// Prefer multi-joint patterns to single-muscle work, but let real experience outrank
-// an unfamiliar exercise. No exercise identity is inferred from a generic muscle group.
-function patternScore(exercise: Exercise, group: string): number {
-  const name = exercise.name.toLowerCase();
-  if (group === "Ноги") return /присед|жим ногами|выпад|румынск/.test(name) ? 18 : /становая|сгибани|разгибани/.test(name) ? 9 : 0;
-  if (group === "Спина") return /подтяг|тяга|тяг[ау] верхнего блока/.test(name) ? 18 : 0;
-  if (group === "Грудь") return /жим|отжиман|брусь/.test(name) ? 18 : /разводк/.test(name) ? 7 : 0;
-  if (group === "Плечи") return /жим/.test(name) ? 18 : /мах|подъ[её]м/.test(name) ? 7 : 0;
-  return 0;
+function phaseForGroup(group: string): SplitDay | null {
+  if (group === "Грудь" || group === "Плечи" || group === "Трицепс") return "push";
+  if (group === "Спина" || group === "Бицепс") return "pull";
+  if (group === "Ноги" || group === "Икры" || group === "Пресс") return "legs";
+  return null;
+}
+
+const isChestPress = (ex: Exercise) => /жим|отжимани|брусь/i.test(ex.name);
+const isLegCompound = (ex: Exercise) => /присед|жим ногами|румынск|выпад/i.test(ex.name);
+const isRow = (ex: Exercise) => /тяга.*(наклон|горизонталь|гантел)|гребл/i.test(ex.name);
+const isVerticalPull = (ex: Exercise) => /подтяг|верхнего блока/i.test(ex.name);
+const isShoulderPress = (ex: Exercise) => /жим/i.test(ex.name);
+
+function slots(day: SplitDay): Slot[] {
+  const inGroup = (g: string, test: (ex: Exercise) => boolean) => (ex: Exercise) =>
+    planningGroup(ex) === g && test(ex);
+  if (day === "push") return [
+    { group: "Грудь", matches: inGroup("Грудь", ex => isChestPress(ex) && !/наклон/i.test(ex.name)), main: true, sets: 3 },
+    { group: "Грудь", matches: inGroup("Грудь", ex => isChestPress(ex) && (/наклон|гантел/i.test(ex.name))), main: true, sets: 3 },
+    { group: "Плечи", matches: inGroup("Плечи", isShoulderPress), main: true, sets: 3 },
+    { group: "Плечи", matches: inGroup("Плечи", ex => /мах|разведени/i.test(ex.name)), main: false, sets: 2 },
+    { group: "Трицепс", matches: inGroup("Трицепс", () => true), main: false, sets: 2 },
+    { group: "Грудь", matches: inGroup("Грудь", ex => /разводк|отжимани/i.test(ex.name)), main: false, sets: 2 },
+  ];
+  if (day === "pull") return [
+    { group: "Спина", matches: inGroup("Спина", isVerticalPull), main: true, sets: 3 },
+    { group: "Спина", matches: inGroup("Спина", isRow), main: true, sets: 3 },
+    { group: "Спина", matches: inGroup("Спина", ex => /тяга|подтяг/i.test(ex.name)), main: true, sets: 3 },
+    { group: "Бицепс", matches: inGroup("Бицепс", ex => /подъ[её]м|сгибани/i.test(ex.name)), main: false, sets: 2 },
+    { group: "Бицепс", matches: inGroup("Бицепс", ex => /молот|сгибани/i.test(ex.name)), main: false, sets: 2 },
+    { group: "Спина", matches: inGroup("Спина", ex => /тяга|подтяг/i.test(ex.name)), main: false, sets: 2 },
+  ];
+  return [
+    { group: "Ноги", matches: inGroup("Ноги", ex => /присед|жим ногами/i.test(ex.name)), main: true, sets: 3 },
+    { group: "Ноги", matches: inGroup("Ноги", ex => /румынск|сгибани ног/i.test(ex.name)), main: true, sets: 3 },
+    { group: "Ноги", matches: inGroup("Ноги", ex => /выпад|разгибани ног/i.test(ex.name)), main: false, sets: 3 },
+    { group: "Икры", matches: inGroup("Икры", () => true), main: false, sets: 2 },
+    { group: "Пресс", matches: inGroup("Пресс", () => true), main: false, sets: 2 },
+    { group: "Ноги", matches: inGroup("Ноги", isLegCompound), main: false, sets: 2 },
+  ];
+}
+
+function isComparableWorkingSet(row: SetRow, ex: Exercise): boolean {
+  if (row.technique === "breakdown" || isAssisted(ex)) return false;
+  if (isTimedExercise(ex.name)) return row.durationSeconds != null && row.durationSeconds > 0;
+  return row.durationSeconds == null && row.reps >= 5 && row.reps <= 30;
 }
 
 /**
- * Builds the next *independent* workout from the entire completed training log.
- *
- * Lifetime history decides exercise familiarity, while exponentially decayed
- * workload and time since last exposure decide priority. Neither a single
- * previous session nor the 7-day minimum-group list determines the program.
- * The result does not claim to measure physiological recovery.
+ * Full-history three-day split; no saved monthly plan or last-template rotation.
+ * All finished sessions contribute familiarity evidence. Workload from *recent*
+ * sessions controls the next day's focus. Logged dates are not recovery tests.
  */
-export function buildAdaptiveDefinitions(
+export function buildAdaptiveSplit(
   state: OfflineState, profile: CoachProfile, available: Exercise[], now: number,
-): AdaptiveDefinition[] {
-  const ended = new Map(state.workouts.filter(w =>
-    w.finishedAt && Number.isFinite(Date.parse(w.finishedAt)) &&
+): AdaptiveSplit {
+  const finished = new Map(state.workouts.filter(w => w.finishedAt &&
+    Number.isFinite(Date.parse(w.finishedAt)) &&
     Date.parse(w.finishedAt) <= now && Date.parse(w.startedAt) <= Date.parse(w.finishedAt),
   ).map(w => [w.id, Date.parse(w.finishedAt!)]));
   const catalog = new Map(state.exercises.map(ex => [ex.id, ex]));
-  const exposure = new Map<number, Stats>();
-  const groups = new Map<string, Stats>();
-  const ensure = <K,>(map: Map<K, Stats>, key: K): Stats => {
-    const found = map.get(key);
-    if (found) return found;
-    const fresh: Stats = { recentLoad: 0, lastAt: 0, sessions: new Set() };
-    map.set(key, fresh);
-    return fresh;
-  };
-
-  for (const set of state.sets) {
-    const finishedAt = ended.get(set.workoutId);
-    const ex = catalog.get(set.exerciseId);
-    if (finishedAt == null || !ex || set.technique === "breakdown") continue;
-    const timed = isTimedExercise(ex.name);
-    // Heavy singles are tests, not ordinary programming volume or familiarity.
-    if (timed ? !(set.durationSeconds != null && set.durationSeconds > 0) : set.reps < 3 || set.reps > 30) continue;
-    const group = planningGroup(ex);
-    const g = ensure(groups, group);
-    const daysAgo = Math.max(0, (now - finishedAt) / DAY);
-    g.recentLoad += Math.exp(-daysAgo / 8);
-    g.lastAt = Math.max(g.lastAt, finishedAt);
-    g.sessions.add(set.workoutId);
-
-    if (ex.deletedAt || ex.replacementPending || !sameLoadCategory(set, ex) ||
-        (ex.equipment === "dumbbell" && (set.dumbbellCount ?? 1) !== (ex.dumbbellCount ?? 1))) continue;
-    if (!timed && set.reps < 5) continue;
-    const e = ensure(exposure, ex.id);
-    e.recentLoad += Math.exp(-daysAgo / 14);
-    e.lastAt = Math.max(e.lastAt, finishedAt);
-    e.sessions.add(set.workoutId);
-  }
-
-  const groupOrder = (a: string, b: string) => {
-    const priority = (group: string) => {
-      const item = groups.get(group);
-      const ageDays = item?.lastAt ? (now - item.lastAt) / DAY : Infinity;
-      // A recently used muscle is less desirable, but never diagnosed as
-      // "not recovered" based on session timestamps alone.
-      return (item?.recentLoad ?? 0) + (ageDays < 2 ? 9 : ageDays < 3 ? 4 : 0);
-    };
-    return priority(a) - priority(b) || a.localeCompare(b, "ru");
-  };
-
-  const excluded = new Set(state.coachProfile?.excludedExerciseIds ?? []);
+  const excluded = new Set(profile.excludedExerciseIds);
   const eligible = available.filter(ex => !excluded.has(ex.id) && !isAssisted(ex));
-  const pick = (group: string, used: Set<number>): Exercise | null => {
-    const matches = eligible.filter(ex => planningGroup(ex) === group && !used.has(ex.id));
-    const score = (ex: Exercise) => {
-      const stat = exposure.get(ex.id);
-      const days = stat?.lastAt ? (now - stat.lastAt) / DAY : Infinity;
-      return patternScore(ex, group) +
-        (stat ? 20 + Math.min(stat.sessions.size, 10) * 2 : 0) +
-        (days <= 35 ? 5 : 0) +
-        (ex.isMain && PRIMARY.includes(group as typeof PRIMARY[number]) ? 5 : 0);
-    };
-    matches.sort((a, b) => score(b) - score(a) || a.id - b.id);
-    return matches[0] ?? null;
-  };
+  const familiarity = new Map<number, Set<number>>();
+  const lastSeenExercise = new Map<number, number>();
+  const workload = new Map<SplitDay, number>(SPLIT_DAYS.map(day => [day, 0]));
+  const latestPhase = new Map<SplitDay, number>();
+  for (const row of state.sets) {
+    const finishedAt = finished.get(row.workoutId), ex = catalog.get(row.exerciseId);
+    if (finishedAt == null || !ex || !isComparableWorkingSet(row, ex)) continue;
+    const phase = phaseForGroup(planningGroup(ex));
+    if (!phase) continue;
+    // Decayed load covers *all* completed records, but recent sets matter most.
+    const ageDays = Math.max(0, (now - finishedAt) / DAY);
+    workload.set(phase, (workload.get(phase) ?? 0) + Math.exp(-ageDays / 9) *
+      (["Бицепс", "Трицепс", "Икры", "Пресс"].includes(planningGroup(ex)) ? 0.5 : 1));
+    latestPhase.set(phase, Math.max(finishedAt, latestPhase.get(phase) ?? 0));
+    if (ex.deletedAt || ex.replacementPending || !sameLoadCategory(row, ex) ||
+      (ex.equipment === "dumbbell" && (row.dumbbellCount ?? 1) !== (ex.dumbbellCount ?? 1))) continue;
+    const sessions = familiarity.get(ex.id) ?? new Set<number>();
+    sessions.add(row.workoutId);
+    familiarity.set(ex.id, sessions);
+    lastSeenExercise.set(ex.id, Math.max(lastSeenExercise.get(ex.id) ?? 0, finishedAt));
+  }
 
-  const primaryCount = profile.sessionMinutes >= 75 ? 4 : 3;
-  const accessoryCount = profile.sessionMinutes >= 90 ? 2 : 1;
-  const selected: AdaptiveDefinition[] = [];
-  const used = new Set<number>();
-  const add = (ex: Exercise, main: boolean) => {
-    used.add(ex.id);
-    const isStrength = profile.goal === "strength" && main;
-    const bodyweight = ex.equipment === "bodyweight";
-    selected.push({
-      exerciseId: ex.id, sets: main ? 3 : 2,
-      repsMin: isStrength ? 3 : main && bodyweight ? 6 : main ? 8 : 10,
-      repsMax: isStrength ? 6 : main && bodyweight ? 10 : main ? 12 : 15,
-      targetRir: 2, intent: isStrength ? "strength" : main ? "hypertrophy" : "accessory",
+  const availableDays = SPLIT_DAYS.filter(day =>
+    slots(day).some(slot => eligible.some(ex => slot.matches(ex))));
+  // A restricted equipment list can make some days impossible. Never invent a
+  // disallowed exercise merely to fill the split.
+  const candidateDays = availableDays.length ? availableDays : SPLIT_DAYS;
+  const ageOf = (day: SplitDay) => latestPhase.get(day) != null ?
+    (now - latestPhase.get(day)!) / DAY : Infinity;
+  const priority = (day: SplitDay) => (workload.get(day) ?? 0) +
+    (ageOf(day) < 2 ? 9 : ageOf(day) < 3 ? 4 : 0);
+  const day = [...candidateDays].sort((a, b) =>
+    priority(a) - priority(b) || SPLIT_DAYS.indexOf(a) - SPLIT_DAYS.indexOf(b))[0];
+
+  const maxSlots = profile.sessionMinutes >= 90 ? 6 : profile.sessionMinutes >= 70 ? 5 : 4;
+  const selected: AdaptiveDefinition[] = [], used = new Set<number>();
+  for (const slot of slots(day).slice(0, maxSlots)) {
+    const candidates = eligible.filter(ex => !used.has(ex.id) && slot.matches(ex));
+    // First match the movement pattern; only *within* that pattern rank
+    // familiarity. A familiar fly/leg extension cannot replace a compound lift.
+    candidates.sort((a, b) => {
+      const score = (ex: Exercise) => {
+        const sessions = familiarity.get(ex.id)?.size ?? 0;
+        const seen = lastSeenExercise.get(ex.id) ?? 0;
+        return Math.min(6, sessions * 2) + (seen && now - seen < 35 * DAY ? 2 : 0) +
+          (ex.isMain ? 1 : 0);
+      };
+      return score(b) - score(a) || a.id - b.id;
     });
+    const chosen = candidates[0];
+    if (!chosen) continue;
+    used.add(chosen.id);
+    const strength = profile.goal === "strength" && slot.main;
+    const bodyweight = chosen.equipment === "bodyweight";
+    selected.push({
+      exerciseId: chosen.id, sets: slot.sets,
+      repsMin: strength ? 3 : slot.main && bodyweight ? 6 : slot.main ? 8 : 10,
+      repsMax: strength ? 6 : slot.main && bodyweight ? 10 : slot.main ? 12 : 15,
+      targetRir: 2, intent: strength ? "strength" : slot.main ? "hypertrophy" : "accessory",
+    });
+  }
+  return {
+    day, name: NAMES[day], definitions: selected,
+    reason: `Сплит: ${NAMES[day].replace("Сплит · ", "")}. День выбран по нагрузке из всей истории завершённых тренировок с повышенным весом недавних занятий. Сначала двигательные паттерны и базовые упражнения, затем знакомые варианты. Записи не позволяют точно оценить восстановление.`,
   };
-
-  const mains = PRIMARY.filter(group => eligible.some(ex => planningGroup(ex) === group)).sort(groupOrder);
-  for (const group of mains.slice(0, primaryCount)) {
-    const ex = pick(group, used);
-    if (ex) add(ex, true);
-  }
-  const extra = SECONDARY.filter(group => eligible.some(ex => planningGroup(ex) === group)).sort((a, b) => {
-    // Core is a useful accessory even if calves have zero recorded sets.
-    const aHistory = eligible.some(ex => planningGroup(ex) === a && exposure.has(ex.id));
-    const bHistory = eligible.some(ex => planningGroup(ex) === b && exposure.has(ex.id));
-    return Number(bHistory) - Number(aHistory) || groupOrder(a, b);
-  });
-  for (const group of extra.slice(0, accessoryCount)) {
-    const ex = pick(group, used);
-    if (ex) add(ex, false);
-  }
-  // Restricted catalogs may contain only one or two movement groups.
-  if (!selected.length) {
-    const fallback = eligible.slice().sort((a, b) => a.id - b.id)[0];
-    if (fallback) add(fallback, true);
-  }
-  return selected;
 }
