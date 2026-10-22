@@ -136,7 +136,7 @@ export function calibrateRemaining(exercise: TemplateExercise, performed: SetTar
   // This is the first (and currently the only) calibration set. Do not
   // pre-prescribe working sets until feedback is recorded. A technique
   // breakdown stops the exercise instead of expanding it automatically.
-  const mayContinue = performed.technique === "good";
+  const mayContinue = performed.technique === "good" && performed.rir >= 1 && performed.reps >= exercise.repsMin;
   const recorded = { ...performed, setType: "working" as const };
   const targets = (exercise.setTargets ?? []).map((set, i) => i === completed - 1 ? recorded : i < completed ? set : { ...set, weightKg, reps });
   if (pending != null && mayContinue && completed === 1) {
