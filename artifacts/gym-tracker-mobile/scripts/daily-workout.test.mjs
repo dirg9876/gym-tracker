@@ -63,13 +63,13 @@ test("an existing active workout wins over any pending offer, preserving its set
 test("without a month the plan uses all history, not the previous custom template name", async () => {
   await template("Push fixture", 1); await template("Pull fixture", 8);
   const p = await preview(); assert.equal(p.source, "balanced");
-  assert.equal(p.plan.name, "Тренировка на сегодня");
+  assert.match(p.plan.name, /^Сплит · /);
   const w = await start(p);
   await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 1, weightKg: 40, reps: 8, rir: 2, technique: "good" });
   await request(`/api/workouts/${w.id}/finish`, "POST");
   const next = await preview();
   assert.equal(next.source, "balanced");
-  assert.equal(next.plan.name, "Тренировка на сегодня");
+  assert.match(next.plan.name, /^Сплит · /);
   await request("/api/ai-coach/profile", "PUT", { ...defaultCoachProfile(), equipment: ["bodyweight"] });
   assert.ok((await preview()).plan.exercises.every(ex => ex.equipment === "bodyweight"));
 });
@@ -77,49 +77,144 @@ test("no compatible catalog still permits a manual start and does not invent exe
   await request("/api/exercises"); const raw = state(); raw.exercises = [];
   const value = buildDailyWorkout(raw); assert.equal(value.plan, null); assert.equal(raw.exercises.length, 0);
 });
-test("all-history planner favors established compound lifts over last-session isolation, and balances muscle groups", async () => {
+test("split stays within its muscle families and favors main patterns over heavily trained isolation", async () => {
   await request("/api/exercises");
-  const raw = state();
-  const time = "2026-10-22T12:00:00Z";
-  const sessions = [
-    { id: 101, exerciseId: 14, date: "2026-08-20T10:00:00Z", reps: 10, weight: 90 },
-    { id: 102, exerciseId: 1, date: "2026-09-15T10:00:00Z", reps: 10, weight: 60 },
-    { id: 103, exerciseId: 10, date: "2026-09-25T10:00:00Z", reps: 10, weight: 50 },
-    { id: 104, exerciseId: 17, date: "2026-10-20T10:00:00Z", reps: 12, weight: 55 },
-    { id: 105, exerciseId: 1, date: "2026-10-21T10:00:00Z", reps: 1, weight: 85 },
+  const raw = state(), date = "2026-10-22T12:00:00Z";
+  // Known isolation is not a reason to omit the unfamiliar compound shoulder press.
+  raw.workouts = [
+    { id: 101, name: null, startedAt: "2026-09-15T10:00:00Z", finishedAt: "2026-09-15T11:00:00Z" },
+    { id: 102, name: null, startedAt: "2026-10-21T10:00:00Z", finishedAt: "2026-10-21T11:00:00Z" },
+    { id: 103, name: null, startedAt: "2026-10-21T12:00:00Z", finishedAt: "2026-10-21T13:00:00Z" },
   ];
-  raw.workouts = sessions.map(x => ({ id: x.id, name: null, startedAt: x.date, finishedAt: x.date }));
-  raw.sets = sessions.flatMap(x => Array.from({ length: 3 }, (_, k) => ({
-    id: x.id * 10 + k, workoutId: x.id, exerciseId: x.exerciseId, reps: x.reps,
-    weightKg: x.weight, rir: x.reps === 1 ? null : 2,
-    technique: "good", createdAt: x.date,
-  })));
-  const result = buildDailyWorkout(raw, new Date(time));
+  raw.sets = [
+    ...Array.from({ length: 12 }, (_, i) => ({
+      id: 1000 + i, workoutId: 101, exerciseId: 21, reps: 12,
+      weightKg: 10, rir: 2, technique: "good", createdAt: "2026-09-15T10:05:00Z",
+    })),
+    ...Array.from({ length: 10 }, (_, i) => ({
+      id: 2000 + i, workoutId: 102, exerciseId: 7, reps: 8,
+      weightKg: 0, rir: 2, technique: "good", createdAt: "2026-10-21T10:10:00Z",
+    })),
+    ...Array.from({ length: 10 }, (_, i) => ({
+      id: 3000 + i, workoutId: 103, exerciseId: 14, reps: 10,
+      weightKg: 80, rir: 2, technique: "good", createdAt: "2026-10-21T12:10:00Z",
+    })),
+  ];
+  const result = buildDailyWorkout(raw, new Date(date));
   assert.equal(result.source, "balanced");
+  assert.match(result.plan.name, /^Сплит · Грудь/);
   assert.equal(result.plan.exercises.length, 5);
-  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets, 0), 14);
   const groups = new Set(result.plan.exercises.map(ex => ex.muscleGroup));
-  for (const group of ["Ноги", "Спина", "Грудь", "Плечи"]) assert.ok(groups.has(group), group);
-  assert.ok(result.plan.exercises.some(ex => ex.exerciseId === 14), "older trained leg press outranks recent isolated leg extension");
-  const bench = result.plan.exercises.find(ex => ex.exerciseId === 1);
-  assert.ok(bench && bench.setTargets.every(target => target.reps >= 6 && !(target.weightKg === 85 && target.reps === 1)));
-  assert.match(result.reason, /всей истории/);
+  assert.ok([...groups].every(group => ["Грудь", "Плечи", "Трицепс"].includes(group)));
+  assert.equal(result.plan.exercises[0].exerciseId, 1);
+  assert.equal(result.plan.exercises[2].exerciseId, 19, "shoulder press precedes familiar lateral raise");
+  assert.equal(result.plan.exercises[3].exerciseId, 21, "lateral raise remains an accessory");
+  assert.equal(result.plan.exercises.reduce((sum, ex) => sum + ex.sets, 0), 13);
 });
 
-test("calf press mislabelled as legs never crowds out quad exercises", async () => {
+test("all recorded sessions, not the last workout, determine the next split day", async () => {
+  await request("/api/exercises");
+  const raw = state(), base = Date.parse("2026-10-22T12:00:00Z");
+  const done = (id, exerciseId, hoursAgo, sets = 3) => {
+    const date = new Date(base - hoursAgo * 3600000).toISOString();
+    raw.workouts.push({ id, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < sets; i++) raw.sets.push({
+      id: id * 100 + i, workoutId: id, exerciseId, reps: 10,
+      weightKg: 40, rir: 2, technique: "good", createdAt: date,
+    });
+  };
+  done(101, 1, 96, 12); // push
+  done(102, 1, 72, 12); // push
+  done(103, 7, 96, 3); // pull
+  done(104, 14, 24, 6); // legs is last, but pull is least loaded
+  const choice = buildDailyWorkout(raw, new Date(base));
+  assert.match(choice.plan.name, /^Сплит · Спина/);
+  assert.ok(choice.plan.exercises.every(ex => ["Спина", "Бицепс"].includes(ex.muscleGroup)));
+  assert.ok(choice.plan.exercises.some(ex => ex.exerciseId === 7));
+  assert.ok(choice.plan.exercises.some(ex => ex.exerciseId === 8 || ex.exerciseId === 11));
+});
+
+test("stored single 85 x 1 never defines the next push day's working prescription", async () => {
   await request("/api/exercises");
   const raw = state();
+  const d = "2026-10-15T12:00:00Z";
+  raw.workouts = [{ id: 105, name: null, startedAt: d, finishedAt: d }];
+  raw.sets = [{ id: 500, workoutId: 105, exerciseId: 1, weightKg: 85, reps: 1,
+    rir: null, technique: "good", createdAt: d }];
+  const proposal = buildDailyWorkout(raw, new Date("2026-10-22T12:00:00Z"));
+  const bench = proposal.plan.exercises.find(ex => ex.exerciseId === 1);
+  assert.ok(bench);
+  assert.ok(bench.setTargets.every(target => target.reps >= 6 && !(target.weightKg === 85 && target.reps === 1)));
+});
+
+test("a three-session history naturally rotates push, pull and legs without a monthly plan", async () => {
+  await request("/api/exercises");
+  const raw = state(), now = new Date("2026-10-22T12:00:00Z");
+  const addFinished = (workoutId, exerciseId, hoursAgo) => {
+    const date = new Date(now.getTime() - hoursAgo * 3600000).toISOString();
+    raw.workouts.push({ id: workoutId, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < 3; i++) raw.sets.push({
+      id: workoutId * 100 + i, workoutId, exerciseId,
+      weightKg: 40, reps: 10, rir: 2, technique: "good", createdAt: date,
+    });
+  };
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Грудь/);
+  addFinished(601, 1, 72);
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Спина/);
+  addFinished(602, 7, 48);
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Ноги/);
+  addFinished(603, 14, 24);
+  assert.match(buildDailyWorkout(raw, now).plan.name, /^Сплит · Грудь/);
+});
+
+test("calf press catalogued under legs cannot replace a compound quad movement", async () => {
+  await request("/api/exercises");
+  const raw = state(), now = new Date("2026-10-22T12:00:00Z");
   const calf = { ...raw.exercises.find(ex => ex.id === 14), id: 99, name: "Жим ногами сидя на икры", muscleGroup: "Ноги" };
   raw.exercises.push(calf);
-  raw.workouts = [{ id: 120, name: null, startedAt: "2026-10-20T12:00:00Z", finishedAt: "2026-10-20T12:30:00Z" }];
-  raw.sets = Array.from({ length: 4 }, (_, i) => ({
-    id: 500 + i, workoutId: 120, exerciseId: 99, reps: 15, weightKg: 80,
-    createdAt: "2026-10-20T12:05:00Z", rir: 2, technique: "good",
-  }));
-  const result = buildDailyWorkout(raw, new Date("2026-10-22T12:00:00Z"));
-  const primary = result.plan.exercises.slice(0, 4);
-  assert.ok(primary.some(ex => ex.muscleGroup === "Ноги"));
-  assert.ok(primary.every(ex => ex.exerciseId !== 99), "calf movement is not a legs primary");
+  // Make legs the least recently worked split, even with the calf session.
+  for (const [id, exerciseId, n] of [[201, 1, 9], [202, 7, 9], [203, 99, 3]]) {
+    const date = "2026-10-20T10:00:00Z";
+    raw.workouts.push({ id, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < n; i++) raw.sets.push({ id: id * 100 + i,
+      workoutId: id, exerciseId, weightKg: 50, reps: 12,
+      rir: 2, technique: "good", createdAt: date });
+  }
+  const choice = buildDailyWorkout(raw, now);
+  assert.match(choice.plan.name, /^Сплит · Ноги/);
+  assert.equal(choice.plan.exercises[0].exerciseId, 12, "squat is the first quad pattern, not calf press");
+  assert.ok(choice.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 99));
+  assert.ok(choice.plan.exercises.every(ex => ["Ноги", "Икры", "Пресс"].includes(ex.muscleGroup)));
+});
+
+test("familiar unilateral leg press beats unknown squat, but calf press stays accessory", async () => {
+  await request("/api/exercises");
+  const raw = state(), now = new Date("2026-10-22T12:00:00Z");
+  raw.exercises.push({ ...raw.exercises.find(ex => ex.id === 14),
+    id: 43, name: "Жим одной ногой", muscleGroup: "Ноги", isMain: false });
+  raw.exercises.push({ ...raw.exercises.find(ex => ex.id === 14),
+    id: 41, name: "Жим ногами сидя на икры", muscleGroup: "Ноги", isMain: false });
+  const entries = [
+    { workoutId: 301, exerciseId: 1, sets: 9 },
+    { workoutId: 302, exerciseId: 7, sets: 9 },
+    { workoutId: 303, exerciseId: 43, sets: 3 },
+    { workoutId: 304, exerciseId: 41, sets: 2 },
+    { workoutId: 305, exerciseId: 17, sets: 2 },
+  ];
+  for (const item of entries) {
+    const date = "2026-10-20T10:00:00Z";
+    raw.workouts.push({ id: item.workoutId, name: null, startedAt: date, finishedAt: date });
+    for (let i = 0; i < item.sets; i++) raw.sets.push({
+      id: item.workoutId * 100 + i, workoutId: item.workoutId,
+      exerciseId: item.exerciseId, weightKg: 60, reps: 12,
+      rir: 2, technique: "good", createdAt: date,
+    });
+  }
+  const workout = buildDailyWorkout(raw, now);
+  assert.match(workout.plan.name, /^Сплит · Ноги/);
+  assert.equal(workout.plan.exercises[0].exerciseId, 43);
+  assert.ok(workout.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 41));
+  assert.ok(workout.plan.exercises.some(ex => ex.exerciseId === 17), "leg extensions remain optional accessories");
 });
 
 test("future and unfinished workouts do not influence independent exercise selection", async () => {
@@ -149,7 +244,7 @@ test("new dumbbell bench uses a conservative analog, and first-set assessment re
   assert.equal(calculated.calibrationBasis?.sourceExerciseId, 1);
   const p = await preview();
   assert.equal(p.source, "balanced");
-  assert.ok(p.plan.exercises.some(ex => ex.muscleGroup === "Грудь"));
+  assert.ok(p.plan.exercises.length > 0);
 });
 test("unknown source effort is discounted; singles, failed technique and unrelated moves are not analogs", async () => {
   await record(1, 60, 8, {});
