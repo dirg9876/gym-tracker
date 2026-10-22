@@ -69,10 +69,18 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
       return { weightKg: result.weightKg, reps: exercise.equipment === "bodyweight" && calibration ? 3 : result.reps, setType: "working" };
     });
     const values = targets.map(s => s.durationSeconds ?? s.reps);
+    // Only the automatic split defers unknown working sets. A saved monthly
+    // plan preserves its complete author-specified structure.
+    const oneSetProbe = source === "balanced" && calibration && count > 1;
     exercises.push({ exerciseId: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isBodyweight: exercise.equipment === "bodyweight", basedOn: "personal-record", suggestedWeightKg: targets[0].weightKg,
-      sets: count, repsMin: timed ? Math.min(...values) : definition.repsMin, repsMax: timed ? Math.max(...values) : definition.repsMax,
+      sets: oneSetProbe ? 1 : count,
+      repsMin: timed ? Math.min(...values) : definition.repsMin, repsMax: timed ? Math.max(...values) : definition.repsMax,
       intent: definition.intent ?? (profile.goal === "strength" ? "strength" : "hypertrophy"), weightStepKg: exercise.weightStepKg ?? 2.5, targetRir: definition.targetRir ?? 2,
-      calibration, note: timed ? "Удержание в секундах, без веса." : isAssisted(exercise) ? "Противовес подбирается вручную, без автоматического повышения." : prediction.next.reason, setTargets: targets });
+      calibration,
+      ...(oneSetProbe ? { postCalibrationSets: count - 1 } : {}),
+      note: oneSetProbe ? `Сначала один подборочный подход. После записи RIR и техники будут рассчитаны ещё ${count - 1} рабочих подхода. ${prediction.next.reason}` :
+        timed ? "Удержание в секундах, без веса." : isAssisted(exercise) ? "Противовес подбирается вручную, без автоматического повышения." : prediction.next.reason,
+      setTargets: oneSetProbe ? targets.slice(0, 1) : targets });
     remainingSets -= count;
   }
   if (finished.some(w => dateKey(new Date(w.startedAt)) === date)) reason += " Сегодня уже записана тренировка. Необходимость дополнительного занятия и восстановление по журналу неизвестны.";
