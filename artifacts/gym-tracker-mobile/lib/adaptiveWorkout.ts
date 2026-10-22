@@ -48,11 +48,11 @@ export function buildAdaptiveDefinitions(
   const catalog = new Map(state.exercises.map(ex => [ex.id, ex]));
   const exposure = new Map<number, Stats>();
   const groups = new Map<string, Stats>();
-  const ensure = (map: Map<number, Stats> | Map<string, Stats>, key: never): Stats => {
-    const found = (map as Map<string | number, Stats>).get(key);
+  const ensure = <K,>(map: Map<K, Stats>, key: K): Stats => {
+    const found = map.get(key);
     if (found) return found;
     const fresh: Stats = { recentLoad: 0, lastAt: 0, sessions: new Set() };
-    (map as Map<string | number, Stats>).set(key, fresh);
+    map.set(key, fresh);
     return fresh;
   };
 
@@ -64,7 +64,7 @@ export function buildAdaptiveDefinitions(
     // Heavy singles are tests, not ordinary programming volume or familiarity.
     if (timed ? !(set.durationSeconds != null && set.durationSeconds > 0) : set.reps < 3 || set.reps > 30) continue;
     const group = planningGroup(ex);
-    const g = ensure(groups, group as never);
+    const g = ensure(groups, group);
     const daysAgo = Math.max(0, (now - finishedAt) / DAY);
     g.recentLoad += Math.exp(-daysAgo / 8);
     g.lastAt = Math.max(g.lastAt, finishedAt);
@@ -73,7 +73,7 @@ export function buildAdaptiveDefinitions(
     if (ex.deletedAt || ex.replacementPending || !sameLoadCategory(set, ex) ||
         (ex.equipment === "dumbbell" && (set.dumbbellCount ?? 1) !== (ex.dumbbellCount ?? 1))) continue;
     if (!timed && set.reps < 5) continue;
-    const e = ensure(exposure, ex.id as never);
+    const e = ensure(exposure, ex.id);
     e.recentLoad += Math.exp(-daysAgo / 14);
     e.lastAt = Math.max(e.lastAt, finishedAt);
     e.sessions.add(set.workoutId);
