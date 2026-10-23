@@ -8,5 +8,5 @@
 - Use `scripts/build-release.ps1` for local release APKs. It refreshes and verifies both the embedded Expo manifest and JavaScript bundle; Gradle may otherwise miss shared workspace TS, JSON or PNG changes and ship old code or images. Keep Android keyboard resizing native (`adjustResize`), with iOS-only KeyboardAvoidingView behavior in forms, and preserve gesture roots in modal scrollable views.
 - Keep the one-time release-notes window and the manual "What's new" entry in Updates working. Do not interrupt an active workout or overwrite progress to test the window.
 - Preserve the existing signing key, all user history and unrelated worktree changes. Never publish private keys, owner tokens, connection files, personal backups, SDK/AVD files or credentials.
-- The established publication branch is `master`. APKs belong in GitHub Release assets, not Git blobs. Do not force-push or change the default branch.
+- The publication and default branch is `master`. APKs belong in GitHub Release assets, not Git blobs. Do not force-push or change the default branch.
 - Write a self-contained checkpoint after meaningful work: goal, decisions, parameters, files, verification results, unresolved limitations and next step. Keep `CHECKPOINT.md` pointing to the latest checkpoint.

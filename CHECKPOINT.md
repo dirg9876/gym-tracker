@@ -1,14 +1,16 @@
 # Gym-Beam: Текущий Checkpoint
 
-Последняя работа: [очистка описаний и единое название Gym-Beam](CHECKPOINT_2026-10-23_REPOSITORY_BRANDING.md).
-Обновлены актуальные инструкции Android и ИИ, описание GitHub и проверки документации.
-448 тестов и workspace typecheck PASS. Приложение не менялось: опубликована 1.1.16,
-следующий логический app release 1.1.17; runtime 1.1.0, versionCode 22 сохранены.
-Изменения в `master`: commit `4c30fd1`, CI 40011307667 PASS, включая Android export.
+Последняя работа: [удаление устаревших веток](CHECKPOINT_2026-10-23_BRANCH_CLEANUP.md).
+По запросу пользователя удалены 8 remote и 3 local ветки; осталась `master`,
+она же default branch GitHub. Уникальные коммиты сохранены в проверенном локальном
+Git bundle. Старый PR #1 закрыт без слияния, теги и релизы сохранены.
+448 тестов и workspace typecheck PASS; выполненная работа не меняла код приложения.
 
-Актуальная рабочая и публикационная ветка: `master`. GitHub по умолчанию пока
-показывает старую `main`; настройка default branch не менялась.
+Приложение не менялось: опубликована 1.1.16, следующий логический app release
+1.1.17; runtime 1.1.0, versionCode 22 сохранены. Проверки и параметры резервной
+копии перечислены в последнем checkpoint.
 
+- [Очистка описаний Gym-Beam: 448 тестов, типы и CI PASS](CHECKPOINT_2026-10-23_REPOSITORY_BRANDING.md).
 - [Android-only: структура, сборка и проверки](CHECKPOINT_2026-10-23_ANDROID_ONLY.md).
 - [Опубликованный выпуск 1.1.16: APK и OTA](CHECKPOINT_2026-10-23_TIMELINE_1_1_16.md).
 - [Аудит места: общая очистка не выполнялась](CHECKPOINT_2026-10-23_STORAGE_AUDIT.md).
