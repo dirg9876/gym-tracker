@@ -1,5 +1,34 @@
 # Gym-Beam: Только Android, 2026-10-23
 
+## Итог: Завершено
+
+Очистка опубликована в master: основной commit
+`3f15a27222cc662e6518b8c72a6a3ec6c9b7f7c4`, исправление Expo prebuild
+`a8d96558bffb7a6cf69d3fda398cd4eb7405083e`.
+CI PASS: https://github.com/dirg9876/gym-tracker/actions/runs/40009491371 (1m29s).
+Чистый Linux runner подтвердил frozen install, typecheck, все444 теста, обе
+галереи, local coach build, Cloudflare dry-run и Android export. Ранее красный
+CI40008873068 разобран и исправлен, см. пояснение ниже.
+
+Из текущей ветки удалены409 файлов и все web app/sandbox/DB/workout-server пакеты.
+Сохранены единственное приложение Android, optional AI gateways и нужные shared
+контракты. Прямые retained версии SDK/dependencies не менялись; вычищены388 package
+records lockfile, installer удалил409 пакетов и добавил17 перенесённых/новых связей.
+Native APK build3m16s, подпись и logo pixel content PASS. Финальная проверка
+секретов33 added/modified source files /1456 APK entries /204 OTA files PASS.
+
+App release остаётся1.1.16/code22/runtime1.1.0. Новые APK/OTA не публиковались ради
+repo-only maintenance, действующие GitHub Release/OTA1.1.16 неизменны. Пользовательский
+прогресс/ключ подписи/credentials/SDK/AVD не удалялись. Изменённый web mockup сохранён
+локально byte-identical; unrelated dirty/untracked материалы не попали в commit.
+Нет активных build/test/QA процессов. Не нужно повторять выполненные шаги ниже.
+
+Следующий шаг: только новый запрос пользователя. Для нового app release следующий
+patch1.1.17. Git history не переписывалась; ignored legacy web dist/node_modules,
+большие APK/caches и объектыGit остаются на диске. Общий storage audit12GiB не был
+исполнен, нельзя считать, что очищено12GiB. Ограничения старого аудита матмодели
+остаются в checkpoint1.1.16 и не относятся к удалению web.
+
 ## Цель И Контекст
 
 Пользователь явно просит удалить из репозитория всё, связанное с веб-приложением:
@@ -98,15 +127,15 @@ PASS, 3 новые регрессии. Продуктовый JS не менял
 весь native build был успешен до исправления только build-workflow. Лог final tests:
 `android-only-tests-final.log`, prebuild: `android-only-prebuild.log`.
 
-Далее: commit/push исправления prebuild и дождаться НОВОГО CI (первый run красный,
-его не объявлять успешным), финализировать checkpoint. Нужные direct версии
+Исправление prebuild опубликовано, новый CI40009491371 PASS; незавершённые статусы
+этого раздела теперь архивные. Нужные direct версии
 зависимостей не обновлялись. SDK/EAS/native runtime не мигрировали.
 
 Это очистка репозитория без изменения поведения установленного Android, а не новый
 логический app release: не повышать/публиковать версию только ради maintenance.
 Если потребуется реальный новый app release, следующий1.1.17, runtime по совместимости.
 
-## План И Проверки
+## Исходный План
 
 1. Перенести logo/asset tooling, удалить исходники и конфиги web по точному перечню.
    Для bulk удаления Windows проверить resolved absolute paths внутри workspace,

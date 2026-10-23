@@ -1,6 +1,8 @@
 # Gym-Beam: Checkpoints
 
-Текущая задача: [удалить web-приложение и оставить Android](CHECKPOINT_2026-10-23_ANDROID_ONLY.md). Нужные Android assets и optional AI gateways сохранить; очистка репозитория, не новый app release. Версия **1.1.16 полностью опубликована**: [итог](CHECKPOINT_2026-10-23_TIMELINE_1_1_16.md), source d2c6839, CI/APK/production OTA и offline launch PASS, exact state/plans сохранены. AVD5556/Gradle остановлены, сеть восстановлена. [Storage audit](CHECKPOINT_2026-10-23_STORAGE_AUDIT.md): 12GiB кандидатов, общая очистка не выполнялась.
+ЗАВЕРШЕНО: [репозиторий только для Android](CHECKPOINT_2026-10-23_ANDROID_ONLY.md). В master удалены web/PWA/sandbox и старый DB/Clerk workout backend; сохранены Android assets и optional AI gateways. Commits3f15a27+a8d9655, CI40009491371 PASS, 444 теста/typecheck/Android export/native APK PASS. Cleanup не новый app release: текущая **1.1.16** остаётся опубликованной, следующая app версия1.1.17. История пользователя и ключи сохранены, процессы остановлены. Git history и ignored caches не чистились; [storage audit12GiB](CHECKPOINT_2026-10-23_STORAGE_AUDIT.md) не исполнялся.
+
+**1.1.16 опубликована полностью**: [итог](CHECKPOINT_2026-10-23_TIMELINE_1_1_16.md), app source d2c6839, CI/APK/production OTA и offline launch PASS, exact state/plans сохранены. AVD5556/Gradle остановлены, сеть восстановлена. Все нижние записи архивные.
 
 Выпуск **1.1.15 ЗАВЕРШЁН**: [итоговый checkpoint](CHECKPOINT_2026-10-23_RELEASE_1_1_15.md). 423 теста/typecheck/CI/journey/nativeQA PASS, исходные state/plans сохранены точно после APK и OTA. Source d0aafba, code21/runtime1.1.0. [APK 1.1.15](https://github.com/dirg9876/gym-tracker/releases/download/v1.1.15/gym-beam-1.1.15.apk). Ниже архивные этапы, их незавершённые статусы не являются текущей задачей.
 
