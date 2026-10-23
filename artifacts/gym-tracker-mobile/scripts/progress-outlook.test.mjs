@@ -113,7 +113,7 @@ test("a checksummed backup with duplicate or impossible weight dates is rejected
 test("exercise outlook is deterministic/read-only and never logs imagined future successes or feeds them to EMA", async () => {
   const raw = await seed(); session(raw, 1, 1, 8, 70, "2026-10-20");
   const saved = structuredClone(raw), a = buildExerciseOutlook(raw, 1, now), b = buildExerciseOutlook(raw, 1, now);
-  assert.deepEqual(a, b); assert.deepEqual(raw, saved); assert.equal(a.sessions.length, 4);
+  assert.deepEqual(a, b); assert.deepEqual(raw, saved); assert.equal(a.sessions.length, 6);
   assert.ok(a.sessions.every(row => row.targets.length === 3 && row.targets.every(set => set.reps <= 12 && set.weightKg <= 72.5)));
   assert.ok(a.sessions.every((row, i) => row.date >= "2026-10-22" && (!i || row.date > a.sessions[i - 1].date)));
 });
@@ -145,7 +145,7 @@ test("month sequence determines dates and sets; active/completed slots and absen
   raw.workouts[0].coachCycle = { planId: raw.coachMonth.id, slot: 0 };
   const value = buildExerciseOutlook(raw, 1, now);
   assert.equal(value.scheduleSource, "Месячный план");
-  assert.deepEqual(value.sessions.map(row => row.targets.length), [4, 2, 2, 4]);
+  assert.deepEqual(value.sessions.map(row => row.targets.length), [4, 2, 2, 4, 2, 2]);
   assert.ok(value.sessions.every(row => row.targets.every(set => set.reps <= 12)));
   assert.equal(buildExerciseOutlook(raw, 21, now).sessions.length, 0);
   const first = value.sessions[0].date;

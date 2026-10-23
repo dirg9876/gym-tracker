@@ -12,6 +12,7 @@ import { bodyWeightForecast } from "./bodyWeight";
 const daysBetween = (a: string, b: string) => (Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000;
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 12);
 const phases = ["push", "pull", "legs"] as const;
+const sessionLimit = 6;
 const phaseFor = (group: string) => ["Грудь", "Плечи", "Трицепс"].includes(group) ? "push" : ["Спина", "Бицепс"].includes(group) ? "pull" : "legs";
 
 function planningContext(state: OfflineState, now: Date) {
@@ -59,10 +60,10 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
   if (profile.equipment.includes(exercise.equipment) && !profile.excludedExerciseIds.includes(exerciseId) && (!assisted || state.profile.bodyWeightKg != null)) {
     if (monthly) remaining.forEach((slot, index) => {
       const row = slot.template.exercises.find(ex => ex.exerciseId === exerciseId);
-      if (row && occurrences.length < 4) occurrences.push({ date: localDateKey(addDays(firstDate, Math.round(index * spacing))), sets: row.targets.length, durationSeconds: row.targets[0]?.durationSeconds ?? undefined });
+      if (row && occurrences.length < sessionLimit) occurrences.push({ date: localDateKey(addDays(firstDate, Math.round(index * spacing))), sets: row.targets.length, durationSeconds: row.targets[0]?.durationSeconds ?? undefined });
     });
     else {
-      for (const row of timeline.filter(row => row.day === phase).slice(0, 4)) occurrences.push({ date: row.date, sets: phaseDefinition?.sets ?? (policy.intent === "accessory" ? 2 : 3) });
+      for (const row of timeline.filter(row => row.day === phase).slice(0, sessionLimit)) occurrences.push({ date: row.date, sets: phaseDefinition?.sets ?? (policy.intent === "accessory" ? 2 : 3) });
     }
   }
   const count = occurrences[0]?.sets ?? phaseDefinition?.sets ?? 3;
@@ -94,8 +95,14 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
   if (!occurrences.length) scheduleSource = assisted && state.profile.bodyWeightKg == null ? "Для подбора противовеса сначала укажите массу тела" : monthly ? "В оставшихся занятиях месяца этого упражнения нет" : !profile.equipment.includes(exercise.equipment) || profile.excludedExerciseIds.includes(exerciseId) ? "Упражнение исключено из плана" : "В ближайшем рекомендованном сценарии этого упражнения нет";
   const initialWeightKg = sessions[0]?.targets[0]?.weightKg ?? null;
   const lastWeightKg = sessions.at(-1)?.targets[0]?.weightKg ?? null;
+  const stepKg = exercise.weightStepKg ?? 2.5;
+  const firstIncrease = initialWeightKg == null ? undefined : sessions.find(row => row.targets[0].weightKg > initialWeightKg);
+  const progression = !calibration && !timed && !assisted && exercise.equipment !== "bodyweight" && stepKg <= 2.5 && initialWeightKg != null
+    ? { nextWeightKg: Math.round((initialWeightKg + stepKg) * 100) / 100, earliestDate: firstIncrease?.date ?? null,
+      reps: policy.repsMax, sets: count, confirmations: 2, targetRir: 2 }
+    : null;
   return { exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isMain: exercise.isMain, isCustom: exercise.isCustom },
-    repsMin: policy.repsMin, repsMax: policy.repsMax, targetRir: 2, timed, assisted, calibration, scheduleSource, sessions,
+    repsMin: policy.repsMin, repsMax: policy.repsMax, targetRir: 2, weightStepKg: stepKg, timed, assisted, calibration, scheduleSource, sessions, progression,
     initialWeightKg, changeKg: !calibration && !timed && !assisted && initialWeightKg != null && lastWeightKg != null ? Math.round((lastWeightKg - initialWeightKg) * 100) / 100 : null,
     reason: timed && !last ? "Время пока не проверено по вашим подходам; начальный ориентир требует посильной проверки без боли." : assisted ? "Противовес подбирается вручную. Уменьшение противовеса повышает, а не снижает нагрузку." : prediction.next.reason,
     assumptions: `Даты предполагаемые: ${monthly ? "месячный план" : "настройки"}, ${monthly ? Math.round(7 / spacing) : profile.daysPerWeek} занятий в неделю; дни недели не закреплены. Следующие назначения — сценарий при выполнении всех подходов с целевым запасом и техникой, не обещание прогресса. Пропуск, изменение плана или новая запись пересчитывают прогноз.`,

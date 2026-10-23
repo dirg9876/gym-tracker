@@ -1,6 +1,8 @@
 # Gym-Beam: Checkpoints
 
-В работе **1.1.15: общая история и прогноз, профиль и выбор2сплитов**. [Текущий checkpoint](CHECKPOINT_2026-10-23_STATS_SPLITS_1_1_15.md). Реализация и регрессионные тесты добавлены; проверки/версия/APK/публикация ещё впереди. Patch ЕЩЁ НЕ ВЫПОЛНЕН. Сохранность личной истории обязательна; частные auditматериалы остаются только ignored. Последний опубликованный выпуск ниже.
+Подготовлен **1.1.16: единый график истории и прогноза, понятная прогрессия веса/повторов**. [Текущий checkpoint](CHECKPOINT_2026-10-23_TIMELINE_1_1_16.md). Patch УЖЕ выполнен один раз: code22/runtime1.1.0. 434 теста/typecheck/journey/APK/nativeQA PASS, исходные state/plans восстановлены точно. Впереди публикация master/APK/OTA. [Аудит места](CHECKPOINT_2026-10-23_STORAGE_AUDIT.md): около 12 GiB кандидатов, ничего не удалялось.
+
+Выпуск **1.1.15 ЗАВЕРШЁН**: [итоговый checkpoint](CHECKPOINT_2026-10-23_RELEASE_1_1_15.md). 423 теста/typecheck/CI/journey/nativeQA PASS, исходные state/plans сохранены точно после APK и OTA. Source d0aafba, code21/runtime1.1.0. [APK 1.1.15](https://github.com/dirg9876/gym-tracker/releases/download/v1.1.15/gym-beam-1.1.15.apk). Ниже архивные этапы, их незавершённые статусы не являются текущей задачей.
 
 Выпуск **1.1.14 ЗАВЕРШЁН**: [CHECKPOINT_2026-10-23_RELEASE_1_1_14.md](CHECKPOINT_2026-10-23_RELEASE_1_1_14.md). Прогнозы массы тела и нагрузки каждого упражнения, журнал взвешиваний/backup11, до4следующих занятий с датами/подходами/весами/повторами. 410тестов/typecheck/CI/journey/nativeQA PASS; после APK и productionOTA state/plans сохранены точно. [APK1.1.14](https://github.com/dirg9876/gym-tracker/releases/download/v1.1.14/gym-beam-1.1.14.apk). Sourcee002702, code20/runtime1.1.0. Без переустановки: Обновления > Проверить обновления > Применить обновление. Следующий логический выпуск1.1.15; все записи ниже архивные.
 

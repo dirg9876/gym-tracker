@@ -6,46 +6,28 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View, u
 import { BarChart } from "@/components/BarChart";
 import { Button } from "@/components/Button";
 import { ExercisePicker } from "@/components/ExercisePicker";
-import { LineChart } from "@/components/LineChart";
 import { Segmented } from "@/components/Segmented";
 import { TrainingCalendar } from "@/components/TrainingCalendar";
 import { BodyWeightStats } from "@/components/BodyWeightStats";
 import { ExerciseOutlook } from "@/components/ExerciseOutlook";
+import { ExerciseProgressChart } from "@/components/ExerciseProgressChart";
 import type { buildExerciseOutlook } from "@/lib/exerciseOutlook";
 import type { bodyWeightForecast } from "@/lib/bodyWeight";
 import { useColors } from "@/hooks/useColors";
 import { coachRequest } from "@/lib/coachApi";
 import { formatDate, formatNumber, formatShortDate, pluralizeDays } from "@/lib/format";
-import { formatStandard } from "@/lib/exerciseStandards";
-import type { InsightExercise, InsightSeries, TrainingInsights } from "@/lib/trainingInsights";
+import type { InsightExercise, TrainingInsights } from "@/lib/trainingInsights";
 import { formatSetContext, formatSetResult, sameLoadCategory } from "@/lib/workoutMeasurement";
 
 const dateOf = (key: string) => `${key}T12:00:00`;
 const setCount = (value: number) => `${formatNumber(value)} подх.`;
-const metricNames = { weight: "Вес", assistance: "Противовес", reps: "Повторы", seconds: "Время" };
 
 function ExerciseInsight({ item }: { item: InsightExercise }) {
   const colors = useColors();
   const router = useRouter();
-  const [metric, setMetric] = useState<InsightSeries["id"] | null>(null);
-  const [workoutId, setWorkoutId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
   const historyPage = Math.min(page, Math.max(0, Math.ceil(item.history.length / 5) - 1));
-  const series = item.series.find(row => row.id === (metric ?? item.defaultMetric)) ?? item.series[0];
-  const points = series?.points.slice(-24) ?? [];
-  const selectedIndex = points.findIndex(point => point.workoutId === workoutId);
-  const selected = points[selectedIndex] ?? points.at(-1);
   return <View style={{ gap: 12 }}>
-    {item.series.length > 1 ? <Segmented label="Показатель" value={series.id} options={item.series.map(row => ({ value: row.id, label: metricNames[row.id] }))} onChange={value => { setMetric(value); setWorkoutId(null); }} /> : null}
-    {series && selected ? <>
-      <Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>{series.label}</Text>
-      <LineChart points={points} height={180} color={colors.accent} label={series.label} formatValue={value => formatStandard(value, series.unit)} selectedIndex={selectedIndex} onSelect={index => setWorkoutId(points[index].workoutId)} />
-      <Pressable accessibilityRole="button" accessibilityLabel={`Открыть тренировку ${formatDate(selected.date)}`} onPress={() => router.push(`/history/${selected.workoutId}`)} style={{ minHeight: 48, flexDirection: "row", alignItems: "center", gap: 12, borderTopWidth: 1, borderColor: colors.cardBorder, paddingTop: 10 }}>
-        <View style={{ flex: 1, gap: 4 }}><Text style={{ color: colors.foreground, fontSize: 15, fontFamily: "Inter_600SemiBold" }}>{formatSetResult(selected.set)}</Text><Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{formatDate(selected.date)}</Text></View>
-        <Feather name="arrow-up-right" size={20} color={colors.accent} />
-      </Pressable>
-      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{points.length < series.points.length ? `Последние ${points.length} из ${series.points.length} тренировок периода` : `Тренировок с результатом: ${points.length}`}</Text>
-    </> : <Text style={{ color: colors.mutedForeground }}>Нет измеренных результатов за этот период</Text>}
     {item.unknownTimeSets ? <Text style={{ color: colors.amber, fontSize: 12 }}>Старые подходы без времени: {item.unknownTimeSets}</Text> : null}
     {item.otherCategorySets ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>В истории есть подходы с другой категорией: {item.otherCategorySets}. Они не смешиваются с текущим графиком.</Text> : null}
     <Text style={{ color: colors.foreground, fontSize: 15, fontFamily: "Inter_600SemiBold" }}>Все занятия · {item.history.length}</Text>
@@ -89,8 +71,9 @@ export default function StatsScreen() {
       <View style={section}>
         <Text style={title}>Упражнение · история и прогноз</Text>
         {selectedOutlook ? <><ExercisePicker exercises={outlook.data.exercises.map(row => row.exercise)} selectedId={selectedOutlook.exercise.id} onSelect={setExerciseId} />
+          {allHistory.isPending ? <ActivityIndicator color={colors.accent} /> : allHistory.isError ? <Button title="Повторить загрузку истории" variant="secondary" onPress={() => { void allHistory.refetch(); }} /> : <ExerciseProgressChart key={`chart-${selectedId}`} outlook={selectedOutlook} history={selected} />}
           <Text style={{ color: colors.foreground, fontSize: 15, fontFamily: "Inter_600SemiBold" }}>Следующие занятия</Text>
-          <ExerciseOutlook key={`forecast-${selectedId}`} outlook={selectedOutlook} compact />
+          <ExerciseOutlook key={`forecast-${selectedId}`} outlook={selectedOutlook} compact showChart={false} />
           <Text style={{ color: colors.foreground, fontSize: 15, fontFamily: "Inter_600SemiBold" }}>История за всё время</Text>
           {selected ? <ExerciseInsight key={selectedId} item={selected} /> : allHistory.isPending ? <ActivityIndicator color={colors.accent} /> : allHistory.isError ? <Button title="Повторить загрузку истории" variant="secondary" onPress={() => { void allHistory.refetch(); }} /> : <Text style={{ color: colors.mutedForeground }}>Нет завершённых подходов этого упражнения</Text>}
         </> : <Text style={{ color: colors.mutedForeground }}>Нет доступных упражнений</Text>}
