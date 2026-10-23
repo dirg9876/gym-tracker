@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
+import { normalizeAndroidPackage } from "../artifacts/gym-tracker-mobile/scripts/normalize-android-package.mjs";
 
 const root = new URL("../", import.meta.url);
 const text = file => readFileSync(new URL(file, root), "utf8");
@@ -61,4 +62,24 @@ test("all workspace TypeScript references point to retained packages", () => {
   for (const file of ["tsconfig.json", `${mobile}tsconfig.json`, "artifacts/api-server/tsconfig.json"]) {
     for (const reference of json(file).references ?? []) assert.ok(existsSync(new URL(`${reference.path}/tsconfig.json`, new URL(file, root))), reference.path);
   }
+});
+
+test("Android prebuild removes only Expo-generated browser and iOS commands, preserving package metadata", () => {
+  const original = { name: "test", dependencies: { expo: "54.0.33" }, scripts: { android: "expo run:android", ios: "expo run:ios", web: "expo start --web", test: "node --test" } };
+  const saved = structuredClone(original), normalized = normalizeAndroidPackage(original, ["android"]);
+  assert.deepEqual(normalized, { ...original, scripts: { android: "expo run:android", test: "node --test" } });
+  assert.deepEqual(original, saved);
+});
+
+test("prebuild cleanup does not overwrite custom user commands or a multi-platform package", () => {
+  const custom = { scripts: { ios: "custom command", web: "custom build" } };
+  assert.deepEqual(normalizeAndroidPackage(custom, ["android"]), custom);
+  assert.equal(normalizeAndroidPackage(custom, ["android", "ios"]), custom);
+});
+
+test("local Android runs and signed builds both use the normalization step", () => {
+  const scripts = json(`${mobile}package.json`).scripts;
+  assert.match(scripts["prebuild:android"], /--platform android.*normalize-android-package/);
+  assert.match(scripts.android, /pnpm prebuild:android/);
+  assert.match(text(`${mobile}scripts/build-release.ps1`), /pnpm run prebuild:android/);
 });

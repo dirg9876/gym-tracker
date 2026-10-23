@@ -9,7 +9,7 @@ Push-Location $root
 try {
   pnpm run release:check
   if ($LASTEXITCODE -ne 0) { throw 'Release version/notes check failed' }
-  pnpm exec expo prebuild --platform android --no-install
+  pnpm run prebuild:android
   if ($LASTEXITCODE -ne 0) { throw 'Expo prebuild failed' }
   Copy-Item -LiteralPath $SigningKey -Destination (Join-Path $root 'android/app/debug.keystore') -Force
   [IO.File]::WriteAllText((Join-Path $root 'android/local.properties'), 'sdk.dir=' + $env:ANDROID_HOME.Replace('\', '/'))

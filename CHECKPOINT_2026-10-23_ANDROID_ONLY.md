@@ -59,7 +59,7 @@ README/CI/tsconfig/workspace обновлены. CI вызывает pnpm test, 
 Worker --dry-run и Android export. Новые scripts/android-workspace.test.mjs7 проверок;
 preinstall теперь cross-platform Node guard, без удаления пользовательских lockfiles.
 
-441 тест PASS =7 repo +378mobile +21API +13Worker +22design. Workspace typecheck,
+444 теста PASS =10 repo +378mobile +21API +13Worker +22design. Workspace typecheck,
 release:check, gallery preservation, art inspection, local gateway build+node --check,
 Worker dry-run build, Android Expo export PASS. Обновлён branding-test: web favicon
 больше не требуется, Android icon/splash/поля идентичности всё ещё проверяются.
@@ -83,9 +83,23 @@ Generated web dist/node_modules и lib/db cache ещё есть на диске,
 попытка bulk forced очистки blocked by execution policy, не обходить ограничения.
 Из текущей ветки исходники удалены, историюGit/SDK/AVD/backup никто не чистил.
 
-Далее: финальный diff/secret audit (пропускать staged deletions и разрешить только
-пустой public .env.example), точный stage без чужих dirty, commit/push master/CI,
-финализировать checkpoint. Ещё нет cleanup commit/push. Нужные direct версии
+Source cleanup УЖЕ commit/push master: `3f15a27222cc662e6518b8c72a6a3ec6c9b7f7c4`,
+440 файлов (409 удалений, logo rename100%), 33957 удалённых строк. Secret audit31
+added/modified paths /1456 APK entries /204 OTA files PASS. Unrelated dirty только
+`.agents/agent_assets_metadata.toml`, старые untracked материалы сохранены.
+
+Первый CI40008873068 поймал реальный workflow нюанс: Expo prebuild добавил обратно
+scripts.ios уже ПОСЛЕ успешных local тестов и перед stage. Исправлено:
+`mobile/scripts/normalize-android-package.mjs` после prebuild удаляет только
+автоматические default ios/web scripts при platforms=[android], сохраняет metadata,
+прочие команды и не мутирует входной object. build-release.ps1 и pnpm android теперь
+используют общий prebuild:android с этой нормализацией. Actual prebuild + все444 теста
+PASS, 3 новые регрессии. Продуктовый JS не менялся, APK повторно не собирался;
+весь native build был успешен до исправления только build-workflow. Лог final tests:
+`android-only-tests-final.log`, prebuild: `android-only-prebuild.log`.
+
+Далее: commit/push исправления prebuild и дождаться НОВОГО CI (первый run красный,
+его не объявлять успешным), финализировать checkpoint. Нужные direct версии
 зависимостей не обновлялись. SDK/EAS/native runtime не мигрировали.
 
 Это очистка репозитория без изменения поведения установленного Android, а не новый

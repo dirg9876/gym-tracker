@@ -12,8 +12,8 @@
     "build:android:apk": "pnpm dlx eas-cli@latest build --platform android --profile apk",
     "build": "expo export --platform android",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "prebuild:android": "expo prebuild --platform android --no-install && node scripts/normalize-android-package.mjs",
+    "android": "pnpm prebuild:android && expo run:android"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
