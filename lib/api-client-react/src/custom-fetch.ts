@@ -30,7 +30,7 @@ let _customFetchHandler: CustomFetchHandler | null = null;
  * Set a base URL that is prepended to every relative request URL
  * (i.e. paths that start with `/`).
  *
- * Useful for Expo bundles that need to call a remote API server.
+ * Available for network consumers; Gym-Beam's diary uses the local handler.
  * Pass `null` to clear the base URL.
  */
 export function setBaseUrl(url: string | null): void {
@@ -42,11 +42,8 @@ export function setBaseUrl(url: string | null): void {
  * the getter is invoked; when it returns a non-null string, an
  * `Authorization: Bearer <token>` header is attached to the request.
  *
- * Useful for Expo bundles making token-gated API calls.
+ * Only configure this for the intended trusted API origin.
  * Pass `null` to clear the getter.
- *
- * NOTE: This function should never be used in web applications where session
- * token cookies are automatically associated with API calls by the browser.
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
@@ -55,8 +52,8 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
 /**
  * Replace network fetches with an app-local handler.
  *
- * Mobile offline builds use this to satisfy the generated API client from
- * local device storage while keeping the web app on normal HTTP requests.
+ * Gym-Beam uses this to serve diary requests from local device storage.
+ * Optional AI requests use a separate authenticated gateway connection.
  */
 export function setCustomFetchHandler(handler: CustomFetchHandler | null): void {
   _customFetchHandler = handler;

@@ -1,10 +1,14 @@
-# Gym-Beam Coach Worker
+# Gym-Beam: Cloudflare Coach Gateway
 
 Production: https://gym-beam-coach.dirg9876.workers.dev
 
-Cloudflare Workers Free confirmed by the owner on 2026-10-15. No paid hosting plan
-enabled. OpenAI spend is separate, capped at $5 per UTC month by this gateway
-using configured model prices. Free quotas can temporarily make AI unavailable.
+Optional AI gateway for the Gym-Beam Android app. The diary and mathematical
+workout planner run offline on the phone; this service checks plans and provides
+coach analysis. A home computer is not required during a workout.
+
+The owner selected Cloudflare Workers Free. Do not enable paid hosting implicitly.
+Provider spend is separate, capped at $5 per UTC month by this gateway using
+configured model prices. Free quotas can temporarily make AI unavailable.
 [Cloudflare pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 
 ## Runtime
@@ -29,8 +33,8 @@ node scripts/deploy.mjs --publish --free-plan-confirmed
 
 The helper uses .cloud-deploy/wrangler.json with frozen .cloud-deploy/seed.json.
 Always use the helper for real deployment, not bare wrangler deploy/base config:
-wrangler.jsonc deliberately lacks the bootstrap seed. Minified upload537.06KiB,
-gzip128.72KiB. Dry-run build is not a deployment.
+wrangler.jsonc deliberately lacks the bootstrap seed. A dry-run build is not a
+deployment and does not update the live service.
 
 Frozen seed: month2026-10, usedNanoUsd1893100, reservedNanoUsd0. Captured after
 stopping the local paid gateway. Keep this EXACT seed on all future deployments,
@@ -58,24 +62,30 @@ An OpenAI key must never go into the phone's owner-token field.
 
 ## Verification
 
-8 actual Miniflare/workerd tests with mocked outbound API: auth/body bounds/caps/
-cache/unknown reserves/restart persistence/immutable migration/concurrency.
-No real secrets loaded. Miniflare5 needs convertV4MiniflareOptions and
-resourcePersistencePath for persistent test storage.
+Run `pnpm test`, `pnpm typecheck` and `pnpm build` in this directory. The build
+performs only a deployment dry run. Miniflare/workerd tests use a mocked provider
+and isolated state to check authorization, request bounds, budget caps, cache,
+unknown reserves, restart persistence, immutable migration and concurrency.
+They do not load real secrets or make paid API calls.
 
-Production health200/unauthorized401/authenticated200, carried spend$0.0018931,
-one synthetic timed next-set API call and free cache replay all passed. Final
-post-smoke spend$0.0022081, reserve0, limit5. Android emulator connects via HTTPS
-with no local server/ADB reverse. AI/consent off; progress unchanged.
+`GET /healthz` and authenticated status do not call the model. Current spend and
+reserves must be read from the live status, not copied from a historical smoke
+report. Earlier migration verification is recorded in the
+[cloud checkpoint](../../CHECKPOINT_CLOUD_2026-10-15.md).
 
 scripts/cloud-smoke.mjs --paid-once is opt-in and refuses to replace its existing
 private report. Do not delete reports to silently repeat paid tests. Synthetic
 context only; personal workout history was not sent to the model.
 
-The new native gym-beam-autoconnect.apk stores the owner token with Android
-Keystore (expo-secure-store); it restores settings after process death/updates.
-One private connection-file import provisions the phone without typing secrets.
-The token is not embedded in the APK or progress backups. The previous
-gym-tracker-tested.apk remains RAM-only. See ../api-server/PHONE_SETUP.md for setup,
-APK backup/signature caveats and current product limitations. Cloud API and its
-durable ledger are unchanged by this mobile update; no additional paid calls.
+## Android Connection
+
+Gym-Beam stores the owner token with Android Keystore (expo-secure-store) and
+restores the connection after process death and compatible updates. One private
+connection-file import provisions the phone without typing secrets. The token
+is not embedded in the APK or progress backups.
+
+Use the APK from [GitHub Releases](https://github.com/dirg9876/gym-tracker/releases),
+not an old local test build. See [phone setup](../api-server/PHONE_SETUP.md) and
+the [coach guide](../../AI_COACH_GUIDE.md). Enabling AI allows the daily workout
+preview to request a paid review automatically; connecting or reading status
+alone does not call the model. Disabling AI leaves the offline diary available.

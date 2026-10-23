@@ -1,5 +1,6 @@
 {
   "name": "workspace",
+  "description": "Gym-Beam: personal Android workout tracker with offline progress and an optional AI coach.",
   "version": "0.1.0",
   "license": "MIT",
   "packageManager": "pnpm@10.33.2",
