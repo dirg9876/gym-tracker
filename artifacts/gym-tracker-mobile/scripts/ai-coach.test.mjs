@@ -58,7 +58,7 @@ test("owner token is only in SecureStore; profile round-trips in v7, import disa
   assert.ok(![...storage.values()].some(text => text.includes(token)));
   assert.equal(JSON.parse(secureStorage.get(credentials.AI_CREDENTIAL_KEY)).token, token);
   const copy = await exportProgress();
-  assert.equal(JSON.parse(copy).version, 10);
+  assert.equal(JSON.parse(copy).version, 11);
   assert.ok(!copy.includes("coach.example.com"));
   assert.ok(!copy.includes(token));
   await restoreProgress(copy);

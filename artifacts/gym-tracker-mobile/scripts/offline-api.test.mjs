@@ -212,7 +212,7 @@ test("planks use explicit seconds end to end, with no fake kilograms, reps or we
   const heatmap = await request("/api/stats/heatmap?days=7");
   assert.equal(heatmap.activeDays, 1);
   const backup = await exportProgress();
-  assert.equal(JSON.parse(backup).version, 10);
+  assert.equal(JSON.parse(backup).version, 11);
   await restoreProgress(backup);
   assert.equal((await request(`/api/workouts/${workout.id}`)).durationSeconds, 90);
 });

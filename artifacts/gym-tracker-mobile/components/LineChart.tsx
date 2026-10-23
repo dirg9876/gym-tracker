@@ -13,14 +13,15 @@ type Props = {
   selectedIndex?: number;
   onSelect?: (index: number) => void;
   label?: string;
+  zeroBaseline?: boolean;
 };
 
-export function LineChart({ points, color, height = 160, formatValue = formatNumber, selectedIndex, onSelect, label = "Динамика" }: Props) {
+export function LineChart({ points, color, height = 160, formatValue = formatNumber, selectedIndex, onSelect, label = "Динамика", zeroBaseline = true }: Props) {
   const colors = useColors();
   const stroke = color ?? colors.primary;
   const [width, setWidth] = useState(0);
   const gradient = `area-${useId().replace(/[^a-z0-9]/gi, "")}`;
-  const geometry = lineChartGeometry(points, width, height);
+  const geometry = lineChartGeometry(points, width, height, zeroBaseline);
   const index = selectedIndex != null && selectedIndex >= 0 && selectedIndex < points.length ? selectedIndex : points.length - 1;
   const selected = points[index];
   const valid = points.length > 0 && points.every(point => Number.isFinite(point.value) && Number.isFinite(Date.parse(point.date)));

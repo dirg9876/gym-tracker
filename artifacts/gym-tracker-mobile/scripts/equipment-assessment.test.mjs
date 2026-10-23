@@ -159,7 +159,7 @@ test("backup10 validates equipment snapshots and retains import compatibility wi
   await request("/api/profile","PUT",{bodyWeightKg:80});
   const exercise=await create({loadMode:"assisted"});
   const workout=await start(); await add(workout.id,exercise.id,30,10);
-  const good=JSON.parse(await exportProgress()); assert.equal(good.version,10);
+  const good=JSON.parse(await exportProgress()); assert.equal(good.version,11);
   for(const change of [copy=>copy.state.exercises.find(ex=>ex.id===exercise.id).weightStepKg=0,copy=>copy.state.sets[0].bodyWeightKg=20,copy=>copy.state.sets[0].loadMode="weight",copy=>copy.state.sets[0].dumbbellCount=2]) {
     const copy=structuredClone(good); change(copy); copy.checksum=createHash("sha256").update(JSON.stringify({state:copy.state,plans:copy.plans})).digest("hex");
     await assert.rejects(parseProgressBackup(JSON.stringify(copy)));

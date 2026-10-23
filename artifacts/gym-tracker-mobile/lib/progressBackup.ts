@@ -6,6 +6,7 @@ import { disableAiCoach } from "./aiCoachConnection";
 import { migrateExerciseCatalog } from "./exerciseReplacement";
 import { clearCoachProposal } from "./aiCoachPlan";
 import type { OfflineState } from "./offlineApi";
+import { bodyWeightLogSchema } from "./bodyWeight";
 import { isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { equipmentSettingsSchema, validEquipmentSettings, isAssisted } from "./equipmentSettings";
 import { templateExerciseSchema, validateTargets } from "./workoutTemplates";
@@ -24,6 +25,7 @@ const equipment = z.enum(["barbell", "dumbbell", "bodyweight", "machine", "other
 const plannedExercise = templateExerciseSchema;
 
 const stateSchema = z.object({
+  bodyWeightLog: bodyWeightLogSchema.optional(),
   coachProfile: coachProfileSchema.optional(),
   coachMonth: savedCoachMonthSchema.optional(),
   version: z.literal(1),
@@ -68,7 +70,7 @@ const planSchema = z.object({
 
 const backupSchema = z.object({
   format: z.literal("gym-tracker-backup"),
-  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9), z.literal(10)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9), z.literal(10), z.literal(11)]),
   exportedAt: date,
   state: stateSchema,
   plans: z.record(z.string().regex(/^[1-9]\d*$/), planSchema),
@@ -161,7 +163,7 @@ async function serializeEntries(entries: [string, string][]): Promise<string> {
   const plans = Object.fromEntries(entries.filter(([key]) => key.startsWith(PLAN_PREFIX))
     .map(([key, value]) => [key.slice(PLAN_PREFIX.length), JSON.parse(value)]));
   const text = JSON.stringify({
-    format: "gym-tracker-backup", version: 10, exportedAt: new Date().toISOString(),
+    format: "gym-tracker-backup", version: 11, exportedAt: new Date().toISOString(),
     state, plans, checksum: await checksum(state, plans),
   }, null, 2);
   await parseProgressBackup(text);

@@ -36,7 +36,7 @@ test("draft persists all confirmed fields and round-trips without inventing a pe
   assert.equal((await request(`/api/workouts/${workout.id}`)).sets.length, 0);
   assert.equal((await request("/api/levels")).currentLevel, 0);
   const backup = await exportProgress();
-  assert.equal(JSON.parse(backup).version, 10);
+  assert.equal(JSON.parse(backup).version, 11);
   await save(workout.id, plank, 1);
   await restoreProgress(backup);
   assert.deepEqual(await request(url(workout.id)), saved);

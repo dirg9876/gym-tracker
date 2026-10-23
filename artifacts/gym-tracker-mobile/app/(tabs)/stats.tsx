@@ -9,6 +9,10 @@ import { ExercisePicker } from "@/components/ExercisePicker";
 import { LineChart } from "@/components/LineChart";
 import { Segmented } from "@/components/Segmented";
 import { TrainingCalendar } from "@/components/TrainingCalendar";
+import { BodyWeightStats } from "@/components/BodyWeightStats";
+import { ExerciseOutlook } from "@/components/ExerciseOutlook";
+import type { buildExerciseOutlook } from "@/lib/exerciseOutlook";
+import type { bodyWeightForecast } from "@/lib/bodyWeight";
 import { useColors } from "@/hooks/useColors";
 import { coachRequest } from "@/lib/coachApi";
 import { formatDate, formatNumber, formatShortDate, pluralizeDays } from "@/lib/format";
@@ -50,13 +54,24 @@ export default function StatsScreen() {
   const { fontScale } = useWindowDimensions();
   const [period, setPeriod] = useState<"28" | "84" | "all">("28");
   const [exerciseId, setExerciseId] = useState<number>();
+  const [outlookId, setOutlookId] = useState<number>();
+  const outlook = useQuery({ queryKey: ["progress-outlook"], queryFn: () => coachRequest<{ body: ReturnType<typeof bodyWeightForecast> & { currentKg: number | null }; exercises: ReturnType<typeof buildExerciseOutlook>[] }>("/api/stats/outlook") });
   const { data, isLoading, isError, isRefetching, refetch } = useQuery({ queryKey: ["training-insights", period], queryFn: () => coachRequest<TrainingInsights>(`/api/stats/insights?days=${period}`) });
-  useFocusEffect(useCallback(() => { void refetch(); }, [refetch]));
+  useFocusEffect(useCallback(() => { void refetch(); void outlook.refetch(); }, [refetch, outlook.refetch]));
+  const selectedOutlook = outlook.data?.exercises.find(row => row.exercise.id === outlookId) ?? outlook.data?.exercises.find(row => !row.calibration) ?? outlook.data?.exercises[0];
   const selected = data?.exercises.find(row => row.exercise.id === exerciseId) ?? data?.exercises[0];
   const section = { borderTopWidth: 1, borderColor: colors.cardBorder, paddingTop: 20, gap: 14 };
   const title = { color: colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold" };
-  return <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 24 }} refreshControl={<RefreshControl refreshing={isRefetching} tintColor={colors.primary} onRefresh={() => { void refetch(); }} />}>
+  return <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 24 }} refreshControl={<RefreshControl refreshing={isRefetching || outlook.isRefetching} tintColor={colors.primary} onRefresh={() => { void refetch(); void outlook.refetch(); }} />}>
     <Segmented label="Период" value={period} options={[{ value: "28", label: "28 дней" }, { value: "84", label: "12 недель" }, { value: "all", label: "Всё время" }]} onChange={setPeriod} />
+    {outlook.data ? <>
+      <BodyWeightStats body={outlook.data.body} />
+      <View style={section}>
+        <Text style={title}>Прогноз по упражнениям</Text>
+        <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>По всей завершённой истории и текущему плану, независимо от периода графиков</Text>
+        {selectedOutlook ? <><ExercisePicker exercises={outlook.data.exercises.map(row => row.exercise)} selectedId={selectedOutlook.exercise.id} onSelect={setOutlookId} /><ExerciseOutlook key={selectedOutlook.exercise.id} outlook={selectedOutlook} compact /></> : <Text style={{ color: colors.mutedForeground }}>Нет доступных упражнений</Text>}
+      </View>
+    </> : outlook.isError ? <Button title="Повторить загрузку прогнозов" variant="secondary" onPress={() => { void outlook.refetch(); }} /> : <ActivityIndicator color={colors.accent} />}
     {isLoading ? <View style={{ minHeight: 240, justifyContent: "center" }}><ActivityIndicator color={colors.primary} /></View> : isError || !data ? <Button title="Повторить загрузку статистики" variant="secondary" onPress={() => { void refetch(); }} /> : <>
       <View style={{ gap: 14 }}>
         <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{data.from ? `${formatDate(dateOf(data.from))} - ${formatDate(dateOf(data.to))}` : "За всё время"}</Text>

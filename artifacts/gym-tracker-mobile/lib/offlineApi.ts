@@ -8,6 +8,9 @@ import { buildTrainingInsights } from "./trainingInsights";
 import { buildTrainingAnalysis } from "./trainingAnalysis";
 import { buildActivePrediction, buildNextExercisePrediction } from "./trainingPrediction";
 import { buildDailyWorkout, type DailyPreview } from "./dailyWorkout";
+import { bodyWeightEntrySchema, bodyWeightForecast, bodyWeightLogSchema, weightDateSchema, type BodyWeightEntry } from "./bodyWeight";
+import { buildExerciseOutlook, buildProgressOutlook } from "./exerciseOutlook";
+import { localDateKey } from "./trainingInsights";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
@@ -110,6 +113,7 @@ type CustomProgramExerciseRow = Progression & {
 };
 
 export type OfflineState = {
+  bodyWeightLog?: BodyWeightEntry[];
   coachProfile?: CoachProfile;
   coachMonth?: SavedCoachMonth;
   version: 1;
@@ -455,6 +459,35 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
   if (match && method === "GET") return getWorkoutExerciseBreakdown(state, Number(match[1]));
 
   if (method === "GET" && path === "/api/stats/overview") return getStatsOverview(state);
+  if (method === "GET" && path === "/api/stats/outlook") return buildProgressOutlook(state);
+  match = /^\/api\/exercises\/(\d+)\/outlook$/.exec(path);
+  if (match && method === "GET") {
+    if (!findExercise(state, Number(match[1]))) throw httpError(404, "Упражнение не найдено");
+    return buildExerciseOutlook(state, Number(match[1]));
+  }
+  if (method === "PUT" && path === "/api/body-weight") {
+    const today = localDateKey(new Date());
+    const parsed = bodyWeightEntrySchema.safeParse(body);
+    if (!parsed.success || parsed.data.date > today) throw httpError(400, "Укажите прошедшую или сегодняшнюю дату и вес от 20 до 500 кг.");
+    const log = bodyWeightLogSchema.safeParse([...(state.bodyWeightLog ?? []).filter(row => row.date !== parsed.data.date), parsed.data].sort((a, b) => a.date.localeCompare(b.date)));
+    if (!log.success) throw httpError(400, "Журнал взвешиваний переполнен.");
+    const latest = state.bodyWeightLog?.filter(row => row.date <= today).at(-1);
+    const tracksProfile = latest != null && latest.kg === state.profile.bodyWeightKg;
+    state.bodyWeightLog = log.data;
+    if (parsed.data.date === today || state.profile.bodyWeightKg == null || tracksProfile) state.profile = normalizeProfile({ ...state.profile, bodyWeightKg: log.data.filter(row => row.date <= today).at(-1)!.kg });
+    await saveState(state);
+    return bodyWeightForecast(state.bodyWeightLog);
+  }
+  match = /^\/api\/body-weight\/(.+)$/.exec(path);
+  if (match && method === "DELETE") {
+    if (!weightDateSchema.safeParse(match[1]).success) throw httpError(400, "Неверная дата взвешивания.");
+    const today = localDateKey(new Date()), latest = state.bodyWeightLog?.filter(row => row.date <= today).at(-1);
+    state.bodyWeightLog = (state.bodyWeightLog ?? []).filter(row => row.date !== match![1]);
+    const remaining = state.bodyWeightLog.filter(row => row.date <= today).at(-1);
+    if (remaining && latest?.date === match[1] && latest.kg === state.profile.bodyWeightKg) state.profile = normalizeProfile({ ...state.profile, bodyWeightKg: remaining.kg });
+    await saveState(state);
+    return bodyWeightForecast(state.bodyWeightLog);
+  }
   if (method === "GET" && path === "/api/stats/insights") {
     const days = parsedUrl.searchParams.get("days") ?? "28";
     if (!["28", "84", "all"].includes(days)) throw httpError(400, "Неверный период статистики");
@@ -548,6 +581,7 @@ function createInitialState(): OfflineState {
 function normalizeState(input: Partial<OfflineState>): OfflineState {
   const fallback = createInitialState();
   return {
+    ...(input.bodyWeightLog ? { bodyWeightLog: input.bodyWeightLog } : {}),
     ...(input.coachProfile ? { coachProfile: input.coachProfile } : {}),
     ...(input.coachMonth ? { coachMonth: input.coachMonth } : {}),
     version: 1,
@@ -1682,6 +1716,12 @@ async function updateProfile(state: OfflineState, body: RequestBody): Promise<Pr
   if (input.bodyWeightKg != null && (typeof input.bodyWeightKg !== "number" || !Number.isFinite(input.bodyWeightKg) || input.bodyWeightKg < 20 || input.bodyWeightKg > 500)) throw httpError(400, "Вес тела должен быть от 20 до 500 кг");
   if (input.sex != null && input.sex !== "male" && input.sex !== "female") throw httpError(400, "Некорректный пол");
   if (input.heightCm != null && (typeof input.heightCm !== "number" || !Number.isFinite(input.heightCm) || input.heightCm <= 0)) throw httpError(400, "Рост должен быть положительным числом");
+  if (input.bodyWeightKg != null) {
+    const date = localDateKey(new Date());
+    const log = bodyWeightLogSchema.safeParse([...(state.bodyWeightLog ?? []).filter(row => row.date !== date), { date, kg: input.bodyWeightKg }].sort((a, b) => a.date.localeCompare(b.date)));
+    if (!log.success) throw httpError(400, "Журнал взвешиваний переполнен.");
+    state.bodyWeightLog = log.data;
+  }
   state.profile = normalizeProfile({
     ...state.profile,
     bodyWeightKg: input.bodyWeightKg === undefined ? state.profile.bodyWeightKg : input.bodyWeightKg,

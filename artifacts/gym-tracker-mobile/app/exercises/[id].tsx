@@ -5,6 +5,7 @@ import {
 } from "@workspace/api-client-react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,6 +13,9 @@ import { Card } from "@/components/Card";
 import { LineChart } from "@/components/LineChart";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { StandardsPanel } from "@/components/StandardsPanel";
+import { ExerciseOutlook } from "@/components/ExerciseOutlook";
+import type { ExerciseOutlook as Outlook } from "@/lib/exerciseOutlook";
+import { coachRequest } from "@/lib/coachApi";
 import type { RankedExercise } from "@/lib/exerciseStandards";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
@@ -25,6 +29,7 @@ export default function ExerciseProgressScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const id = parseInt(params.id || "0", 10);
+  const outlook = useQuery({ queryKey: ["exercise-outlook", id], queryFn: () => coachRequest<Outlook>(`/api/exercises/${id}/outlook`), enabled: !!id, refetchOnMount: "always" });
 
   const { data: progress, isLoading } = useGetExerciseProgress(id, {
     query: { enabled: !!id, queryKey: getGetExerciseProgressQueryKey(id) },
@@ -66,6 +71,10 @@ export default function ExerciseProgressScreen() {
           gap: 18,
         }}
       >
+        <View style={{ gap: 12, borderBottomWidth: 1, borderColor: colors.cardBorder, paddingBottom: 18 }}>
+          <Text style={{ color: colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold" }}>Следующие тренировки</Text>
+          {outlook.data ? <ExerciseOutlook outlook={outlook.data} /> : outlook.isPending ? <ActivityIndicator color={colors.accent} /> : <Pressable accessibilityRole="button" onPress={() => { void outlook.refetch(); }} style={{ minHeight: 44 }}><Text style={{ color: colors.accent }}>Повторить загрузку прогноза</Text></Pressable>}
+        </View>
         {/* Records */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           {(timed ? [
