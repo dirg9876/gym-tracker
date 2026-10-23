@@ -18,7 +18,7 @@ import type { ExerciseMaintenance } from "@/lib/exerciseReplacement";
 // Repacked APKs store new artwork as a raw asset; EAS bundles it normally.
 const logo = process.env.EXPO_PUBLIC_GYM_REPACK_ASSETS === "1"
   ? { uri: "file:///android_asset/branding/gymbeam-logo.png" }
-  : require("../../../gym-tracker/src/assets/gymbeam-logo.png");
+  : require("@/assets/images/gymbeam-logo.png");
 
 export default function BrandScreen() {
   const colors = useColors();

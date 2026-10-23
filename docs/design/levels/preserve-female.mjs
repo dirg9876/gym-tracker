@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { getLevelLabels } from "../../../lib/level-data/src/index.ts";
 
-const source = new URL("../../../artifacts/gym-tracker/src/assets/levels/", import.meta.url);
+const source = new URL("../../../artifacts/gym-tracker-mobile/assets/levels/", import.meta.url);
 const baselineUrl = new URL("./female-baseline-v1.json", import.meta.url);
 const images = readdirSync(source).filter((name) => /^(level|tier)-\d+-f\.png$/u.test(name)).sort();
 const current = {

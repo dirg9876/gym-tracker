@@ -8,15 +8,6 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../lib/ai-coach" },
-    {
-      "path": "../../lib/level-data"
-    },
-    {
-      "path": "../../lib/db"
-    },
-    {
-      "path": "../../lib/api-zod"
-    }
+    { "path": "../../lib/ai-coach" }
   ]
 }

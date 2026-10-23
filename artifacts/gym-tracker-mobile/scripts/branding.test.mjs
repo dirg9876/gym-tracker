@@ -21,9 +21,10 @@ test("Gym-Beam branding preserves the installed application and EAS identity", (
   assert.equal(expo.extra.eas.projectId, "dabd3128-415f-4a2f-8c73-3b0a52585149");
 });
 
-test("launcher, splash and favicon use the glass logo with a padded Android layer", async () => {
+test("Android launcher and splash use the glass logo with a padded native layer", async () => {
   assert.equal(expo.splash.image, expo.icon);
-  assert.equal(expo.web.favicon, expo.icon);
+  assert.deepEqual(expo.platforms, ["android"]);
+  assert.equal(expo.web, undefined);
   assert.notEqual(expo.android.adaptiveIcon.foregroundImage, expo.icon);
   const icon = await Jimp.read(path.resolve(root, expo.icon));
   const adaptive = await Jimp.read(path.resolve(root, expo.android.adaptiveIcon.foregroundImage));

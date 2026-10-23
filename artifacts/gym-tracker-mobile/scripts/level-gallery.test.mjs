@@ -65,7 +65,7 @@ test("every bundled female PNG is byte-identical to the protected original", () 
   }
 });
 
-test("all installed male portraits and tier fallbacks match the reviewed source on both platforms", () => {
+test("all installed Android male portraits and tier fallbacks match the reviewed source", () => {
   const design = resolve(mobile, "../../docs/design/levels");
   const manifest = JSON.parse(readFileSync(resolve(design, "male-generation-v4.sources.json"), "utf8"));
   const catalog = JSON.parse(readFileSync(resolve(design, "catalog-male-v4.json"), "utf8"));
@@ -76,15 +76,11 @@ test("all installed male portraits and tier fallbacks match the reviewed source 
   for (const entry of manifest.sources) {
     assert.equal(entry.reviewed, true, `Unreviewed ${entry.id}`);
     assert.equal(entry.name, catalog.levels[entry.id].name);
-    for (const assets of [resolve(mobile, "assets/levels"), resolve(mobile, "../gym-tracker/src/assets/levels")]) {
-      assert.equal(sha(resolve(assets, `level-${entry.id}.png`)), entry.sha256);
-    }
+    assert.equal(sha(resolve(mobile, "assets/levels", `level-${entry.id}.png`)), entry.sha256);
   }
   for (const { id, to } of catalog.chapters) {
     const expected = manifest.sources.find((entry) => entry.id === to).sha256;
-    for (const assets of [resolve(mobile, "assets/levels"), resolve(mobile, "../gym-tracker/src/assets/levels")]) {
-      assert.equal(sha(resolve(assets, `tier-${id}.png`)), expected);
-    }
+    assert.equal(sha(resolve(mobile, "assets/levels", `tier-${id}.png`)), expected);
   }
 });
 

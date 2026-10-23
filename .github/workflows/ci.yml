@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build-check:
-    name: Typecheck + build (web + api)
+    name: Android + AI gateways
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -36,33 +36,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Workspace-wide typecheck: shared libs (api-spec, api-zod,
-      # api-client-react, db, …) followed by every artifact / scripts package
-      # that defines a `typecheck` script (api-server, gym-tracker,
-      # gym-tracker-mobile, mockup-sandbox, scripts).
       - name: Typecheck workspace
         run: pnpm run typecheck
 
       - name: Check mobile release metadata
         run: pnpm --filter @workspace/gym-tracker-mobile run release:check
 
-      - name: Test mobile app
-        run: pnpm --filter @workspace/gym-tracker-mobile test
+      - name: Test Android workspace and optional AI gateways
+        run: pnpm test
 
       - name: Validate level galleries
         run: |
-          node --test docs/design/levels/*.test.mjs
           node docs/design/levels/build-power-catalog.mjs
           node docs/design/levels/preserve-female.mjs
 
-      - name: Build API server
+      - name: Build optional local AI gateway
         run: pnpm --filter @workspace/api-server run build
 
-      # vite.config.ts requires PORT and BASE_PATH at build time. Values are
-      # arbitrary for CI — the build only embeds BASE_PATH (used as the
-      # public base URL); PORT is only read by the dev server.
-      - name: Build web app
+      - name: Build optional Cloudflare AI gateway without deploying
+        run: pnpm --filter @workspace/ai-coach-worker build
+
+      - name: Export Android app bundle
         env:
-          PORT: 8080
-          BASE_PATH: /
-        run: pnpm --filter @workspace/gym-tracker run build
+          NODE_ENV: production
+        run: pnpm --filter @workspace/gym-tracker-mobile build

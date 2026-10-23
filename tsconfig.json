@@ -8,9 +8,6 @@
       "path": "./lib/level-data"
     },
     {
-      "path": "./lib/db"
-    },
-    {
       "path": "./lib/api-client-react"
     },
     {

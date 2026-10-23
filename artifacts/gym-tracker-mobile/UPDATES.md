@@ -2,7 +2,7 @@
 
 ## На телефоне
 
-1. Установите Gym-Beam 1.1.0 (Android versionCode 6) поверх последнего локального APK. Не удаляйте приложение. Перед первым обновлением сделайте экспорт прогресса в отдельную папку телефона.
+1. Установите последний опубликованный APK Gym-Beam поверх текущего приложения. Не удаляйте приложение. Перед первым обновлением сделайте экспорт прогресса в отдельную папку телефона.
 2. Последующие изменения JavaScript, интерфейса и изображений приходят через Expo Update. При запуске приложение проверяет канал `production`; загруженное обновление применяется при следующем запуске.
 3. Для ручной проверки откройте значок загрузки в верхней части Главной. Нажмите «Проверить обновления», затем «Применить обновление». Во время активной тренировки принудительное применение заблокировано.
 4. Новый Android-модуль, изменение разрешений или несовместимый runtime требуют нового APK. Его устанавливают поверх текущего, без удаления, с той же подписью и увеличенным versionCode.
@@ -13,19 +13,19 @@
 
 Проект EAS: `@dirg9508/gym-tracker-mobile`, id `dabd3128-415f-4a2f-8c73-3b0a52585149`.
 Канал и ветка EAS: `production`. Git-ветка исходников: `master` (это независимые имена).
-Runtime: `1.1.0`, политика `appVersion`. При изменении native-зависимостей/плагинов/разрешений увеличивайте `expo.version` и `android.versionCode`, выпускайте новый APK. Не публикуйте несовместимый JS в старый runtime.
+Runtime: явная строка `1.1.0`, не политика `appVersion` и не отображаемая версия приложения. Для совместимых JavaScript/asset изменений runtime остаётся прежним. Несовместимые изменения native API, зависимостей или разрешений требуют нового runtime и APK. Не публикуйте несовместимый JS в старый runtime.
 
 Из `artifacts/gym-tracker-mobile`, после тестов и коммита:
 
 ```powershell
-pnpm dlx eas-cli@16.32.0 update --channel production --platform android --environment production --message "Описание изменений" --non-interactive
+pnpm dlx eas-cli@25.3.0 update --channel production --platform android --environment production --message "Описание изменений" --non-interactive
 ```
 
 Если Windows/EAS CLI сообщает `spawn npx ENOENT`, проверенный путь с отдельной сборкой:
 
 ```powershell
 pnpm exec expo export --platform android --output-dir dist
-pnpm dlx eas-cli@16.32.0 update --channel production --platform android --environment production --skip-bundler --input-dir dist --message "Описание изменений" --non-interactive
+pnpm dlx eas-cli@25.3.0 update --channel production --platform android --environment production --skip-bundler --input-dir dist --message "Описание изменений" --non-interactive
 ```
 
 Не используйте старый `dist` для новых исходников. Публикация OTA выполняется разработчиком после проверок; сам Git push не публикует обновление. Получение уже опубликованной версии телефоном не требует включённого ПК.

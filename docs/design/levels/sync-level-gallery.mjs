@@ -8,7 +8,6 @@ import { validateCatalog } from "./validate-catalog.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const mobile = resolve(root, "artifacts/gym-tracker-mobile");
-const webAssets = resolve(root, "artifacts/gym-tracker/src/assets/levels");
 const mobileAssets = resolve(mobile, "assets/levels");
 const hash = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
 const read = (file) => JSON.parse(readFileSync(new URL(file, import.meta.url), "utf8"));
@@ -16,9 +15,8 @@ const baseline = read("./female-baseline-v1.json");
 const catalog = read("./catalog-male-v4.json");
 validateCatalog(catalog, { expectedIntegration: catalog.integrationStatus });
 for (const [file, sha256] of Object.entries(baseline.images)) {
-  const source = resolve(webAssets, file);
+  const source = resolve(mobileAssets, file);
   assert.equal(hash(source), sha256, `Original female image changed: ${file}`);
-  copyFileSync(source, resolve(mobileAssets, file));
 }
 
 const imageArray = (name, pattern, count) => `export const ${name}: readonly number[] = [\n${Array.from({ length: count }, (_, id) => `  require("@/assets/levels/${pattern(id)}"),`).join("\n")}\n];\n`;
@@ -43,11 +41,11 @@ if (process.argv.includes("--install")) {
     assert.equal(hash(entry.destination), entry.sha256, `Changed portrait ${level.id}`);
   }
   for (const entry of manifest.sources) {
-    for (const destination of [webAssets, mobileAssets]) copyFileSync(entry.destination, resolve(destination, `level-${entry.id}.png`));
+    copyFileSync(entry.destination, resolve(mobileAssets, `level-${entry.id}.png`));
   }
   for (const chapter of catalog.chapters) {
     const entry = manifest.sources.find((item) => item.id === chapter.to);
-    for (const destination of [webAssets, mobileAssets]) copyFileSync(entry.destination, resolve(destination, `tier-${chapter.id}.png`));
+    copyFileSync(entry.destination, resolve(mobileAssets, `tier-${chapter.id}.png`));
   }
 
   // Replace the generated male table using TS syntax nodes; never touch female data or progression logic.
@@ -68,10 +66,10 @@ if (process.argv.includes("--install")) {
   const to = nodes.at(-1).end;
   const labels = `const ${name}: Array<[string, string]> = [\n${catalog.levels.map((level) => `  ${JSON.stringify([level.name, level.caption])},`).join("\n")}\n];`;
   writeFileSync(file, source.slice(0, from) + labels + source.slice(to));
-  console.log("Installed all81 reviewed male portraits, matching labels and9 representative tier images on mobile/web");
+  console.log("Installed all81 reviewed male portraits, matching labels and9 representative tier images on Android");
 } else {
   assert.ok(process.argv.includes("--female-only"), "Use --female-only or --install");
-  console.log("Copied90 unchanged female assets and generated complete sex-specific Metro maps; male gallery not installed");
+  console.log("Verified90 unchanged female assets and generated complete sex-specific Metro maps; male gallery not installed");
 }
 for (const [file, sha256] of Object.entries(baseline.images)) assert.equal(hash(resolve(mobileAssets, file)), sha256);
 assert.ok(existsSync(resolve(mobile, "lib/levelArt.generated.ts")));

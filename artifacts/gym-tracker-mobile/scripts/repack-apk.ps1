@@ -47,7 +47,7 @@ try {
   [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $bundle, 'assets/index.android.bundle', 'Optimal') | Out-Null
   $logoEntry = 'assets/branding/gymbeam-logo.png'
   if ($zip.GetEntry($logoEntry)) { $zip.GetEntry($logoEntry).Delete() }
-  $logoPath = Join-Path $mobileRoot '../gym-tracker/src/assets/gymbeam-logo.png'
+  $logoPath = Join-Path $mobileRoot 'assets/images/gymbeam-logo.png'
   [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $logoPath, $logoEntry, 'Optimal') | Out-Null
 } finally {
   $zip.Dispose()

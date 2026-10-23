@@ -91,7 +91,7 @@ if (command === "request") {
 } else if (command === "audit") {
   assert.equal(new Set(log.sources.map((entry) => entry.id)).size, log.sources.length, "Duplicate portrait IDs");
   assert.equal(new Set(log.sources.map((entry) => entry.sha256)).size, log.sources.length, "Duplicate portrait bitmap");
-  const require = createRequire(new URL("../../../artifacts/gym-tracker/package.json", import.meta.url));
+  const require = createRequire(new URL("../../../scripts/package.json", import.meta.url));
   const { PNG } = require("pngjs");
   const images = [];
   for (const entry of log.sources) {

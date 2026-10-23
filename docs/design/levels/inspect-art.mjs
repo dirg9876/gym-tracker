@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const require = createRequire(new URL("../../../artifacts/gym-tracker/package.json", import.meta.url));
+const require = createRequire(new URL("../../../scripts/package.json", import.meta.url));
 const { PNG } = require("pngjs");
 const artifacts = [
   { file: "style-study-v2.png", role: "current adult concept sheet, deliberately opaque" },

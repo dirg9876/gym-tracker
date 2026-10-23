@@ -1,5 +1,27 @@
 # Gym-Beam 1.1.16: История И Прогноз На Одном Графике
 
+## Итог: Опубликовано
+
+Выпуск ЗАВЕРШЁН. Source master `d2c68397dff88dd98b18c45533511f6da2da6076`.
+CI PASS: https://github.com/dirg9876/gym-tracker/actions/runs/40002783197
+APK: https://github.com/dirg9876/gym-tracker/releases/download/v1.1.16/gym-beam-1.1.16.apk
+152475067 байт; GitHub asset digest совпадает с локальным SHA256
+`9DE193A113D182D1DE78AC935198F0A3A72F185D5229ED92F9202E0AA84EED61`.
+Production Android OTA/runtime1.1.0: `01a16a02-5eb3-707c-866a-57747fd9b978`,
+group `cac2f93f-6707-4d0c-8385-4d4bf80da3d5`, создан2026-10-23T18:25:02.643Z,
+gitCommitHash совпадает с source. Версия1.1.16/code22; следующий app release1.1.17.
+
+Реальные check/download/apply и cold offline launch OTA PASS. Скриншоты
+`release-1.1.16-ota-applied/offline.*` ignored. Экспорт после OTA успел завершиться
+несмотря на прерывание tool-turn пользователем. В следующем turn проверено:
+`after-ota-1.1.16-visualqa.json` exact state/plans == свежий baseline PASS.
+Сеть включена обратно, QA AVD5556 остановлен; Gradle остановлен, процессов проверок
+не осталось. История, backup, ключ подписи, основной AVD не затронуты.
+
+Новый запрос: убрать веб-приложение из репозитория, оставить Android и нужные шлюзы.
+См. `CHECKPOINT_2026-10-23_ANDROID_ONLY.md`. Нижние промежуточные статусы и TODO
+оставлены как архив, не повторять публикацию/увеличение версии1.1.16.
+
 ## Цель И Текущий Статус
 
 Workspace `C:\gymbeam`, PowerShell, mobile `artifacts/gym-tracker-mobile`.

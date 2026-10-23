@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
-const require = createRequire(new URL("../../../artifacts/gym-tracker/package.json", import.meta.url));
+const require = createRequire(new URL("../../../scripts/package.json", import.meta.url));
 const { PNG } = require("pngjs");
 const catalog = JSON.parse(readFileSync(new URL("./catalog-male-v3.json", import.meta.url), "utf8"));
 const staging = new URL("../../../artifacts/apk/verified/level-art-male-v3/", import.meta.url);

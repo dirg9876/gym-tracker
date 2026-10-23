@@ -1,6 +1,6 @@
 # Gym-Beam: Checkpoints
 
-Подготовлен **1.1.16: единый график истории и прогноза, понятная прогрессия веса/повторов**. [Текущий checkpoint](CHECKPOINT_2026-10-23_TIMELINE_1_1_16.md). Patch УЖЕ выполнен один раз: code22/runtime1.1.0. 434 теста/typecheck/journey/APK/nativeQA PASS, исходные state/plans восстановлены точно. Впереди публикация master/APK/OTA. [Аудит места](CHECKPOINT_2026-10-23_STORAGE_AUDIT.md): около 12 GiB кандидатов, ничего не удалялось.
+Текущая задача: [удалить web-приложение и оставить Android](CHECKPOINT_2026-10-23_ANDROID_ONLY.md). Нужные Android assets и optional AI gateways сохранить; очистка репозитория, не новый app release. Версия **1.1.16 полностью опубликована**: [итог](CHECKPOINT_2026-10-23_TIMELINE_1_1_16.md), source d2c6839, CI/APK/production OTA и offline launch PASS, exact state/plans сохранены. AVD5556/Gradle остановлены, сеть восстановлена. [Storage audit](CHECKPOINT_2026-10-23_STORAGE_AUDIT.md): 12GiB кандидатов, общая очистка не выполнялась.
 
 Выпуск **1.1.15 ЗАВЕРШЁН**: [итоговый checkpoint](CHECKPOINT_2026-10-23_RELEASE_1_1_15.md). 423 теста/typecheck/CI/journey/nativeQA PASS, исходные state/plans сохранены точно после APK и OTA. Source d0aafba, code21/runtime1.1.0. [APK 1.1.15](https://github.com/dirg9876/gym-tracker/releases/download/v1.1.15/gym-beam-1.1.15.apk). Ниже архивные этапы, их незавершённые статусы не являются текущей задачей.
 
