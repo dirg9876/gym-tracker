@@ -4,18 +4,19 @@ import { nextScheduledSession } from "./coachMonth";
 import { buildNextExercisePrediction, explainLoadCalculation } from "./trainingPrediction";
 import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
-import { buildAdaptiveSplit } from "./adaptiveWorkout";
+import { buildAdaptiveSplit, lastWorkoutSplit, SPLIT_DAYS, type SplitDay } from "./adaptiveWorkout";
 import type { TemplatePlan, TemplateExercise, SetTarget } from "./workoutTemplates";
 
 export type DailyWorkout = {
   date: string; source: "month" | "template" | "balanced"; reason: string;
   plan: TemplatePlan | null; scheduled: CoachContext["scheduled"] | null; coachSupported: boolean;
+  splitDay?: SplitDay;
 };
-export type DailyPreview = DailyWorkout & { fingerprint: string; activeWorkoutId: number | null };
+export type DailyPreview = DailyWorkout & { choices: DailyWorkout[]; fingerprint: string; activeWorkoutId: number | null };
 type Definition = { exerciseId: number; sets: number; repsMin: number; repsMax: number; durationSeconds?: number; targetRir?: number; intent?: TemplateExercise["intent"]; note?: string | null };
 const dateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyWorkout {
+export function buildDailyWorkout(state: OfflineState, now = new Date(), preferredDay?: SplitDay): DailyWorkout {
   const date = dateKey(now), timestamp = now.getTime();
   const profile = personalCoachProfile(state.coachProfile ?? defaultCoachProfile());
   const available = state.exercises.filter(ex => !ex.deletedAt && !ex.replacementPending && profile.equipment.includes(ex.equipment) && (!isAssisted(ex) || state.profile.bodyWeightKg != null));
@@ -27,6 +28,12 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
   let reason = history.length ? "План сформирован по всей истории завершённых тренировок: знакомые основные движения, учёт недавней нагрузки и щадящая прогрессия. Журнал не определяет восстановление точно." : "Начальный план основных движений. Для незнакомых упражнений вес уточняется по первому подборочному подходу, без проверки максимума.";
   let definitions: Definition[] = [];
   let scheduled = nextScheduledSession(state) ?? null;
+  const phaseOf = (group: string): SplitDay => ["Грудь", "Плечи", "Трицепс"].includes(group) ? "push" : ["Спина", "Бицепс"].includes(group) ? "pull" : "legs";
+  const scheduledDay = scheduled ? SPLIT_DAYS.map(day => ({ day, count: scheduled!.plan.exercises.filter(ex => {
+    const exercise = byId.get(ex.exerciseId); return exercise && phaseOf(exercise.muscleGroup) === day;
+  }).reduce((sum, ex) => sum + ex.targets.length, 0) })).sort((a, b) => b.count - a.count)[0].day : undefined;
+  if (preferredDay && preferredDay !== scheduledDay) scheduled = null;
+  let splitDay = scheduled ? scheduledDay : undefined;
   if (scheduled) {
     definitions = scheduled.plan.exercises.filter(ex => byId.has(ex.exerciseId)).map(ex => {
       const values = ex.targets.map(set => set.durationSeconds ?? set.reps);
@@ -47,7 +54,8 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
     // Without a saved month, plan a genuinely new workout from the whole
     // completed history; custom templates remain available for manual use.
     source = "balanced";
-    const split = buildAdaptiveSplit(state, profile, available, timestamp);
+    const split = buildAdaptiveSplit(state, profile, available, timestamp, preferredDay);
+    splitDay = split.day;
     name = split.name;
     reason = split.reason;
     definitions = split.definitions;
@@ -87,6 +95,15 @@ export function buildDailyWorkout(state: OfflineState, now = new Date()): DailyW
   }
   if (finished.some(w => dateKey(new Date(w.startedAt)) === date)) reason += " Сегодня уже записана тренировка. Необходимость дополнительного занятия и восстановление по журналу неизвестны.";
   if (definitions.length > exercises.length) reason += " Часть упражнений не включена из-за доступности оборудования или ограничений объёма.";
-  return { date, source, reason, scheduled, coachSupported: exercises.every(ex => !isAssisted(byId.get(ex.exerciseId))),
+  return { date, source, reason, splitDay, scheduled, coachSupported: exercises.every(ex => !isAssisted(byId.get(ex.exerciseId))),
     plan: exercises.length ? { id: "daily", name, description: "", emoji: "", basedOnLevel: 0, basedOnLevelName: "", benchmarkKg: 0, isCustom: true, exercises } : null };
+}
+
+export function buildDailyChoices(state: OfflineState, now = new Date()): DailyWorkout[] {
+  const last = lastWorkoutSplit(state, now.getTime());
+  const preferred = buildDailyWorkout(state, now);
+  const days = [preferred.splitDay, ...SPLIT_DAYS].filter((day, index, all): day is SplitDay =>
+    day != null && day !== last && all.indexOf(day) === index);
+  return days.map(day => day === preferred.splitDay ? preferred : buildDailyWorkout(state, now, day))
+    .filter(choice => choice.plan != null).slice(0, 2);
 }

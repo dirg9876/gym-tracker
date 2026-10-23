@@ -37,7 +37,7 @@ const stateSchema = z.object({
     deletedAt: date.optional(),
     replacementPending: z.boolean().optional(),
   }).extend(equipmentSettingsSchema.shape).passthrough().refine(validEquipmentSettings)),
-  workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional() }).passthrough()),
+  workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional(), splitDay: z.enum(["push", "pull", "legs"]).optional() }).passthrough()),
   sets: z.array(z.object({
     id, workoutId: id, exerciseId: id, weightKg: amount,
     equipment: equipment.optional(),

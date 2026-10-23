@@ -7,7 +7,8 @@ import { canReplaceExercise, migrateExerciseCatalog, requiresExerciseReplacement
 import { buildTrainingInsights } from "./trainingInsights";
 import { buildTrainingAnalysis } from "./trainingAnalysis";
 import { buildActivePrediction, buildNextExercisePrediction } from "./trainingPrediction";
-import { buildDailyWorkout, type DailyPreview } from "./dailyWorkout";
+import { buildDailyWorkout, buildDailyChoices, type DailyPreview } from "./dailyWorkout";
+import type { SplitDay } from "./adaptiveWorkout";
 import { bodyWeightEntrySchema, bodyWeightForecast, bodyWeightLogSchema, weightDateSchema, type BodyWeightEntry } from "./bodyWeight";
 import { buildExerciseOutlook, buildProgressOutlook } from "./exerciseOutlook";
 import { localDateKey } from "./trainingInsights";
@@ -79,6 +80,7 @@ type WorkoutRow = {
   lastDraftCommit?: { revision: number; setId: number };
   coachCycle?: { planId: string; slot: number };
   trainingMode?: "office";
+  splitDay?: SplitDay;
 };
 
 type SetRow = CoachFields & {
@@ -308,7 +310,7 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     return currentCoachContext(state, body);
   }
   if (method === "POST" && path === "/api/ai-coach/apply-plan") return applyCoachPlan(state, body);
-  if (method === "GET" && path === "/api/daily-workout") return dailyPreview(state);
+  if (method === "GET" && path === "/api/daily-workout") return dailyPreview(state, parsedUrl.searchParams.get("split"));
   if (method === "POST" && path === "/api/daily-workout/start") return startDailyWorkout(state, body);
   if (method === "GET" && path === "/api/ai-coach/month") return monthProgress(state);
   if (method === "DELETE" && path === "/api/ai-coach/month") {
@@ -471,10 +473,8 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     if (!parsed.success || parsed.data.date > today) throw httpError(400, "Укажите прошедшую или сегодняшнюю дату и вес от 20 до 500 кг.");
     const log = bodyWeightLogSchema.safeParse([...(state.bodyWeightLog ?? []).filter(row => row.date !== parsed.data.date), parsed.data].sort((a, b) => a.date.localeCompare(b.date)));
     if (!log.success) throw httpError(400, "Журнал взвешиваний переполнен.");
-    const latest = state.bodyWeightLog?.filter(row => row.date <= today).at(-1);
-    const tracksProfile = latest != null && latest.kg === state.profile.bodyWeightKg;
     state.bodyWeightLog = log.data;
-    if (parsed.data.date === today || state.profile.bodyWeightKg == null || tracksProfile) state.profile = normalizeProfile({ ...state.profile, bodyWeightKg: log.data.filter(row => row.date <= today).at(-1)!.kg });
+    state.profile = normalizeProfile({ ...state.profile, bodyWeightKg: log.data.filter(row => row.date <= today).at(-1)!.kg });
     await saveState(state);
     return bodyWeightForecast(state.bodyWeightLog);
   }
@@ -982,16 +982,19 @@ async function createWorkout(state: OfflineState, body: RequestBody): Promise<Wo
   return workoutResponse(state, workout);
 }
 
-async function dailyPreview(state: OfflineState): Promise<DailyPreview> {
-  const suggestion = buildDailyWorkout(state);
-  const fingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, JSON.stringify({ date: suggestion.date, state }));
-  return { ...suggestion, fingerprint, activeWorkoutId: state.workouts.find(w => !w.finishedAt)?.id ?? null };
+async function dailyPreview(state: OfflineState, selected?: unknown): Promise<DailyPreview> {
+  const choices = buildDailyChoices(state);
+  const suggestion = (selected == null ? choices[0] : choices.find(row => row.splitDay === selected));
+  if (selected != null && !suggestion) throw httpError(400, "Этот сплит недоступен. Обновите предложение.");
+  const result = suggestion ?? { ...buildDailyWorkout(state), plan: null };
+  const fingerprint = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, JSON.stringify({ date: result.date, splitDay: result.splitDay, state }));
+  return { ...result, choices, fingerprint, activeWorkoutId: state.workouts.find(w => !w.finishedAt)?.id ?? null };
 }
 
 async function startDailyWorkout(state: OfflineState, body: RequestBody): Promise<Workout> {
   const active = state.workouts.find(w => !w.finishedAt);
   if (active) return workoutResponse(state, active);
-  const preview = await dailyPreview(state);
+  const preview = await dailyPreview(state, body.splitDay);
   if (body.fingerprint !== preview.fingerprint) throw httpError(409, "История, настройки или дата изменились. Обновите предложение; прогресс сохранён.");
   if (!preview.plan) throw httpError(400, "Для выбранного оборудования пока нет упражнений. Можно начать самостоятельно.");
   const input = parseCustomProgram(state, (body.plan ?? preview.plan) as RequestBody);
@@ -1012,6 +1015,7 @@ async function startDailyWorkout(state: OfflineState, body: RequestBody): Promis
   });
   const first = rows[0], exercise = findExercise(state, first.exerciseId)!;
   const workout: WorkoutRow = { id: state.nextWorkoutId++, name: input.name, startedAt: new Date().toISOString(), finishedAt: null,
+    splitDay: preview.splitDay,
     draft: makeWorkoutDraft(exercise, first.setTargets![0]), draftRevision: 0,
     ...(preview.scheduled ? { coachCycle: { planId: preview.scheduled.planId, slot: preview.scheduled.slot } } : {}) };
   const plan: TemplatePlan = { ...preview.plan, name: input.name, description: input.description ?? "", exercises: rows };
@@ -1025,9 +1029,10 @@ async function currentCoachContext(state: OfflineState, body: RequestBody): Prom
   const messages = coachMessagesSchema.optional().safeParse(body.messages);
   if (!task.success || !messages.success) throw httpError(400, "Проверьте сообщение тренеру (до 300 символов).");
   if (body.trainingMode != null && body.trainingMode !== "regular" && body.trainingMode !== "office") throw httpError(400, "Неизвестный сценарий тренировки.");
+  if (body.splitDay != null && !buildDailyChoices(state).some(row => row.splitDay === body.splitDay)) throw httpError(400, "Этот сплит недоступен. Обновите предложение.");
   const workoutId = typeof body.workoutId === "number" ? body.workoutId : undefined;
   const raw = (task.data === "adjust_workout" || task.data === "next_set") && workoutId ? await AsyncStorage.getItem(PLAN_PREFIX + workoutId) : null;
-  return buildCoachContext(state, task.data, workoutId, messages.data, raw ? JSON.parse(raw) as TemplatePlan : null, body.trainingMode as "regular" | "office" | undefined);
+  return buildCoachContext(state, task.data, workoutId, messages.data, raw ? JSON.parse(raw) as TemplatePlan : null, body.trainingMode as "regular" | "office" | undefined, body.splitDay as SplitDay | undefined);
 }
 
 async function applyCoachPlan(state: OfflineState, body: RequestBody): Promise<Workout> {

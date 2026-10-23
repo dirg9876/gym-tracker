@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import type { CoachContext, CoachEnvelope, CoachMessages, CoachTask } from "@workspace/ai-coach";
 import { coachRequest } from "@/lib/coachApi";
 import { assertCoachAnswerCurrent, readAiConnection, requestAiCoach } from "@/lib/aiCoachConnection";
+import type { SplitDay } from "@/lib/adaptiveWorkout";
 
 export const AI_CONNECTION_QUERY = ["ai-connection"];
 export const AI_BUDGET_QUERY = ["ai-budget"];
@@ -13,10 +14,10 @@ export function useAiConnection() {
   useFocusEffect(useCallback(() => { void query.refetch(); }, [query.refetch]));
   return query;
 }
-export function loadAiContext(task: CoachTask, workoutId?: number, messages?: CoachMessages, trainingMode?: "regular" | "office") {
-  return coachRequest<CoachContext>("/api/ai-coach/context", "POST", { task, workoutId, messages, trainingMode });
+export function loadAiContext(task: CoachTask, workoutId?: number, messages?: CoachMessages, trainingMode?: "regular" | "office", splitDay?: SplitDay) {
+  return coachRequest<CoachContext>("/api/ai-coach/context", "POST", { task, workoutId, messages, trainingMode, splitDay });
 }
-export function useAiCoach(task: CoachTask, workoutId?: number, contextKey = "", trainingMode?: "regular" | "office") {
+export function useAiCoach(task: CoachTask, workoutId?: number, contextKey = "", trainingMode?: "regular" | "office", splitDay?: SplitDay) {
   const client = useQueryClient();
   const connection = useAiConnection();
   const [answer, setAnswer] = useState<{ envelope: CoachEnvelope; context: CoachContext } | null>(null);
@@ -36,7 +37,7 @@ export function useAiCoach(task: CoachTask, workoutId?: number, contextKey = "",
   };
   const validate = async () => {
     if (!answer) throw new Error("Запросите новый совет.");
-    const context = await loadAiContext(task, workoutId, answer.context.messages, trainingMode);
+    const context = await loadAiContext(task, workoutId, answer.context.messages, trainingMode, splitDay);
     await assertCoachAnswerCurrent(answer.envelope, context);
     return context;
   };
@@ -46,10 +47,10 @@ export function useAiCoach(task: CoachTask, workoutId?: number, contextKey = "",
     ask: (messages?: CoachMessages) => run(async () => {
       setAnswer(null);
       const key = currentKey.current;
-      const context = await loadAiContext(task, workoutId, messages, trainingMode);
+      const context = await loadAiContext(task, workoutId, messages, trainingMode, splitDay);
       const envelope = await requestAiCoach(context);
       client.setQueryData(AI_BUDGET_QUERY, envelope.budget);
-      await assertCoachAnswerCurrent(envelope, await loadAiContext(task, workoutId, messages, trainingMode));
+      await assertCoachAnswerCurrent(envelope, await loadAiContext(task, workoutId, messages, trainingMode, splitDay));
       if (key !== currentKey.current) throw new Error("Тренировка изменилась. Запросите новый совет.");
       if (!mounted.current) return;
       setAnswer({ envelope, context });

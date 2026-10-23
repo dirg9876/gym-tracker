@@ -18,7 +18,7 @@ type Slot = {
 };
 
 const DAY = 86_400_000;
-const SPLIT_DAYS: SplitDay[] = ["push", "pull", "legs"];
+export const SPLIT_DAYS: SplitDay[] = ["push", "pull", "legs"];
 const NAMES: Record<SplitDay, string> = {
   push: "Сплит · Грудь, плечи и трицепс",
   pull: "Сплит · Спина и бицепс",
@@ -34,6 +34,30 @@ function phaseForGroup(group: string): SplitDay | null {
   if (group === "Грудь" || group === "Плечи" || group === "Трицепс") return "push";
   if (group === "Спина" || group === "Бицепс") return "pull";
   if (group === "Ноги" || group === "Икры" || group === "Пресс") return "legs";
+  return null;
+}
+
+export function workoutSplit(state: OfflineState, workoutId: number): SplitDay | null {
+  const workout = state.workouts.find(row => row.id === workoutId);
+  if (workout?.splitDay) return workout.splitDay;
+  const scores = new Map<SplitDay, number>();
+  for (const set of state.sets.filter(row => row.workoutId === workoutId)) {
+    const exercise = state.exercises.find(row => row.id === set.exerciseId);
+    const phase = exercise && phaseForGroup(planningGroup(exercise));
+    if (phase) scores.set(phase, (scores.get(phase) ?? 0) + 1);
+  }
+  return SPLIT_DAYS.filter(day => scores.has(day)).sort((a, b) => scores.get(b)! - scores.get(a)!)[0] ?? null;
+}
+
+export function lastWorkoutSplit(state: OfflineState, now: number): SplitDay | null {
+  const finished = state.workouts.filter(w => w.finishedAt && w.trainingMode !== "office" &&
+    Date.parse(w.finishedAt) <= now && Date.parse(w.startedAt) <= Date.parse(w.finishedAt))
+    .sort((a, b) => b.finishedAt!.localeCompare(a.finishedAt!) || b.id - a.id);
+  for (const workout of finished) {
+    if (!state.sets.some(set => set.workoutId === workout.id)) continue;
+    const phase = workoutSplit(state, workout.id);
+    if (phase) return phase;
+  }
   return null;
 }
 
@@ -84,7 +108,7 @@ function isComparableWorkingSet(row: SetRow, ex: Exercise): boolean {
  * sessions controls the next day's focus. Logged dates are not recovery tests.
  */
 export function buildAdaptiveSplit(
-  state: OfflineState, profile: CoachProfile, available: Exercise[], now: number,
+  state: OfflineState, profile: CoachProfile, available: Exercise[], now: number, preferredDay?: SplitDay,
 ): AdaptiveSplit {
   const finished = new Map(state.workouts.filter(w => w.finishedAt &&
     Number.isFinite(Date.parse(w.finishedAt)) &&
@@ -119,12 +143,13 @@ export function buildAdaptiveSplit(
     slots(day).some(slot => eligible.some(ex => slot.matches(ex))));
   // A restricted equipment list can make some days impossible. Never invent a
   // disallowed exercise merely to fill the split.
-  const candidateDays = availableDays.length ? availableDays : SPLIT_DAYS;
+  const alternatives = availableDays.filter(day => day !== lastWorkoutSplit(state, now));
+  const candidateDays = alternatives.length ? alternatives : availableDays.length ? availableDays : SPLIT_DAYS;
   const ageOf = (day: SplitDay) => latestPhase.get(day) != null ?
     (now - latestPhase.get(day)!) / DAY : Infinity;
   const priority = (day: SplitDay) => (workload.get(day) ?? 0) +
     (ageOf(day) < 2 ? 9 : ageOf(day) < 3 ? 4 : 0);
-  const day = [...candidateDays].sort((a, b) =>
+  const day = preferredDay ?? [...candidateDays].sort((a, b) =>
     priority(a) - priority(b) || SPLIT_DAYS.indexOf(a) - SPLIT_DAYS.indexOf(b))[0];
 
   const maxSlots = profile.sessionMinutes >= 90 ? 6 : profile.sessionMinutes >= 70 ? 5 : 4;
@@ -158,6 +183,6 @@ export function buildAdaptiveSplit(
   }
   return {
     day, name: NAMES[day], definitions: selected,
-    reason: `Сплит: ${NAMES[day].replace("Сплит · ", "")}. День выбран по нагрузке из всей истории завершённых тренировок с повышенным весом недавних занятий. Сначала двигательные паттерны и базовые упражнения, затем знакомые варианты. Записи не позволяют точно оценить восстановление.`,
+    reason: `Сплит: ${NAMES[day].replace("Сплит · ", "")}. ${preferredDay ? "Вы выбрали этот вариант; упражнения подобраны по истории завершённых тренировок." : "День выбран по нагрузке из всей истории завершённых тренировок с повышенным весом недавних занятий."} Сначала двигательные паттерны и базовые упражнения, затем знакомые варианты. Записи не позволяют точно оценить восстановление.`,
   };
 }

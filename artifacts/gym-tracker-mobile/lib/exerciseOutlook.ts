@@ -1,6 +1,6 @@
 import { defaultCoachProfile, goalPrescription, personalCoachProfile } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
-import { buildAdaptiveSplit, planningGroup } from "./adaptiveWorkout";
+import { buildAdaptiveSplit, planningGroup, type SplitDay } from "./adaptiveWorkout";
 import { monthProgress } from "./coachMonth";
 import { buildNextExercisePrediction } from "./trainingPrediction";
 import { isAssisted } from "./equipmentSettings";
@@ -27,15 +27,27 @@ function planningContext(state: OfflineState, now: Date) {
   const firstOffset = latestDay ? Math.max(0, Math.round(spacing) - daysBetween(today, latestDay)) : 0;
   const firstDate = addDays(now, firstOffset);
   const available = state.exercises.filter(ex => !ex.deletedAt && !ex.replacementPending && profile.equipment.includes(ex.equipment) && !isAssisted(ex));
-  const split = buildAdaptiveSplit(state, profile, available, now.getTime());
-  const definitions = phases.flatMap(phase => buildAdaptiveSplit(state, profile, available.filter(ex => phaseFor(planningGroup(ex)) === phase), now.getTime()).definitions);
-  return { profile, doneIds, byWorkout, monthly, remaining, spacing, firstDate, split, definitions };
+  const definitions = phases.flatMap(phase => buildAdaptiveSplit(state, profile, available, now.getTime(), phase).definitions);
+  const timeline: Array<{ date: string; day: SplitDay }> = [];
+  if (!monthly) {
+    // Only the scenario copy records assumed successes; real observations stay untouched.
+    const scenario = { ...state, workouts: state.workouts.filter(w => doneIds.has(w.id) || w === active).map(w => w === active ? { ...w, finishedAt: w.startedAt } : w), sets: state.sets.filter(s => doneIds.has(s.workoutId) || s.workoutId === active?.id) };
+    for (let index = 0; index < 18; index++) {
+      const date = addDays(firstDate, Math.round(index * spacing));
+      const split = buildAdaptiveSplit(scenario, profile, available, date.getTime());
+      timeline.push({ date: localDateKey(date), day: split.day });
+      const id = scenario.nextWorkoutId++;
+      scenario.workouts.push({ id, name: split.name, startedAt: date.toISOString(), finishedAt: date.toISOString(), splitDay: split.day });
+      for (const def of split.definitions) for (let i = 0; i < def.sets; i++) scenario.sets.push({ id: scenario.nextSetId++, workoutId: id, exerciseId: def.exerciseId, weightKg: 0, reps: def.repsMin, rir: 2, technique: "good", createdAt: date.toISOString() });
+    }
+  }
+  return { profile, doneIds, byWorkout, monthly, remaining, spacing, firstDate, definitions, timeline };
 }
 
 export function buildExerciseOutlook(state: OfflineState, exerciseId: number, now = new Date(), planning = planningContext(state, now)) {
   const exercise = state.exercises.find(row => row.id === exerciseId && !row.deletedAt && !row.replacementPending);
   if (!exercise) throw new Error("Упражнение недоступно.");
-  const { profile, doneIds, byWorkout, monthly, remaining, spacing, firstDate, split, definitions } = planning;
+  const { profile, doneIds, byWorkout, monthly, remaining, spacing, firstDate, definitions, timeline } = planning;
   const policy = goalPrescription(profile.goal, exercise), timed = isTimedExercise(exercise.name), assisted = isAssisted(exercise);
   const history = state.sets.filter(row => doneIds.has(row.workoutId) && row.exerciseId === exerciseId && sameLoadCategory(row, exercise) && (exercise.equipment !== "dumbbell" || (row.dumbbellCount ?? 1) === (exercise.dumbbellCount ?? 1)))
     .sort((a, b) => byWorkout.get(a.workoutId)!.finishedAt!.localeCompare(byWorkout.get(b.workoutId)!.finishedAt!) || a.workoutId - b.workoutId || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
@@ -50,8 +62,7 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
       if (row && occurrences.length < 4) occurrences.push({ date: localDateKey(addDays(firstDate, Math.round(index * spacing))), sets: row.targets.length, durationSeconds: row.targets[0]?.durationSeconds ?? undefined });
     });
     else {
-      const offset = (phases.indexOf(phase) - phases.indexOf(split.day) + 3) % 3;
-      for (let i = 0; i < 4; i++) occurrences.push({ date: localDateKey(addDays(firstDate, Math.round((offset + i * 3) * spacing))), sets: phaseDefinition?.sets ?? (policy.intent === "accessory" ? 2 : 3) });
+      for (const row of timeline.filter(row => row.day === phase).slice(0, 4)) occurrences.push({ date: row.date, sets: phaseDefinition?.sets ?? (policy.intent === "accessory" ? 2 : 3) });
     }
   }
   const count = occurrences[0]?.sets ?? phaseDefinition?.sets ?? 3;
@@ -80,7 +91,7 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
     const sets = calibration ? 1 : occurrence.sets;
     return { date: occurrence.date, conditional: index > 0, calibration, targets: Array.from({ length: sets }, (_, i) => ({ ...(targets[i] ?? targets.at(-1)!) })) };
   });
-  if (!occurrences.length) scheduleSource = assisted && state.profile.bodyWeightKg == null ? "Для подбора противовеса сначала укажите массу тела" : monthly ? "В оставшихся занятиях месяца этого упражнения нет" : "Оборудование исключено из плана";
+  if (!occurrences.length) scheduleSource = assisted && state.profile.bodyWeightKg == null ? "Для подбора противовеса сначала укажите массу тела" : monthly ? "В оставшихся занятиях месяца этого упражнения нет" : !profile.equipment.includes(exercise.equipment) || profile.excludedExerciseIds.includes(exerciseId) ? "Упражнение исключено из плана" : "В ближайшем рекомендованном сценарии этого упражнения нет";
   const initialWeightKg = sessions[0]?.targets[0]?.weightKg ?? null;
   const lastWeightKg = sessions.at(-1)?.targets[0]?.weightKg ?? null;
   return { exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isMain: exercise.isMain, isCustom: exercise.isCustom },

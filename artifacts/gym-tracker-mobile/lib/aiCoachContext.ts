@@ -2,13 +2,13 @@ import { coachContextSchema, defaultCoachProfile, jsonByteLength, personalCoachP
 import { buildTrainingAnalysis } from "./trainingAnalysis";
 import { buildActivePrediction, buildNextExercisePrediction } from "./trainingPrediction";
 import { buildDailyWorkout } from "./dailyWorkout";
+import type { SplitDay } from "./adaptiveWorkout";
 import type { OfflineState } from "./offlineApi";
 import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
 import { completedTargets, plannedSet, type TemplatePlan } from "./workoutTemplates";
-import { nextScheduledSession } from "./coachMonth";
 
-export function buildCoachContext(state: OfflineState, task: CoachTask, workoutId?: number, messages?: CoachMessages, plan?: TemplatePlan | null, trainingMode?: "regular" | "office"): CoachContext {
+export function buildCoachContext(state: OfflineState, task: CoachTask, workoutId?: number, messages?: CoachMessages, plan?: TemplatePlan | null, trainingMode?: "regular" | "office", splitDay?: SplitDay): CoachContext {
   const focus = workoutId ? state.workouts.find(w => w.id === workoutId) : undefined;
   trainingMode = focus?.trainingMode ?? trainingMode;
   if (workoutId && !focus) throw new Error("Тренировка не найдена.");
@@ -30,7 +30,7 @@ export function buildCoachContext(state: OfflineState, task: CoachTask, workoutI
     return sessionIds.has(set.workoutId) && ids.has(set.exerciseId) && set.weightKg <= 2000 && set.reps <= 100 && !!exercise && sameLoadCategory(set, exercise) && (exercise.equipment !== "dumbbell" || (set.dumbbellCount ?? 1) === (exercise.dumbbellCount ?? 1));
   });
   const recentSets = eligible.slice(-160);
-  const prepared = task === "next_workout" && trainingMode !== "office" ? buildDailyWorkout(state) : null;
+  const prepared = task === "next_workout" && trainingMode !== "office" ? buildDailyWorkout(state, new Date(), splitDay) : null;
   const calibrationEstimates = task !== "next_set" && task !== "review" && trainingMode !== "office" ? available.slice(0, 120).flatMap(ex => {
     const prediction = buildNextExercisePrediction(state, ex.id, Date.now());
     return prediction.calibrationBasis ? [prediction.calibrationBasis] : [];
@@ -65,7 +65,7 @@ export function buildCoachContext(state: OfflineState, task: CoachTask, workoutI
     })() : {}),
     ...(messages ? { messages } : {}),
     ...(trainingMode ? { trainingMode } : {}),
-    ...(task === "next_workout" && trainingMode !== "office" && nextScheduledSession(state) ? { scheduled: nextScheduledSession(state) } : {}),
+    ...(task === "next_workout" && trainingMode !== "office" && prepared?.scheduled ? { scheduled: prepared.scheduled } : {}),
     ...(task === "adjust_workout" ? { remainingPlan: (plan?.exercises ?? []).filter(ex => ids.has(ex.exerciseId)).slice(0, 120).map(ex => {
       const done = completedTargets(ex, state.sets.filter(set => set.workoutId === workoutId));
       return { exerciseId: ex.exerciseId, targets: Array.from({ length: Math.min(100, ex.sets - done) }, (_, i) => {

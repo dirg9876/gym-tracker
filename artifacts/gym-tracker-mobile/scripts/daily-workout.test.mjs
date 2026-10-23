@@ -142,7 +142,7 @@ test("stored single 85 x 1 never defines the next push day's working prescriptio
   raw.workouts = [{ id: 105, name: null, startedAt: d, finishedAt: d }];
   raw.sets = [{ id: 500, workoutId: 105, exerciseId: 1, weightKg: 85, reps: 1,
     rir: null, technique: "good", createdAt: d }];
-  const proposal = buildDailyWorkout(raw, new Date("2026-10-22T12:00:00Z"));
+  const proposal = buildDailyWorkout(raw, new Date("2026-10-22T12:00:00Z"), "push");
   const bench = proposal.plan.exercises.find(ex => ex.exerciseId === 1);
   assert.ok(bench);
   assert.ok(bench.setTargets.every(target => target.reps >= 6 && !(target.weightKg === 85 && target.reps === 1)));
@@ -173,7 +173,7 @@ test("calf press catalogued under legs cannot replace a compound quad movement",
   const raw = state(), now = new Date("2026-10-22T12:00:00Z");
   const calf = { ...raw.exercises.find(ex => ex.id === 14), id: 99, name: "Жим ногами сидя на икры", muscleGroup: "Ноги" };
   raw.exercises.push(calf);
-  // Make legs the least recently worked split, even with the calf session.
+  // Inspect the chosen legs composition independently of the last-session exclusion.
   for (const [id, exerciseId, n] of [[201, 1, 9], [202, 7, 9], [203, 99, 3]]) {
     const date = "2026-10-20T10:00:00Z";
     raw.workouts.push({ id, name: null, startedAt: date, finishedAt: date });
@@ -181,7 +181,7 @@ test("calf press catalogued under legs cannot replace a compound quad movement",
       workoutId: id, exerciseId, weightKg: 50, reps: 12,
       rir: 2, technique: "good", createdAt: date });
   }
-  const choice = buildDailyWorkout(raw, now);
+  const choice = buildDailyWorkout(raw, now, "legs");
   assert.match(choice.plan.name, /^Сплит · Ноги/);
   assert.equal(choice.plan.exercises[0].exerciseId, 14, "unfamiliar squat is replaced with a safer leg press, never calf press");
   assert.ok(choice.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 99));
@@ -211,7 +211,7 @@ test("familiar unilateral leg press beats unknown squat, but calf press stays ac
       rir: 2, technique: "good", createdAt: date,
     });
   }
-  const workout = buildDailyWorkout(raw, now);
+  const workout = buildDailyWorkout(raw, now, "legs");
   assert.match(workout.plan.name, /^Сплит · Ноги/);
   assert.equal(workout.plan.exercises[0].exerciseId, 43);
   assert.ok(workout.plan.exercises.slice(0, 3).every(ex => ex.exerciseId !== 41));
@@ -394,7 +394,7 @@ test("familiar leg curl wins over unfamiliar Romanian deadlift within posterior-
   recordHistory(701, 1, 10);
   recordHistory(702, 7, 10);
   recordHistory(703, 16, 3);
-  const plan = buildDailyWorkout(raw, now);
+  const plan = buildDailyWorkout(raw, now, "legs");
   assert.match(plan.plan.name, /^Сплит · Ноги/);
   assert.ok(plan.plan.exercises.some(ex => ex.exerciseId === 16), "familiar leg curl replaces unfamiliar technical deadlift");
   assert.ok(plan.plan.exercises.every(ex => ex.exerciseId !== 13));
@@ -408,7 +408,7 @@ test("hypertrophy month with five 85 kg singles never becomes five heavy singles
       targets: Array.from({ length: 5 }, () => ({ weightKg: 85, reps: 1, durationSeconds: null })) }] }],
     weeks: Array.from({ length: 4 }, (_, i) => ({ week: i + 1, focus: "Train", sessions: [0, 0, 0] })) };
   await request("/api/ai-coach/month", "PUT", { context, fingerprint: await coachFingerprint(context), monthly });
-  const proposal = await preview();
+  const proposal = buildDailyWorkout(state());
   assert.equal(proposal.source, "month");
   const bench = proposal.plan.exercises.find(ex => ex.exerciseId === 1);
   assert.ok(bench);
@@ -433,7 +433,8 @@ test("the saved month wins over custom types; only completion consumes its next 
   const w = await start(p); assert.equal((await preview()).scheduled.slot, 0);
   await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 30, weightKg: 0, reps: 0, durationSeconds: 45 });
   await request(`/api/workouts/${w.id}/finish`, "POST", {});
-  assert.equal((await preview()).scheduled.slot, 1);
+  assert.equal((await request("/api/ai-coach/month")).slots.find(slot => !slot.completed).slot, 1);
+  assert.ok((await preview()).choices.every(choice => choice.splitDay !== "legs"));
   await request(`/api/workouts/${w.id}`, "DELETE");
   assert.equal((await preview()).scheduled.slot, 0);
 });

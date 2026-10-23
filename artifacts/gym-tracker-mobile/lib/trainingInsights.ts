@@ -4,10 +4,11 @@ import { isTimedExercise } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
 
 export type InsightPeriod = 28 | 84 | null;
-type Session = { id: number; startedAt: string; finishedAt?: string | null };
+type Session = { id: number; name?: string | null; startedAt: string; finishedAt?: string | null };
 export type InsightPoint = { date: string; value: number; workoutId: number; set: MeasuredSet };
 export type InsightSeries = { id: "weight" | "assistance" | "reps" | "seconds"; label: string; unit: "kg" | "reps" | "seconds"; lowerIsBetter: boolean; points: InsightPoint[] };
-export type InsightExercise = { exercise: Exercise; sets: number; defaultMetric: InsightSeries["id"]; series: InsightSeries[]; unknownTimeSets: number; otherCategorySets: number };
+export type InsightExercise = { exercise: Exercise; sets: number; defaultMetric: InsightSeries["id"]; series: InsightSeries[]; unknownTimeSets: number; otherCategorySets: number;
+  history: { workoutId: number; date: string; name: string | null; sets: MeasuredSet[] }[] };
 
 export const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const midnight = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -67,6 +68,8 @@ export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], 
   for (const [exerciseId, rows] of setsByExercise) {
     const exercise = exerciseById.get(exerciseId);
     if (!exercise) continue;
+    const history = new Map<number, MeasuredSet[]>();
+    for (const row of rows) { const batch = history.get(row.workoutId) ?? []; batch.push(row); history.set(row.workoutId, batch); }
     const bySession = new Map<number, MeasuredSet[]>();
     for (const row of rows.filter(row => (row.equipment ?? exercise.equipment) === exercise.equipment)) { const batch = bySession.get(row.workoutId) ?? []; batch.push(row); bySession.set(row.workoutId, batch); }
     const timed = isTimedExercise(exercise.name);
@@ -91,6 +94,10 @@ export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], 
       return { ...definition, points };
     }).filter(row => row.points.length && !(exercise.equipment === "bodyweight" && row.id === "weight" && row.points.every(point => point.value === 0)));
     exerciseInsights.push({ exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isCustom: exercise.isCustom, isMain: exercise.isMain },
+      history: [...history].map(([workoutId, batch]) => ({ workoutId,
+        date: sessionById.get(workoutId)!.startedAt, name: sessionById.get(workoutId)!.name ?? null,
+        sets: batch.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id) }))
+        .sort((a, b) => b.date.localeCompare(a.date) || b.workoutId - a.workoutId),
       sets: rows.length, series, otherCategorySets: rows.filter(row => (row.equipment ?? exercise.equipment) !== exercise.equipment).length,
       defaultMetric: timed ? "seconds" : exercise.equipment === "bodyweight" ? "reps" : series.some(row => row.id === "assistance") && !series.some(row => row.id === "weight") ? "assistance" : "weight",
       unknownTimeSets: timed ? rows.filter(row => !(row.durationSeconds != null && row.durationSeconds > 0)).length : 0 });

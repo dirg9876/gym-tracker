@@ -46,13 +46,13 @@ test("backdated body records can be corrected/deleted without replacing the newe
   await request("/api/body-weight/2026-10-01", "DELETE");
   assert.equal(state().profile.bodyWeightKg, 80); assert.deepEqual(state().sets, original);
 });
-test("a legacy undated profile weight is not overwritten by adding an old weigh-in", async () => {
+test("adding a first dated weigh-in updates a legacy profile and subsequent older edits keep the newest observation", async () => {
   const raw = await seed(); raw.profile.bodyWeightKg = 80; storage.set(PROGRESS_KEY, JSON.stringify(raw));
   await request("/api/body-weight", "PUT", { date: "2026-10-01", kg: 75 });
-  assert.equal(state().profile.bodyWeightKg, 80);
+  assert.equal(state().profile.bodyWeightKg, 75);
   await request("/api/body-weight", "PUT", { date: "2026-10-02", kg: 75.2 });
   await request("/api/body-weight/2026-10-01", "DELETE");
-  assert.equal(state().profile.bodyWeightKg, 80, "deleting an old row does not rededate an undated current weight");
+  assert.equal(state().profile.bodyWeightKg, 75.2, "the latest dated observation is the profile source");
   await request("/api/body-weight", "PUT", { date: "2026-10-22", kg: 81 });
   assert.equal(state().profile.bodyWeightKg, 81);
 });
