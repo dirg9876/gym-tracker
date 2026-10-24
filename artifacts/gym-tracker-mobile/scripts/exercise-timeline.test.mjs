@@ -99,10 +99,11 @@ test("assisted movements preserve counterweight semantics and never invent an au
   assert.ok(chart.points.every(row => row.value === 20));
 });
 
-test("incompatible categories remain in the complete journal, not in the measured comparison curve", async () => {
+test("old category labels for the same exercise remain in both the journal and comparison curve", async () => {
   const raw = state(); record(raw, 1, "2026-09-01", 50, 10, 3, { equipment: "other" }); record(raw, 1, "2026-10-22", 60);
   const history = await insights(raw, 1), chart = buildExerciseTimeline(buildExerciseOutlook(raw, 1, now), history);
-  assert.equal(history.history.length, 2); assert.equal(chart.forecastStartIndex, 1); assert.equal(chart.points[0].value, 60);
+  assert.equal(history.history.length, 2); assert.equal(chart.forecastStartIndex, 2);
+  assert.deepEqual(chart.points.slice(0, 2).map(row => row.value), [50, 60]);
 });
 
 test("future and unfinished records cannot turn projections into observed history", async () => {

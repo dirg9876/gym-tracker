@@ -15,7 +15,7 @@ import { localDateKey } from "./trainingInsights";
 import { getLevelLabels } from "@workspace/level-data";
 import { liftForExercise, msmcTarget, rankNorms, rankForGameLevel, weightClass } from "@workspace/level-data/strength";
 import { achievedExerciseLevel, levelFromExercises, targetForExerciseLevel, type ExerciseLevelsResponse, type LevelExerciseStat } from "./levelProgress";
-import { durationOf, isTimedExercise, minimumWeight, sameLoadCategory, setVolume, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
+import { durationOf, exerciseNameKey, isTimedExercise, minimumWeight, sameLoadCategory, setVolume, type DurationMetrics, type MeasuredSet } from "./workoutMeasurement";
 import { equipmentSettingsSchema, validEquipmentSettings, isAssisted, performanceWeight, type EquipmentSettings } from "./equipmentSettings";
 import { AUTO_BACKUP_JOBS_KEY, PLAN_PREFIX, PROGRESS_KEY, isProgressKey, readProgressEntries, commitProgressTransaction, quarantineProgress, ProgressRecoveryRequired, withProgressLock } from "./progressStorage";
 import { validateStoredProgress } from "./progressBackup";
@@ -551,6 +551,31 @@ async function loadState(): Promise<OfflineState> {
     throw new ProgressRecoveryRequired();
   }
   if (migrateExerciseCatalog(normalized)) await saveStateAndPlans(normalized);
+  // Leave an active workout's IDs stable. Completed-history duplicates can merge atomically.
+  if (!normalized.workouts.some(workout => !workout.finishedAt)) {
+    const candidates = normalized.exercises.slice().sort((a, b) => Number(a.isCustom) - Number(b.isCustom) || a.id - b.id);
+    const names = new Map<string, ExerciseRow>();
+    for (const source of candidates) {
+      const key = exerciseNameKey(source.name), target = names.get(key);
+      if (!target) { names.set(key, source); continue; }
+      if (source.replacementPending) continue;
+      if (!canReplaceExercise(source, target)) {
+        source.replacementPending = true;
+        await saveStateAndPlans(normalized);
+        continue;
+      }
+      const merged = JSON.parse(JSON.stringify(normalized)) as OfflineState;
+      try {
+        await replaceExercise(merged, source.id, { targetExerciseId: target.id });
+        normalized = merged;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 409) throw error;
+        // An oversized/incompatible saved plan requires an explicit replacement decision.
+        const pending = findExercise(normalized, source.id)!;
+        if (!pending.replacementPending) { pending.replacementPending = true; await saveStateAndPlans(normalized); }
+      }
+    }
+  }
   return normalized;
 }
 
@@ -626,6 +651,11 @@ function listExercises(state: OfflineState): Exercise[] {
 
 async function createExercise(state: OfflineState, body: RequestBody): Promise<Exercise> {
   const row = newExercise(state, body);
+  const existing = state.exercises.find(exercise => !exercise.deletedAt && exerciseNameKey(exercise.name) === exerciseNameKey(row.name));
+  if (existing) {
+    if (!canReplaceExercise(row, existing)) throw httpError(409, "Это название уже используется с другим режимом нагрузки. Уточните название или настройки существующего упражнения.");
+    return enrichExercise(state, existing);
+  }
   state.exercises.push(row);
   await saveState(state);
   return enrichExercise(state, row);
@@ -782,7 +812,7 @@ async function replaceExercise(state: OfflineState, exerciseId: number, body: Re
   const target = body.exercise && typeof body.exercise === "object" && !Array.isArray(body.exercise)
     ? newExercise(state, body.exercise as RequestBody)
     : typeof body.targetExerciseId === "number" ? findExercise(state, body.targetExerciseId) : null;
-  if (!target || !canReplaceExercise(source, target)) throw httpError(400, "Для переноса нужны одинаковые категория, единицы, противовес и число гантелей.");
+  if (!target || !canReplaceExercise(source, target)) throw httpError(400, "Для переноса нужны одинаковые категория или название, а также совместимые единицы, режим противовеса и число гантелей.");
   if (body.exercise) state.exercises.push(target);
 
   const remap = <T extends CustomProgramExerciseRow>(rows: T[]): T[] => {
@@ -821,7 +851,13 @@ async function replaceExercise(state: OfflineState, exerciseId: number, body: Re
     }
     plan.exercises = [...merged.values()];
   }
-  for (const set of state.sets) if (set.exerciseId === exerciseId) set.exerciseId = target.id;
+  for (const set of state.sets) if (set.exerciseId === exerciseId) {
+    // Keep old measurement/tonnage snapshots when the destination has another category.
+    set.equipment ??= source.equipment;
+    set.loadMode ??= source.loadMode ?? "weight";
+    if (source.equipment === "dumbbell" && set.durationSeconds == null) set.dumbbellCount ??= 1;
+    set.exerciseId = target.id;
+  }
   for (const workout of state.workouts) {
     if (workout.timer?.exerciseId === exerciseId) workout.timer.exerciseId = target.id;
     if (!workout.finishedAt && (workout.draft?.exerciseId === exerciseId || workout.draft?.exerciseId === target.id)) {
@@ -836,6 +872,11 @@ async function replaceExercise(state: OfflineState, exerciseId: number, body: Re
   if (state.coachProfile) state.coachProfile.excludedExerciseIds = [...new Set(state.coachProfile.excludedExerciseIds.map(id => id === exerciseId ? target.id : id))];
   state.exercises = state.exercises.filter(exercise => exercise.id !== exerciseId);
   delete target.replacementPending;
+  const entries = new Map(await readProgressEntries());
+  entries.set(STORAGE_KEY, JSON.stringify(state));
+  for (const [key, value] of changed) entries.set(key, value);
+  try { validateStoredProgress([...entries]); }
+  catch { throw httpError(409, "История сохранена. Перед объединением уточните веса и число подходов в сохранённых планах: они не подходят текущей категории."); }
   await saveStateAndPlans(state, changed);
   return enrichExercise(state, target);
 }
@@ -1337,7 +1378,7 @@ function buildWorkoutReport(state: OfflineState, workout: WorkoutRow): WorkoutRe
       ].filter((item): item is NonNullable<typeof item> => item !== null)
     : [];
 
-  const categoryKey = (set: MeasuredSet) => `${set.exerciseId}:${set.equipment}:${isAssisted(set)}`;
+  const categoryKey = (set: MeasuredSet) => `${set.exerciseId}:${isAssisted(set)}`;
   const previousBest = new Map<string, { maxWeight: number; maxReps: number; maxVolumeSet: number }>();
   for (const set of previousSets) {
     const key = categoryKey(set);

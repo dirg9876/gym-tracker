@@ -8,9 +8,12 @@ export type MeasuredSet = WorkoutSet & DurationMetrics & CoachFields & Equipment
   equipment?: Equipment; bodyWeightKg?: number; bodyWeightEstimated?: boolean; effectiveWeightKg?: number;
 };
 
-// Legacy sets inherit the catalog until their first category change snapshots it.
+export const exerciseNameKey = (name: string): string => name.trim().replace(/\s+/g, " ").toLocaleLowerCase("ru-RU").replace(/ё/g, "е");
+
+// Exercise identity is checked by callers. Catalog category edits do not split its history.
+// Counterweight is still a different measured quantity, not a category spelling change.
 export function sameLoadCategory(set: { equipment?: Equipment; loadMode?: "weight" | "assisted" }, exercise: { equipment: Equipment; loadMode?: "weight" | "assisted" }): boolean {
-  return (set.equipment ?? exercise.equipment) === exercise.equipment && isAssisted(set) === isAssisted(exercise);
+  return isAssisted(set) === isAssisted(exercise);
 }
 
 export function setVolume(weightKg: number, reps: number, equipment?: Equipment, bodyWeightKg?: number | null, timed = false, settings?: EquipmentSettings): number {

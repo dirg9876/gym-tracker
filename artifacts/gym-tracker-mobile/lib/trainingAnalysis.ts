@@ -40,7 +40,7 @@ export function buildTrainingAnalysis(state: OfflineState, workoutId?: number, n
   for (const set of state.sets) {
     const workout = byWorkout.get(set.workoutId), exercise = byExercise.get(set.exerciseId);
     if (!workout || !exercise) continue;
-    const equipment = set.equipment ?? exercise.equipment;
+    const equipment = exercise.equipment;
     const key = `${exercise.id}/${equipment}/${isAssisted(set) ? "assisted" : "weight"}/${equipment === "dumbbell" ? set.dumbbellCount ?? 1 : 1}`;
     rows.push({ ...set, equipment, name: exercise.name, group: exercise.muscleGroup, date: workout.startedAt, workoutFinishedAt: workout.finishedAt!, key });
   }

@@ -8,7 +8,7 @@ const { loadPlan } = await import("../lib/programPlanStash.ts");
 const { buildCoachContext } = await import("../lib/aiCoachContext.ts");
 const { coachFingerprint } = await import("../lib/aiCoachConnection.ts");
 beforeEach(() => { storage.clear(); globalThis.__failMultiSetOnce = false; });
-const create = equipment => request("/api/exercises", "POST", { name: "Category fixture", muscleGroup: "Спина", equipment });
+const create = equipment => request("/api/exercises", "POST", { name: `Category fixture ${equipment}`, muscleGroup: "Спина", equipment });
 const edit = (id, equipment) => request(`/api/exercises/${id}`, "PATCH", { equipment });
 const state = () => JSON.parse(storage.get(PROGRESS_KEY));
 async function record(exerciseId, weightKg, reps = 10) {
@@ -18,7 +18,7 @@ async function record(exerciseId, weightKg, reps = 10) {
   return request(`/api/workouts/${workout.id}`);
 }
 
-test("all category transitions preserve old sets, body mass, volume and import; only new-category sets affect current ranks", async () => {
+test("all category transitions preserve old sets, body mass, volume and import; category labels do not split results", async () => {
   await request("/api/profile", "PUT", { bodyWeightKg: 80 });
   for (const original of ["barbell", "dumbbell", "bodyweight", "machine", "other"]) {
     const exercise = await create(original);
@@ -26,7 +26,7 @@ test("all category transitions preserve old sets, body mass, volume and import; 
     for (const next of ["other", "machine", "barbell", "bodyweight", "dumbbell"]) {
       const updated = await edit(exercise.id, next);
       assert.equal(updated.equipment, next);
-      assert.equal(updated.rankBest, original === next ? original === "bodyweight" ? 10 : 25 : 0);
+      assert.equal(updated.rankBest, next === "bodyweight" ? 10 : original === "bodyweight" ? 0 : 25);
       assert.deepEqual(await request(`/api/workouts/${before.id}`), before);
       await restoreProgress(await exportProgress());
       assert.deepEqual(await request(`/api/workouts/${before.id}`), before);
@@ -34,25 +34,25 @@ test("all category transitions preserve old sets, body mass, volume and import; 
   }
 });
 
-test("legacy sets are snapshotted before the first category edit and old weights do not become official barbell records", async () => {
+test("legacy sets keep their measurement snapshots but category edits no longer hide exercise history", async () => {
   const before = await record(1, 100);
   const legacy = state(); delete legacy.sets[0].equipment;
   storage.set(PROGRESS_KEY, JSON.stringify(legacy));
   await edit(1, "machine");
   assert.equal(state().sets[0].equipment, "barbell");
   assert.equal((await request(`/api/workouts/${before.id}`)).totalVolume, before.totalVolume);
-  assert.equal((await request("/api/levels")).stats.mainExercises.find(ex => ex.exerciseId === 1).bestValue, 0);
+  assert.equal((await request("/api/levels")).stats.mainExercises.find(ex => ex.exerciseId === 1).bestValue, 100);
   const machine = await record(1, 150);
   await edit(1, "barbell");
-  assert.equal((await request("/api/exercises/1/norms")).userMaxWeightKg, 100);
+  assert.equal((await request("/api/exercises/1/norms")).userMaxWeightKg, 150);
   assert.equal((await request(`/api/workouts/${machine.id}`)).sets[0].equipment, "machine");
   const context = buildCoachContext(state(), "next_workout");
-  assert.deepEqual(context.sessions.flatMap(w => w.sets).map(set => set.weightKg), [100]);
-  assert.equal(context.truncated, true);
+  assert.deepEqual(context.sessions.flatMap(w => w.sets).map(set => set.weightKg), [100, 150]);
+  assert.equal(context.truncated, false);
   const insights = await request("/api/stats/insights?days=all");
   const item = insights.exercises.find(item => item.exercise.id === 1);
-  assert.equal(item.otherCategorySets, 1);
-  assert.deepEqual(item.series.find(series => series.id === "weight").points.map(point => point.value), [100]);
+  assert.equal(item.otherCategorySets, 0);
+  assert.deepEqual(item.series.find(series => series.id === "weight").points.map(point => point.value), [100, 150]);
 });
 
 test("category edits recalibrate saved types and active targets, and invalidate stale drafts atomically", async () => {
@@ -78,7 +78,7 @@ test("category edits recalibrate saved types and active targets, and invalidate 
 test("counterweight and two-dumbbell history remain valid after switching to other equipment", async () => {
   await request("/api/profile", "PUT", { bodyWeightKg: 80 });
   for (const settings of [{ equipment: "machine", loadMode: "assisted" }, { equipment: "dumbbell", dumbbellCount: 2 }]) {
-    const exercise = await request("/api/exercises", "POST", { name: "Snapshots", muscleGroup: "Спина", ...settings });
+    const exercise = await request("/api/exercises", "POST", { name: `Snapshots ${settings.equipment}`, muscleGroup: "Спина", ...settings });
     const before = await record(exercise.id, 20);
     await edit(exercise.id, "barbell");
     assert.deepEqual(await request(`/api/workouts/${before.id}`), before);

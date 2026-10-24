@@ -1,16 +1,16 @@
 import type { Exercise } from "@workspace/api-client-react";
 import type { EquipmentSettings } from "./equipmentSettings";
 import { isAssisted } from "./equipmentSettings";
-import { isTimedExercise } from "./workoutMeasurement";
+import { exerciseNameKey, isTimedExercise } from "./workoutMeasurement";
 
 export type CatalogExercise = Exercise & EquipmentSettings & { replacementPending?: boolean };
 export type ExerciseMaintenance = { exercise: CatalogExercise; recordedSets: number; requiresReplacement: boolean };
 
 export function canReplaceExercise(source: CatalogExercise, target: CatalogExercise): boolean {
-  return source.id !== target.id && source.equipment === target.equipment
+  return source.id !== target.id && (source.equipment === target.equipment || exerciseNameKey(source.name) === exerciseNameKey(target.name))
     && isTimedExercise(source.name) === isTimedExercise(target.name)
     && isAssisted(source) === isAssisted(target)
-    && (source.equipment !== "dumbbell" || (source.dumbbellCount ?? 1) === (target.dumbbellCount ?? 1));
+    && (source.dumbbellCount ?? 1) === (target.dumbbellCount ?? 1);
 }
 
 type CatalogReferences = { sets: { exerciseId: number }[]; coachMonth?: { plan: { templates: { exercises: { exerciseId: number }[] }[] } } };

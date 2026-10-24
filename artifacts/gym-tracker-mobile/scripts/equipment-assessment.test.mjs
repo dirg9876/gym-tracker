@@ -12,7 +12,8 @@ import { validateCoachReply } from "@workspace/ai-coach";
 
 beforeEach(() => storage.clear());
 const start = () => request("/api/workouts", "POST", {});
-const create = settings => request("/api/exercises", "POST", { name: "Equipment fixture", muscleGroup: "Спина", equipment: "machine", ...settings });
+let fixtureId = 0;
+const create = settings => request("/api/exercises", "POST", { name: `Equipment fixture ${++fixtureId}`, muscleGroup: "Спина", equipment: "machine", ...settings });
 const add = (id, exerciseId, weightKg, reps, extra={}) => request(`/api/workouts/${id}/sets`, "POST", { exerciseId, weightKg, reps, ...extra });
 const finish = id => request(`/api/workouts/${id}/finish`, "POST");
 async function save(id, draft) { const path=`/api/workouts/${id}/draft`; const current=await request(path); return request(path,"PUT",{revision:current.revision,draft}); }

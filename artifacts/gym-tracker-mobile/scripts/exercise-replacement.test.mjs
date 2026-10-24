@@ -7,8 +7,9 @@ const { exportProgress, restoreProgress, parseProgressBackup } = await import(".
 const { PROGRESS_KEY } = await import("../lib/progressStorage.ts");
 const { loadPlan } = await import("../lib/programPlanStash.ts");
 const { canReplaceExercise } = await import("../lib/exerciseReplacement.ts");
-beforeEach(() => { storage.clear(); globalThis.__failMultiSetOnce = false; });
-const create = data => request("/api/exercises", "POST", { name: "Custom press", muscleGroup: "Грудь", equipment: "dumbbell", ...data });
+let fixtureId = 0;
+beforeEach(() => { storage.clear(); fixtureId = 0; globalThis.__failMultiSetOnce = false; });
+const create = data => request("/api/exercises", "POST", { name: `Custom press ${++fixtureId}`, muscleGroup: "Грудь", equipment: "dumbbell", ...data });
 const replace = (id, body) => request(`/api/exercises/${id}/replace`, "POST", body);
 const target = (exerciseId, weightKg) => ({ exerciseId, sets: 1, repsMin: 8, repsMax: 10, intent: "hypertrophy", setTargets: [{ weightKg, reps: 10 }] });
 const state = () => JSON.parse(storage.get(PROGRESS_KEY));

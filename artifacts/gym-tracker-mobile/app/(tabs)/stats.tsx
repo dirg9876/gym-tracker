@@ -29,7 +29,7 @@ function ExerciseInsight({ item }: { item: InsightExercise }) {
   const historyPage = Math.min(page, Math.max(0, Math.ceil(item.history.length / 5) - 1));
   return <View style={{ gap: 12 }}>
     {item.unknownTimeSets ? <Text style={{ color: colors.amber, fontSize: 12 }}>Старые подходы без времени: {item.unknownTimeSets}</Text> : null}
-    {item.otherCategorySets ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>В истории есть подходы с другой категорией: {item.otherCategorySets}. Они не смешиваются с текущим графиком.</Text> : null}
+    {item.otherCategorySets ? <Text style={{ color: colors.amber, fontSize: 12 }}>Уточните режим нагрузки для {item.otherCategorySets} подх.: противовес и обычный вес измеряются по-разному.</Text> : null}
     <Text style={{ color: colors.foreground, fontSize: 15, fontFamily: "Inter_600SemiBold" }}>Все занятия · {item.history.length}</Text>
     {item.history.slice(historyPage * 5, historyPage * 5 + 5).map(session => <View key={session.workoutId} style={{ gap: 8, borderTopWidth: 1, borderColor: colors.cardBorder, paddingTop: 12 }}>
       <Pressable accessibilityRole="button" accessibilityLabel={`Открыть тренировку ${formatDate(session.date)}`} onPress={() => router.push(`/history/${session.workoutId}`)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -39,7 +39,7 @@ function ExerciseInsight({ item }: { item: InsightExercise }) {
       {session.sets.map((set, index) => <View key={set.id} style={{ gap: 3 }}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}><Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Подход {index + 1}</Text><Text style={{ color: colors.foreground, fontSize: 14 }}>{formatSetResult(set)}</Text></View>
         {formatSetContext(set) ? <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 18 }}>{formatSetContext(set)}</Text> : null}
-        {!sameLoadCategory(set, item.exercise) ? <Text style={{ color: colors.amber, fontSize: 12 }}>Другая категория в записи · не используется в прогнозе</Text> : null}
+        {!sameLoadCategory(set, item.exercise) ? <Text style={{ color: colors.amber, fontSize: 12 }}>Отличается режим противовеса · требуется уточнение</Text> : null}
       </View>)}
     </View>)}
     {item.history.length > 5 ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

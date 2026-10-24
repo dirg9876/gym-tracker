@@ -2,8 +2,10 @@
   "expo": {
     "name": "Gym-Beam",
     "slug": "gym-tracker-mobile",
-    "platforms": ["android"],
-    "version": "1.1.16",
+    "platforms": [
+      "android"
+    ],
+    "version": "1.1.17",
     "runtimeVersion": "1.1.0",
     "updates": {
       "url": "https://u.expo.dev/dabd3128-415f-4a2f-8c73-3b0a52585149",
@@ -26,7 +28,7 @@
     "backgroundColor": "#0a0a0a",
     "android": {
       "package": "com.dirg9876.gymtracker",
-      "versionCode": 22,
+      "versionCode": 23,
       "backgroundColor": "#0a0a0a",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/gymbeam-adaptive.png",

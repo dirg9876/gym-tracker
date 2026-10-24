@@ -162,7 +162,7 @@ test("online model, next-set context and manual application preserve recorded hi
   assert.equal(reply.nextSet.weightKg, prediction.next.weightKg); assert.equal(reply.nextSet.reps, prediction.next.reps);
   assert.deepEqual(storage, saved);
 });
-test("historical category/dumbbell changes cannot train the new variant", async () => {
+test("dumbbell counts distinguish measurements, but a category label alone cannot discard history", async () => {
   const w = await request("/api/workouts", "POST");
   await request(`/api/workouts/${w.id}/sets`, "POST", { exerciseId: 3, weightKg: 30, reps: 8, rir: 2, technique: "good" });
   await request(`/api/workouts/${w.id}/finish`, "POST");
@@ -170,7 +170,7 @@ test("historical category/dumbbell changes cannot train the new variant", async 
   const current = await request("/api/workouts", "POST");
   assert.equal((await request(`/api/workouts/${current.id}/prediction/3`)).model.status, "insufficient");
   await request("/api/exercises/3", "PATCH", { equipment: "machine" });
-  assert.equal((await request(`/api/workouts/${current.id}/prediction/3`)).model.sessions, 0);
+  assert.equal((await request(`/api/workouts/${current.id}/prediction/3`)).model.sessions, 1);
 });
 test("a past review and an active workout cannot train from later finished workouts", async () => {
   const w = await request("/api/workouts", "POST");

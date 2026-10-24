@@ -27,12 +27,12 @@ test("the complete exercise history retains all three 50 kg sets alongside a lat
   assert.equal((await request("/api/stats/insights?days=28")).exercises[0].history.length, 1);
   assert.equal(bench.series.find(s => s.id === "weight").points.length, 2);
 });
-test("category changes preserve every historical set without mixing them into the current measurement chart", async () => {
+test("category changes preserve every historical set in the current exercise chart", async () => {
   const raw = state(); record(raw, 1, "2026-10-10", 50, 10, 3, { equipment: "other" });
   record(raw, 1, "2026-10-20", 60, 10, 3, { equipment: "barbell" }); persist(raw);
   const bench = (await request("/api/stats/insights?days=all")).exercises[0];
   assert.equal(bench.history.flatMap(w => w.sets).length, 6);
-  assert.equal(bench.otherCategorySets, 3); assert.equal(bench.series[0].points.length, 1);
+  assert.equal(bench.otherCategorySets, 0); assert.equal(bench.series[0].points.length, 2);
 });
 test("all-time history exposes every session beyond the chart display window and is read-only", async () => {
   const raw = state();

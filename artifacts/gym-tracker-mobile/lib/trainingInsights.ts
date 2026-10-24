@@ -1,13 +1,14 @@
 import type { Exercise } from "@workspace/api-client-react";
 import type { MeasuredSet } from "./workoutMeasurement";
-import { isTimedExercise } from "./workoutMeasurement";
+import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
+import type { EquipmentSettings } from "./equipmentSettings";
 import { isAssisted } from "./equipmentSettings";
 
 export type InsightPeriod = 28 | 84 | null;
 type Session = { id: number; name?: string | null; startedAt: string; finishedAt?: string | null };
 export type InsightPoint = { date: string; value: number; workoutId: number; set: MeasuredSet };
 export type InsightSeries = { id: "weight" | "assistance" | "reps" | "seconds"; label: string; unit: "kg" | "reps" | "seconds"; lowerIsBetter: boolean; points: InsightPoint[] };
-export type InsightExercise = { exercise: Exercise; sets: number; defaultMetric: InsightSeries["id"]; series: InsightSeries[]; unknownTimeSets: number; otherCategorySets: number;
+export type InsightExercise = { exercise: Exercise & EquipmentSettings; sets: number; defaultMetric: InsightSeries["id"]; series: InsightSeries[]; unknownTimeSets: number; otherCategorySets: number;
   history: { workoutId: number; date: string; name: string | null; sets: MeasuredSet[] }[] };
 
 export const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -71,7 +72,7 @@ export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], 
     const history = new Map<number, MeasuredSet[]>();
     for (const row of rows) { const batch = history.get(row.workoutId) ?? []; batch.push(row); history.set(row.workoutId, batch); }
     const bySession = new Map<number, MeasuredSet[]>();
-    for (const row of rows.filter(row => (row.equipment ?? exercise.equipment) === exercise.equipment)) { const batch = bySession.get(row.workoutId) ?? []; batch.push(row); bySession.set(row.workoutId, batch); }
+    for (const row of rows) { const batch = bySession.get(row.workoutId) ?? []; batch.push(row); bySession.set(row.workoutId, batch); }
     const timed = isTimedExercise(exercise.name);
     const definitions: Omit<InsightSeries, "points">[] = timed
       ? [{ id: "seconds", label: "Лучшее удержание", unit: "seconds", lowerIsBetter: false }]
@@ -93,12 +94,12 @@ export function buildTrainingInsights(workouts: Session[], sets: MeasuredSet[], 
       points.sort((a, b) => Date.parse(a.date) - Date.parse(b.date) || a.workoutId - b.workoutId);
       return { ...definition, points };
     }).filter(row => row.points.length && !(exercise.equipment === "bodyweight" && row.id === "weight" && row.points.every(point => point.value === 0)));
-    exerciseInsights.push({ exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isCustom: exercise.isCustom, isMain: exercise.isMain },
+    exerciseInsights.push({ exercise: { ...exercise },
       history: [...history].map(([workoutId, batch]) => ({ workoutId,
         date: sessionById.get(workoutId)!.startedAt, name: sessionById.get(workoutId)!.name ?? null,
         sets: batch.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id) }))
         .sort((a, b) => b.date.localeCompare(a.date) || b.workoutId - a.workoutId),
-      sets: rows.length, series, otherCategorySets: rows.filter(row => (row.equipment ?? exercise.equipment) !== exercise.equipment).length,
+      sets: rows.length, series, otherCategorySets: rows.filter(row => !sameLoadCategory(row, exercise)).length,
       defaultMetric: timed ? "seconds" : exercise.equipment === "bodyweight" ? "reps" : series.some(row => row.id === "assistance") && !series.some(row => row.id === "weight") ? "assistance" : "weight",
       unknownTimeSets: timed ? rows.filter(row => !(row.durationSeconds != null && row.durationSeconds > 0)).length : 0 });
   }

@@ -51,7 +51,7 @@ test("review of an old workout cannot see future sessions, and compares the same
   assert.equal(buildTrainingAnalysis(value, focus.id).exercises[0].comparison.comparableEffort, false);
 });
 
-test("time and counterweight are not additional weight; changed categories and dumbbell counts do not produce comparisons", async () => {
+test("time and counterweight keep their units; a category edit no longer splits exercise comparisons", async () => {
   const plank = await request("/api/workouts", "POST");
   await request(`/api/workouts/${plank.id}/sets`, "POST", { exerciseId: 30, weightKg: 0, reps: 0, durationSeconds: 45 });
   await request(`/api/workouts/${plank.id}/finish`, "POST");
@@ -60,7 +60,7 @@ test("time and counterweight are not additional weight; changed categories and d
   await record(3, 10, 10, { rir: 2, technique: "good" });
   await request("/api/exercises/3", "PATCH", { equipment: "machine" });
   const machine = await record(3, 10, 10);
-  assert.equal((await request(`/api/workouts/${machine.id}/analysis`)).exercises[0].comparison, null);
+  assert.equal((await request(`/api/workouts/${machine.id}/analysis`)).exercises[0].comparison.previousReps, 10);
   await request("/api/profile", "PUT", { bodyWeightKg: 80 });
   const assisted = await request("/api/exercises", "POST", { name: "Assisted fixture", muscleGroup: "Спина", equipment: "machine", loadMode: "assisted" });
   const counterweight = await record(assisted.id, 30, 8);

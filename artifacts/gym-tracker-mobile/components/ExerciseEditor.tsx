@@ -63,7 +63,7 @@ export function ExerciseEditor({ exercise, onClose, initialValues, onCreate }: {
           <MuscleGroupPicker value={group} onChange={setGroup} groups={exercises?.map(ex => ex.muscleGroup)} disabled={busy || !identityEditable} />
           <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Категория</Text>
           <EquipmentPicker value={equipment} onChange={setEquipment} disabled={busy} />
-          {exercise && equipment !== exercise.equipment ? <Text style={{ color: colors.amber, fontSize: 13 }}>История сохранит прежнюю категорию. Плановые веса и текущий черновик этого упражнения начнутся с калибровочной нагрузки.</Text> : null}
+          {exercise && equipment !== exercise.equipment ? <Text style={{ color: colors.amber, fontSize: 13 }}>Все подходы этого упражнения останутся в истории и прогнозе. Категория в старых записях сохранится; будущие плановые веса потребуют калибровки.</Text> : null}
           {equipment && !isTimedExercise(name) ? <EquipmentSettingsFields equipment={equipment} value={settings} onChange={setSettings} disabled={busy} /> : null}
         </ScrollView>
       </View>
