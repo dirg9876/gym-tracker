@@ -61,8 +61,22 @@ exerciseReplacement.ts, offlineApi.ts, stats.tsx, ExerciseEditor.tsx.
 - Native QA AVD gymbeam_visualqa (5556): install-r PASS, state/plans до/после точные,
   окно release notes PASS, копия свежей истории показывает 5 подходов без жёлтых
   исключений, график включает 13 и 20 октября. Скриншоты/копии ignored verified.
-- Исходный QA baseline 2 подхода, активных тренировок нет; восстановление запущено.
-  Исходный телефонный backup не изменялся. Публикация APK/OTA ещё не выполнена.
+- Исходный QA baseline 2 подхода восстановлен; state/plans после QA и OTA точно
+  совпадают с исходными. Телефонный backup не изменялся. QA AVD остановлен.
+
+## Публикация
+
+- Source master commit `576861509b5487afcf66a5fd0d544e67b82a1566`, pushed.
+- CI PASS: https://github.com/dirg9876/gym-tracker/actions/runs/40077069270
+- APK: https://github.com/dirg9876/gym-tracker/releases/download/v1.1.17/gym-beam-1.1.17.apk
+  GitHub asset SHA256 совпал с локальным, 153052933 bytes; APK не в Git blobs.
+- OTA Android production/runtime1.1.0: update `01a16d93-c141-7d8e-afe7-ae4d6f342805`,
+  group `65aace96-dbc8-4a55-9a27-f0124afa68f3`, created 2026-10-24T11:02:42.241Z.
+  Проверено реальное скачивание и применение: экран показывает update 01a16d93.
+- Secret audit PASS: 20 staged source files отдельно; 1456 распакованных APK
+  entries и 204 OTA files, private values не обнаружены и не печатались.
+- PowerShell помечает stderr EAS CLI как NativeCommandError; реальная публикация
+  подтверждена JSON update id и применением на Android, не только exit status.
 
 ## Сохранность И Следующий Шаг
 
@@ -70,7 +84,7 @@ exerciseReplacement.ts, offlineApi.ts, stats.tsx, ExerciseEditor.tsx.
 и untracked attached_assets/старые checkpoints/error.log. Ветки удалены ранее,
 оставлена master. Прежний Git bundle не удалять.
 
-Следующий шаг: завершить восстановление QA baseline, сверить state/plans, проверить
-отсутствие private values в staged source/APK/OTA. Commit/push master, Android export
-и совместимый production OTA, GitHub Release APK. Затем дополнить checkpoint
-ссылками, update id, CI и результатами финальной проверки, остановить QA AVD.
+Исправление 1.1.17 завершено. Новый запрос пользователя: смоделировать месячные
+дневники нескольких людей с тренировками математического алгоритма, оценить по
+тренерским и научным критериям и улучшить алгоритм. Это отдельный логический
+app release 1.1.18, не переписывать опубликованный 1.1.17 или его tag/asset.
