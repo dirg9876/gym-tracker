@@ -43,7 +43,7 @@ trainingPrediction.ts повышает вес после лёгкого подх
 https://pubmed.ncbi.nlm.nih.gov/19204579/. Диапазоны пользователя8–12основные,
 10–15изоляция сохраняются, больше не значит тренироваться до отказа.
 
-## Проверки И Следующий Шаг
+## Исходный План Проверки
 
 Прежде изменений baseline месячных сценариев artifacts/apk/monthly/candidate-1.1.18.json
 сохранён:8профилей,94занятия,1218подходов,18RIR0/breakdown,412лёгких,1easy-stalled.
@@ -54,7 +54,7 @@ commit/push/master и публикация. Прежний signing key, optional
 Сохранять .agents metadata и unrelated untracked файлы. CHECKPOINT.md указывает
 сюда. Список изменённых файлов/результаты дополнять по мере выполнения.
 
-## Реализация И Промежуточная Проверка
+## Реализация И Проверка
 
 trainingCoach: respondToReserve/ reserveRepGain; RIR4 добавляет1повтор,
 RIR5 может добавить один доступный весовой шаг или2повтора. Внутри занятия
@@ -72,10 +72,9 @@ evidencev4 описывает правила/ограничения, обнов�
 
 13новых регрессий responsive-progression.test.mjs, включая историю, кап, крупный
 шаг, неизвестные оценки, идемпотентность commit, backup, ручные шаблоны,
-противовес/секунды и соответствие AI. 483tests PASS до последнего уточнения
->=планового числа; после него отдельные27responsive/month PASS. Нужен финальный
-полный прогон (изначально один gateway test ожидалv3, исправлен наv4).
-Workspace typecheck PASS, финальная повторная проверка запущена.
+противовес/секунды и соответствие AI. Итог483tests PASS после всех изменений,
+включая>=планового числа. Изначально тесты шлюзов ожидалиv3, обновлены доv4 с
+проверкой нового принципа качественного RIR и ограничений. Workspace typecheck PASS.
 Journey624тренировки/8970подходов/findings[] PASS.
 Тот же месячный harness:94занятия/1218подходов, RIR0/breakdown18→18 в каждом
 профиле не больше; лёгких412→351; easy-stalled1→2, см. подробный честный разбор
@@ -84,17 +83,14 @@ Journey624тренировки/8970подходов/findings[] PASS.
 Не скрывать флаги и не снимать guard ради метрики.
 
 Bump штатным release:patch:1.1.20/code26/runtime1.1.0;4русские заметки.
-Финальный APK собирается build-1.1.20-final.log после последнего изменения кода.
-Предварительный APK из build-1.1.20.log не публиковать.5556 visualqa запущен,
-сейчас ещё19. Owned backup gym-beam-original-1.1.20.json — точная копия2подходов
+Финальный APK собран build-1.1.20-final.log после последнего изменения кода.
+Предварительный APK из build-1.1.20.log не публиковался. Owned backup
+gym-beam-original-1.1.20.json — точная копия2подходов
 after-native-logo19. Создан ignored prepare-qa-1.1.20.mjs:6syntheticисторических
 подходов, active workout3/daily push, draft50×8/RIR5/good; backup
 gym-beam-qa-reserve-1.1.20.json и wrapper import-qa-1.1.20.ps1 принимают только
-owned QA/original имена. Обе копии в /sdcard/Download, synthetic пока не импортирован.
-Следующий шаг: закончить build/tests, поставить APK-r, проверитьnotes20/стакан,
-импорт ownQA/нажать добавить и увидеть52,5×8 следующим draft, затемrestorebaseline
-и deep compare. Export/audit, source/master, GitHubAPK/OTA, Worker evidencev4 deploy
-без смены Free/secrets/ledger5USD и без model-вызовов; final checkpoint/stopAVD.
+owned QA/original имена. Обе копии в /sdcard/Download, synthetic использован для
+проверки и полностью заменён исходным baseline после QA. Подробности ниже.
 
 ## Финальная Подготовка
 
@@ -105,7 +101,7 @@ E01757BD2AF26D1242F4A2ECB463D4A744341B4DBE48FE875C5BF25BF9E1891C,
 Android export entry-902029dc6ad6cf354440b811519d46d3.hbc готов.
 Worker evidencev4 опубликован189a8063-5928-453c-aed1-8476ebf4e170,
 status before/after ready и ledger/model совпали, model-вызовов нет. DO/Free/5USD
-и immutable seed не менялись. Source ещё не committed в момент этой записи.
+и immutable seed не менялись. Source66018077d79b752995a7831f7947413e8164e1ea.
 
 Native5556: embedded20/code26,4notes и стакан PASS; install-r state/plans точно
 сохранил (before-reserve-qa20 противoriginal20). OwnQA импортирован, нажат
@@ -114,6 +110,33 @@ Native5556: embedded20/code26,4notes и стакан PASS; install-r state/plans
 uiautomator dump после записи не получил idle, сырой screenshot и повторный
 экспорт подтверждают результат; это ограничение QA-инструмента, не ошибка commit.
 Экспорт after-reserve-qa-1.1.20-visualqa.json:1новыйsyntheticподход, draft52,5×8,
-оценкиRIR5/good сохранены. Сейчас восстанавливается ownoriginal2подхода.
-Осталось проверить точное восстановление, audit/stage своих16файлов,
-commit/push/master, APK/OTA20, применение на baseline и итоговый checkpoint.
+оценкиRIR5/good сохранены. Ownoriginal2подхода полностью восстановлен,
+after-reserve-restored-1.1.20-visualqa.json state/plans точно равны original.
+
+## Публикация И Итог
+
+Source66018077d79b752995a7831f7947413e8164e1ea отправлен в master/origin/master.
+CI PASS: https://github.com/dirg9876/gym-tracker/actions/runs/40095887839
+APK: https://github.com/dirg9876/gym-tracker/releases/download/v1.1.20/gym-beam-1.1.20.apk
+Размер/SHA выше совпали с GitHub asset digest. Audit16source/APK/204OTAfiles PASS;
+личные backups, ключи/owner-token/connection files/SDK/AVD не публиковались.
+OTA production Android/runtime1.1.0: update01a16dfb-1d90-7026-8ac5-571dd2bee6a4,
+group9e1a72cd-d39e-40b4-af63-f1678013b877, 2026-10-24T12:55:36.080Z.
+На5556 после «Применить обновление» явно повторно открыты Updates:
+Gym-Beam1.1.20/Обновление01a16dfb. Offline force-stop/cold launch: стакан на
+главной есть, screenshot release-1.1.20-ota-offline-home.png. Связь восстановлена.
+Итоговая сверка after-ota-1.1.20-visualqa.json противoriginal20 подтвердила
+точную сохранность state/plans. QA5556 остановлен;5554 уже остановлен после19,
+другие устройства не затронуты. Выпуск завершён, код/схемы backup больше не менять.
+
+Ограничения: синтетические дневники не доказывают прирост мышц и не проверены
+реальным независимым тренером.18непредсказанных RIR0/breakdown и2диагностических
+stall-флага остаются описанными выше. Приложение не знает самочувствие и боль;
+RIR субъективен/может наследоваться. Новые цели проверяются фактическим подходом.
+Точных индивидуальных научно доказанных процентов не заявлено. Native APIs,
+runtime1.1.0, backupv11 и AI лимит5USD неизменны.
+
+Следующий шаг: пользователь применяет1.1.20 через облако на главной и отмечает
+реальный запас и технику каждого подхода. Новые изменения требуют следующего
+patch1.1.21. Не повторять synthetic import поверх реального активного занятия.
+Сохранять unrelated .agents metadata, untracked assets и прежние Git bundle.
