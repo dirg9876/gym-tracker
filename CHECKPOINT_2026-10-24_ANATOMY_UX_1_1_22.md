@@ -1,5 +1,24 @@
 # Gym-Beam 1.1.22: Анатомия И Удобство
 
+## Выпуск Завершён, Следующая Задача 1.1.23
+
+Source c95d4d4fd2ee7ce1f39a002b3f83ad31f3b0a2fb в master/origin/master.
+GitHubRelease https://github.com/dirg9876/gym-tracker/releases/tag/v1.1.22
+APK153138037bytes uploaded, digest FC1BCC70CBAB922FFCA1ABEFEEB7D98C525E280F3176BE1C1BDB9D9FEBACBF47.
+CI https://github.com/dirg9876/gym-tracker/actions/runs/40102032135 SUCCESS.
+OTA01a16e49-3404-723b-a3d8-71af21e4444a, groupfe60cbc5-215f-43bf-ad23-ae3f4df0e54b,
+production/Android/runtime1.1.0,2026-10-24T14:20:53.636Z. Применение на5556
+подтверждено экраном Updates01a16e49; after-ota-1.1.22-visualqa.json полностью
+совпал с before-anatomy-qa-1.1.22-visualqa.json по state/plans. Native/519tests/
+types/license/privateaudit пройдены. Worker/budget/backup неизменны.
+
+Пользователь после публикации просит разгрузить Статистику и перенести органично
+часть данных в бывшие Виды тренировок с переименованием. Это отдельный выпуск
+1.1.23/code29, checkpoint CHECKPOINT_2026-10-24_TRAINING_NAV_1_1_23.md.
+AVD5556 пока оставлен запущенным для продолжения этой новой задачи; original2sets
+восстановлены, активной тренировки нет. Не повторять старые pendingшаги ниже:
+они являются хронологией22, а не незавершённой публикацией.
+
 Дата24октября2026, C:\gymbeam, master. Предыдущая1.1.21 опубликована,
 checkpoint CHECKPOINT_2026-10-24_WEIGHT_STEP_1_1_21.md. Следующий выпуск1.1.22,
 runtime1.1.0 и backupv11 сохранить, patch через штатный release:patch в конце.
