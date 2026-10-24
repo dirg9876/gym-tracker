@@ -1,8 +1,10 @@
 # Gym-Beam: Текущий Checkpoint
 
-В работе: [1.1.21, шаг веса и пересчёт прогнозов](CHECKPOINT_2026-10-24_WEIGHT_STEP_1_1_21.md).
-Пользователь хочет менять шаг прямо в упражнениях; прогнозы и будущие
-автоматические цели должны обновляться, история и ручной ввод сохраняются.
+Завершено: [1.1.21, шаг веса и сценарий роста](CHECKPOINT_2026-10-24_WEIGHT_STEP_1_1_21.md).
+Опубликована в master, GitHub APK и production OTA. Шаг меняется в упражнении,
+пересчитываются прогнозы и оставшиеся автоматические цели. Условный сценарий
+при RIR4+ поднимает55→60кг, не держит вес до декабря.499tests/types/CI/native QA
+PASS, исходные state/plans восстановлены и совпали после OTA. AVD остановлены.
 
 Завершено: [1.1.20, отзывчивая прогрессия при большом запасе](CHECKPOINT_2026-10-24_RESPONSIVE_PROGRESSION_1_1_20.md).
 Опубликована в master, GitHub APK и production OTA. Большой RIR/хорошая техника
@@ -30,10 +32,9 @@ Android QA, применение OTA и точная сохранность пр
 Git bundle. Старый PR #1 закрыт без слияния, теги и релизы сохранены.
 448 тестов и workspace typecheck PASS; выполненная работа не меняла код приложения.
 
-Текущий выпуск1.1.20/versionCode26/native runtime1.1.0:483tests/typecheck/CI/journey
-PASS, native запись50×8/RIR5 автоматически выставляет52,5×8. Worker evidencev4
-обновлён без платных запросов или смены ledger5USD. Audit и применение OTA PASS,
-QA baseline восстановлен. Следующий логический app release1.1.21.
+Текущий выпуск1.1.21/versionCode27/native runtime1.1.0:499tests/typecheck/CI/native
+PASS. Runtime/backupv11/Worker evidencev4/Free/ledger5USD не менялись. Audit,
+применение OTA и сохранность прогресса PASS. Следующий логический app release1.1.22.
 Проверки и параметры резервной копии перечислены в текущем checkpoint.
 
 - [Очистка описаний Gym-Beam: 448 тестов, типы и CI PASS](CHECKPOINT_2026-10-23_REPOSITORY_BRANDING.md).
