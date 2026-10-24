@@ -81,12 +81,13 @@ test("a saved month cannot define hypertrophy ranges from its suggested high rep
 
 test("isolation has a real 10-15 range; two full successful sessions add one weight step and reset repetitions", async () => {
   await muscles();
+  await request("/api/exercises/21", "PATCH", { weightStepKg: 1 });
   await record(21, 15, 10);
   let next = buildNextExercisePrediction(state(), 21, Date.now()).next;
   assert.equal(next.reps, 15); assert.equal(next.weightKg, 10); assert.equal(next.action, "hold");
   await record(21, 15, 10);
   next = buildNextExercisePrediction(state(), 21, Date.now()).next;
-  assert.equal(next.reps, 10); assert.equal(next.weightKg, 12.5); assert.equal(next.action, "increase");
+  assert.equal(next.reps, 10); assert.equal(next.weightKg, 11); assert.equal(next.action, "increase");
 });
 
 test("catalog movement classification distinguishes compound presses from French presses and calf presses", async () => {

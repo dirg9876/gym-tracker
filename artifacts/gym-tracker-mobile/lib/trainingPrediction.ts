@@ -2,7 +2,7 @@ import { controlPrediction, estimateStrength, goalPrescription, modelForecastSch
 import type { OfflineState } from "./offlineApi";
 import { sameLoadCategory, isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
-import { nextWorkingLoad } from "./trainingCoach";
+import { assessedProbe, nextWorkingLoad, returnAfterBreak, workingBaseline } from "./trainingCoach";
 import { relatedCalibration } from "./relatedLoads";
 
 type Range = { sets: number; repsMin: number; repsMax: number; targetRir: number; weightStepKg: number };
@@ -32,7 +32,9 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
   let first = { ...guard, predictedReps: null as number | null, unroundedWeightKg: null as number | null };
   for (let i = 0; i < 6; i++) {
     const fatigueReps = (fitted.fatigueBeta ?? 0) * (current.length - (firstToday ? current.indexOf(firstToday) : 0) + i);
-    const result = controlPrediction({ strengthKg: supported && hasFeedback && latestMeasured ? strength : null, guard,
+    const result = equipment.equipment === "bodyweight" && !equipment.timed && !equipment.assisted
+      ? { ...guard, reps: Math.min(range.repsMax, guard.reps), predictedReps: null, unroundedWeightKg: null }
+      : controlPrediction({ strengthKg: supported && hasFeedback && latestMeasured ? strength : null, guard,
       repsMin: range.repsMin, repsMax: range.repsMax, targetRir: range.targetRir, stepKg: range.weightStepKg,
       minimumKg: minimumWeight(equipment.equipment as "barbell"), fatigueReps });
     targets.push({ weightKg: result.weightKg, reps: result.reps });
@@ -64,19 +66,26 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   const history = compatible.filter(row => finished.has(row.workoutId)).map(row => ({ ...row, workoutStartedAt: finished.get(row.workoutId)!.startedAt, workoutFinishedAt: finished.get(row.workoutId)!.finishedAt! })).sort((a, b) => a.workoutFinishedAt.localeCompare(b.workoutFinishedAt) || a.workoutId - b.workoutId || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
   const current = compatible.filter(row => row.workoutId === workoutId).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
   const last = current.at(-1) ?? history.at(-1);
-  const working = [...history, ...current].filter(row => row.reps >= range.repsMin && row.reps <= 30 && row.durationSeconds == null).at(-1);
-  const baseline = working ?? last;
+  const baseline = workingBaseline(history, current, range.repsMin);
+  const probe = assessedProbe(baseline, range.repsMin, range.targetRir, exercise.equipment === "bodyweight");
   const progression = nextWorkingLoad(history, { ...range, equipment: exercise.equipment, exerciseId }, now);
   let guard: LoadGuard = { weightKg: baseline?.weightKg ?? (exercise.equipment === "barbell" ? 20 : exercise.equipment === "bodyweight" ? 0 : exercise.equipment === "machine" ? 5 : 2.5), reps: Math.min(baseline?.reps ?? 8, range.repsMax), action: last ? "hold" : "calibrate", reason: progression.reason };
   if (!current.length && progression.increase) guard = { weightKg: progression.weightKg!, reps: range.repsMin, action: "increase", reason: progression.reason };
   if (current.length === 1 && !history.length && last?.technique === "good" && last.rir != null && last.rir >= 4 && range.weightStepKg <= 2.5 && exercise.equipment !== "bodyweight" && !isAssisted(exercise) && !isTimedExercise(exercise.name)) guard = { ...guard, weightKg: last.weightKg + range.weightStepKg, action: "increase", reason: "После первого лёгкого подборочного подхода разрешён один шаг оборудования. Оцените запас и технику снова." };
   const lastSession = history.filter(row => row.workoutId === last?.workoutId);
-  if (!current.length && !progression.increase && last && last.reps >= range.repsMin && last.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) guard = { ...guard, reps: last.reps + 1, action: "progress_reps", reason: "Сначала добавьте повторение в диапазоне, сохраняя запас и технику. Формула проверит расчётный запас." };
-  if (last && exercise.equipment !== "bodyweight" && !isTimedExercise(exercise.name) && !isAssisted(exercise) && !history.some(row => row.reps >= range.repsMin) && !current.some(row => row.reps >= range.repsMin)) guard = { weightKg: exercise.equipment === "barbell" ? 20 : exercise.equipment === "machine" ? 5 : 2.5, reps: 8, action: "calibrate", reason: "Нет рабочих подходов в целевом диапазоне. Сначала выполните подборочный подход с оценкой запаса и техники." };
+  if (!current.length && !progression.increase && baseline && baseline.reps >= range.repsMin && baseline.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) guard = { ...guard, reps: baseline.reps + 1, action: "progress_reps", reason: "Сначала добавьте повторение в диапазоне, сохраняя запас и технику. Формула проверит расчётный запас." };
+  if (probe) {
+    const assessed = (current.length ? current : lastSession).every(row => row.technique === "good" && row.rir != null && row.rir >= range.targetRir);
+    guard = assessed ? probe : { weightKg: baseline!.weightKg, reps: baseline!.reps, action: "calibrate", reason: "Короткий подход сохранён, но не все оценки подтверждают переход в рабочий диапазон. Повторно проверьте запас и технику на измеренном весе." };
+  }
+  if (!probe && last && exercise.equipment !== "bodyweight" && !isTimedExercise(exercise.name) && !isAssisted(exercise) && !history.some(row => row.reps >= range.repsMin) && !current.some(row => row.reps >= range.repsMin)) guard = { weightKg: exercise.equipment === "barbell" ? 20 : exercise.equipment === "machine" ? 5 : 2.5, reps: 8, action: "calibrate", reason: "Нет рабочих подходов в целевом диапазоне. Сначала выполните подборочный подход с оценкой запаса и техники." };
   if (last?.technique === "breakdown") guard = { ...guard, weightKg: Math.max(minimumWeight(exercise.equipment), last.weightKg - range.weightStepKg), reps: Math.max(1, Math.min(last.reps - 1, range.repsMin)), action: "reduce", reason: "Техника нарушалась: снизьте нагрузку. При боли остановите упражнение." };
   if (current.length && last?.technique === "good" && last.rir != null && last.rir < range.targetRir && exercise.equipment !== "bodyweight" && !isAssisted(exercise) && !isTimedExercise(exercise.name)) {
     guard = { ...guard, weightKg: Math.max(minimumWeight(exercise.equipment), Math.min(guard.weightKg, last.weightKg - range.weightStepKg)),
       reps: range.repsMin, action: "reduce", reason: "Последний подход тяжелее целевого RIR; последующие подходы облегчены." };
+  }
+  if (!current.length && last && now - Date.parse(history.at(-1)!.workoutFinishedAt) > 28 * 86400000 && !isTimedExercise(exercise.name) && !isAssisted(exercise)) {
+    guard = returnAfterBreak(baseline!, range.weightStepKg, minimumWeight(exercise.equipment), range.repsMin, exercise.equipment === "bodyweight");
   }
   const forecast = forecastWorkingSets(history, { ...range, sets: Math.max(1, range.sets - current.length) }, guard,
     { equipment: exercise.equipment, timed: isTimedExercise(exercise.name), assisted: isAssisted(exercise) }, now, current);

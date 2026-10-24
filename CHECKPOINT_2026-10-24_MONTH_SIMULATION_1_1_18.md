@@ -57,3 +57,58 @@ lib/ai-coach/src/training-model/*.ts и evidence.ts.
 После meaningful work обновлять этот checkpoint; новый patch только при готовом
 логическом выпуске. Сохранять unrelated dirty .agents metadata, untracked assets,
 private backups/keys и прежний branch archive.
+
+## Выполненная Реализация
+
+Создан scripts/monthly-cohort.mjs:8профилей,28дней,94занятия. Реальный daily/start/
+prediction/set/finish API; независимый Brzycki-подобный ответ с усталостью,
+заданной способностью и пропусками; backup roundtrip после каждого занятия.
+Платных AI-вызовов нет. Исходный baseline снят до правок с кода5768615/7afcfeb;
+ignored artifacts/apk/monthly/baseline-1.1.17.json, SHA256
+29389b06c42d834ddcd575691829d5a9e15e095fe5ddd84330dd3d5f17098099.
+
+Исправлены: повторная калибровка изоляции/собственного веса, перенос последнего
+back-off веса на начало следующего занятия, подтверждение одинаковых схем с
+back-off, относительный крупный шаг и два малых шага при большом запасе, один
+облегчённый probe после28дней, альтернатива при непосильном минимуме. Обновлены
+AI load targets и shared validation: канонические вычисления не режутся старым
+лимитом2.5кг; legacy не получил такой свободы. Обновлена научная памятка v3.
+
+Сравнение:1214→1218подходов, синтетические RIR0/breakdown46→18, условные
+easy-stalled21→1. Лёгких подходов344→412 — это сохранённый недостаток/осторожность,
+не все метрики улучшились. Ни в одном профиле не стало больше срывов, единицы,
+границы и выбор сплита без нарушений. Новые10регрессий включают двойной полный
+прогон, дневники побайтно одинаковы. Добавлены ещё3регрессии свежих повторов и
+собственного веса. Финальная дополнительная граница: малый абсолютный шаг гантели/
+тренажёра тоже ограничен10%, 5→7.5кг не повышается автоматически. Новый итоговый
+набор469тестов PASS, workspace typecheck PASS. Финальный APK пересобран после
+этой правки (build-1.1.18-verified.log), установлен и проверен на Android.
+
+Отчёт с тренерским разбором и научными ссылками:
+docs/MONTHLY_ALGORITHM_REVIEW_2026-10-24.md. Продуктовые пороги не объявлять
+научно доказанным оптимумом;12срывов при внезапной усталости и1stall-флаг остались.
+
+App/release повышены штатным release:patch до1.1.18/code24, runtime1.1.0 сохранён.
+Journey624тренировки/8970подходов PASS, findings[]; Worker dry-run PASS.
+Финальный APK SHA256 E01CAAC7A9749658891793C016CA1F34764B74A4C52256037CBBB04AAD54E8FF,
+подпись прежняя dfdcf05447cf713727f87f653a702649e4bf0ba8ff9598b294d0ac26a264814a.
+Native QA AVD gymbeam_visualqa5556: install-r сохраняет state/plans; notes18 PASS;
+на synthetic14подходах жим55×8, подтягивания5×+0, изоляция5×10; ложный следующий
+скачок5→7.5скрыт после финальной сборки. Свежий личный backup replay90подходов
+не изменён, все9подходов упражнения32учтены; стартовый вес50из первичного подхода.
+
+Шлюз предварительно обновлён (DO/тариф/секреты не менялись), status ready и budget
+до/после совпал, платных запросов нет. После последнего уточнения evidence.ts
+повторить deploy, чтобы сервер получил финальную памятку, затем проверить status.
+
+Созданы files: scripts/monthly-cohort.mjs и monthly-cohort.test.mjs; отчёт docs/
+MONTHLY_ALGORITHM_REVIEW_2026-10-24.md. Изменены mobile lib/trainingCoach,
+trainingPrediction, trainingAnalysis, adaptiveWorkout, dailyWorkout, exerciseOutlook,
+aiCoachContext; shared lib/ai-coach/src/index.ts и evidence.ts, соответствующие
+старые тесты цели/прогноза/шлюза. Новых native API/полей backup нет.
+Параметры: fixed-brzycki-response-v1, старт2026-01-05,28дней; данные синтетические.
+
+Следующие шаги: завершить сверку восстановления QA baseline, stage только свои
+файлы и audit source/APK/нового Android export. Commit/push master, финальный Worker
+deploy со старым ledger/лимитом5USD; APK/production OTA и проверка применения,
+итоговый checkpoint. Не публиковать промежуточный APK с SHA63811769...

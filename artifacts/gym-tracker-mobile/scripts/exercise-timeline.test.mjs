@@ -113,8 +113,8 @@ test("future and unfinished records cannot turn projections into observed histor
   assert.equal(chart.forecastStartIndex, 1); assert.equal(chart.points[0].value, 60);
 });
 
-test("a large equipment step is held for manual confirmation and never sold as a forthcoming automatic milestone", () => {
-  const raw = state(); raw.exercises.find(ex => ex.id === 1).weightStepKg = 5;
+test("an equipment step exceeding ten percent is held for manual confirmation, not sold as an automatic milestone", () => {
+  const raw = state(); raw.exercises.find(ex => ex.id === 1).weightStepKg = 10;
   record(raw, 1, "2026-10-22", 60, 12);
   const outlook = buildExerciseOutlook(raw, 1, now);
   assert.equal(outlook.progression, null); assert.ok(outlook.sessions.every(row => row.targets[0].weightKg === 60));

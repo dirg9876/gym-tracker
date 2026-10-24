@@ -76,7 +76,7 @@ export function buildDailyWorkout(state: OfflineState, now = new Date(), preferr
       if (timed) return { weightKg: 0, reps: 0, durationSeconds: last?.durationSeconds ?? definition.durationSeconds ?? 30, setType: "working" };
       if (isAssisted(exercise)) return { weightKg: Math.min(last?.weightKg ?? 20, state.profile.bodyWeightKg!), reps: Math.min(last?.reps ?? 6, definition.repsMax), setType: "working" };
       const result = prediction.model.targets[i] ?? prediction.next;
-      return { weightKg: result.weightKg, reps: exercise.equipment === "bodyweight" && calibration ? 3 : result.reps, setType: "working" };
+      return { weightKg: result.weightKg, reps: exercise.equipment === "bodyweight" && calibration && !compatible.length ? 3 : result.reps, setType: "working" };
     });
     const values = targets.map(s => s.durationSeconds ?? s.reps);
     // Only the automatic split defers unknown working sets. A saved monthly

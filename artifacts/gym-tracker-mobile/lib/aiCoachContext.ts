@@ -42,7 +42,8 @@ export function buildCoachContext(state: OfflineState, task: CoachTask, workoutI
     const seconds = state.sets.filter(set => set.exerciseId === ex.id && set.durationSeconds != null && sameLoadCategory(set, ex) && finished.some(w => w.id === set.workoutId)).at(-1)?.durationSeconds ?? 30;
     const targets = Array.from({ length: 6 }, (_, i) => {
       const numeric = prediction.model.targets[i] ?? prediction.next;
-      return timed ? { weightKg: 0, reps: 0, durationSeconds: seconds } : { weightKg: numeric.weightKg, reps: ex.equipment === "bodyweight" && prediction.next.action === "calibrate" ? 3 : numeric.reps, durationSeconds: null };
+      const bodyweightProbe = ex.equipment === "bodyweight" && prediction.next.action === "calibrate" && !state.sets.some(set => set.exerciseId === ex.id && finished.some(w => w.id === set.workoutId));
+      return timed ? { weightKg: 0, reps: 0, durationSeconds: seconds } : { weightKg: numeric.weightKg, reps: bodyweightProbe ? 3 : numeric.reps, durationSeconds: null };
     });
     return { exerciseId: ex.id, targets, calibration: !timed && prediction.next.action === "calibrate", reason: prediction.next.reason };
   }).filter(row => row.targets[0].durationSeconds == null) : [];

@@ -117,12 +117,15 @@ test("exercise outlook is deterministic/read-only and never logs imagined future
   assert.ok(a.sessions.every(row => row.targets.length === 3 && row.targets.every(set => set.reps <= 12 && set.weightKg <= 72.5)));
   assert.ok(a.sessions.every((row, i) => row.date >= "2026-10-22" && (!i || row.date > a.sessions[i - 1].date)));
 });
-test("upper-range weight progress is conditional on two complete sessions; a large step is not auto-increased", async () => {
+test("upper-range progress needs two full sessions; a five kg quantum can fit while an oversized quantum is held", async () => {
   const raw = await seed(); session(raw, 1, 1, 12, 70, "2026-10-20");
   let value = buildExerciseOutlook(raw, 1, now);
   assert.equal(value.sessions[0].targets[0].weightKg, 70); assert.equal(value.sessions[0].targets[0].reps, 12);
   assert.equal(value.sessions[1].targets[0].weightKg, 72.5); assert.equal(value.sessions[1].targets[0].reps, 8);
   raw.exercises.find(ex => ex.id === 1).weightStepKg = 5;
+  value = buildExerciseOutlook(raw, 1, now);
+  assert.equal(value.sessions[1].targets[0].weightKg, 75);
+  raw.exercises.find(ex => ex.id === 1).weightStepKg = 10;
   value = buildExerciseOutlook(raw, 1, now);
   assert.ok(value.sessions.every(row => row.targets.every(set => set.weightKg === 70 && set.reps <= 12)));
 });
@@ -171,11 +174,11 @@ test("future and unfinished workouts cannot manufacture a progression or measure
   raw.workouts[0].finishedAt = null;
   assert.deepEqual(buildExerciseOutlook(raw, 1, now), before);
 });
-test("stale real upper-range success cannot substitute for a recent second successful workout", async () => {
+test("stale upper-range success requires recalibration and cannot create imagined working-load progression", async () => {
   const raw = await seed(); session(raw, 1, 1, 12, 70, "2026-08-01");
   const value = buildExerciseOutlook(raw, 1, now);
-  assert.equal(value.sessions[1].targets[0].weightKg, 70);
-  assert.equal(value.sessions[2].targets[0].weightKg, 72.5);
+  assert.equal(value.calibration, true); assert.equal(value.progression, null);
+  assert.ok(value.sessions.every(row => row.calibration && row.targets.length === 1 && row.targets[0].weightKg === 62.5));
 });
 test("assisted forecast needs body weight, keeps counterweight semantics and respects the current body-weight maximum", async () => {
   await seed();

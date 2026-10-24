@@ -8,6 +8,7 @@ import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
 import { localDateKey } from "./trainingInsights";
 import type { SetTarget } from "./workoutTemplates";
 import { bodyWeightForecast } from "./bodyWeight";
+import { progressionIncrement } from "./trainingCoach";
 
 const daysBetween = (a: string, b: string) => (Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000;
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 12);
@@ -72,7 +73,7 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
   let targets: SetTarget[] = Array.from({ length: count }, (_, index) => timed
     ? { weightKg: 0, reps: 0, durationSeconds: last?.durationSeconds ?? occurrences[0]?.durationSeconds ?? 30 }
     : assisted ? { weightKg: Math.min(last?.weightKg ?? 20, state.profile.bodyWeightKg ?? 20), reps: Math.min(last?.reps ?? 6, policy.repsMax) }
-    : { weightKg: (prediction.model.targets[index] ?? prediction.next).weightKg, reps: calibration && exercise.equipment === "bodyweight" ? 3 : (prediction.model.targets[index] ?? prediction.next).reps });
+    : { weightKg: (prediction.model.targets[index] ?? prediction.next).weightKg, reps: calibration && exercise.equipment === "bodyweight" && !last ? 3 : (prediction.model.targets[index] ?? prediction.next).reps });
   // Future successes are explicit scenario assumptions, never observations for EMA.
   const latestSession = history.filter(row => row.workoutId === last?.workoutId);
   const actualDate = last ? localDateKey(new Date(byWorkout.get(last.workoutId)!.finishedAt!)) : null;
@@ -83,8 +84,9 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
     if (index > 0 && !calibration && !timed && !assisted) {
       const atTop = targets.every(set => set.reps >= policy.repsMax);
       successes = previousCount === occurrence.sets && atTop && daysBetween(occurrence.date, occurrences[index - 1].date) <= 28 ? successes + 1 : 0;
-      const increase = successes >= 2 && (exercise.weightStepKg ?? 2.5) <= 2.5 && exercise.equipment !== "bodyweight";
-      targets = targets.map(set => ({ weightKg: Math.round((set.weightKg + (increase ? exercise.weightStepKg ?? 2.5 : 0)) * 100) / 100,
+      const increment = progressionIncrement(targets[0].weightKg, exercise.weightStepKg ?? 2.5, false, exercise.equipment);
+      const increase = successes >= 2 && increment != null && exercise.equipment !== "bodyweight";
+      targets = targets.map(set => ({ weightKg: Math.round((set.weightKg + (increase ? increment! : 0)) * 100) / 100,
         reps: increase ? policy.repsMin : Math.min(policy.repsMax, set.reps + (atTop ? 0 : 1)) }));
       if (increase) successes = 0;
     }
@@ -97,7 +99,7 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
   const lastWeightKg = sessions.at(-1)?.targets[0]?.weightKg ?? null;
   const stepKg = exercise.weightStepKg ?? 2.5;
   const firstIncrease = initialWeightKg == null ? undefined : sessions.find(row => row.targets[0].weightKg > initialWeightKg);
-  const progression = !calibration && !timed && !assisted && exercise.equipment !== "bodyweight" && stepKg <= 2.5 && initialWeightKg != null
+  const progression = !calibration && !timed && !assisted && exercise.equipment !== "bodyweight" && initialWeightKg != null && progressionIncrement(initialWeightKg, stepKg, false, exercise.equipment) != null
     ? { nextWeightKg: Math.round((initialWeightKg + stepKg) * 100) / 100, earliestDate: firstIncrease?.date ?? null,
       reps: policy.repsMax, sets: count, confirmations: 2, targetRir: 2 }
     : null;

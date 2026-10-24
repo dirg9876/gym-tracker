@@ -1,6 +1,6 @@
 import { goalPrescription, type CoachProfile } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
-import { sameLoadCategory, isTimedExercise } from "./workoutMeasurement";
+import { sameLoadCategory, isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
 
 export type AdaptiveDefinition = {
@@ -119,10 +119,17 @@ export function buildAdaptiveSplit(
   const eligible = available.filter(ex => !excluded.has(ex.id) && !isAssisted(ex));
   const familiarity = new Map<number, Set<number>>();
   const lastSeenExercise = new Map<number, number>();
+  const minimumFailures = new Map<number, { at: number; failed: boolean }>();
   const workload = new Map<SplitDay, number>(SPLIT_DAYS.map(day => [day, 0]));
   const latestPhase = new Map<SplitDay, number>();
   for (const row of state.sets) {
     const finishedAt = finished.get(row.workoutId), ex = catalog.get(row.exerciseId);
+    if (finishedAt != null && ex && sameLoadCategory(row, ex) && !isTimedExercise(ex.name)) {
+      const at = Date.parse(row.createdAt), previous = minimumFailures.get(ex.id);
+      if (!previous || at >= previous.at) minimumFailures.set(ex.id, { at, failed: now - finishedAt <= 28 * DAY &&
+        row.weightKg <= minimumWeight(ex.equipment) && row.reps < goalPrescription(profile.goal, ex).repsMin &&
+        (row.technique === "breakdown" || row.rir === 0) });
+    }
     if (finishedAt == null || !ex || !isComparableWorkingSet(row, ex)) continue;
     const phase = phaseForGroup(planningGroup(ex));
     if (!phase) continue;
@@ -154,8 +161,11 @@ export function buildAdaptiveSplit(
 
   const maxSlots = profile.sessionMinutes >= 90 ? 6 : profile.sessionMinutes >= 70 ? 5 : 4;
   const selected: AdaptiveDefinition[] = [], used = new Set<number>();
+  const replacedMinimumLoads = new Set<string>();
   for (const slot of slots(day).slice(0, maxSlots)) {
-    const candidates = eligible.filter(ex => !used.has(ex.id) && slot.matches(ex));
+    const matches = eligible.filter(ex => !used.has(ex.id) && slot.matches(ex));
+    const alternatives = matches.filter(ex => !minimumFailures.get(ex.id)?.failed);
+    const candidates = alternatives.length ? alternatives : matches;
     const posteriorLegs = day === "legs" && slot.group === "Ноги" && selected.length === 1;
     // First match the movement pattern; only *within* that pattern rank
     // familiarity. A familiar fly/leg extension cannot replace a compound lift.
@@ -173,6 +183,7 @@ export function buildAdaptiveSplit(
     });
     const chosen = candidates[0];
     if (!chosen) continue;
+    if (alternatives.length) for (const ex of matches.filter(ex => minimumFailures.get(ex.id)?.failed)) replacedMinimumLoads.add(ex.name);
     used.add(chosen.id);
     const prescription = goalPrescription(profile.goal, chosen);
     selected.push({
@@ -183,6 +194,6 @@ export function buildAdaptiveSplit(
   }
   return {
     day, name: NAMES[day], definitions: selected,
-    reason: `Сплит: ${NAMES[day].replace("Сплит · ", "")}. ${preferredDay ? "Вы выбрали этот вариант; упражнения подобраны по истории завершённых тренировок." : "День выбран по нагрузке из всей истории завершённых тренировок с повышенным весом недавних занятий."} Сначала двигательные паттерны и базовые упражнения, затем знакомые варианты. Записи не позволяют точно оценить восстановление.`,
+    reason: `Сплит: ${NAMES[day].replace("Сплит · ", "")}. ${preferredDay ? "Вы выбрали этот вариант; упражнения подобраны по истории завершённых тренировок." : "День выбран по нагрузке из всей истории завершённых тренировок с повышенным весом недавних занятий."} Сначала двигательные паттерны и базовые упражнения, затем знакомые варианты. Записи не позволяют точно оценить восстановление.${replacedMinimumLoads.size ? ` Для ${[...replacedMinimumLoads].slice(0, 2).join(", ")} выбраны альтернативы: в последнем занятии минимальная нагрузка не позволила выполнить рабочие повторы с запасом или техникой.` : ""}`,
   };
 }

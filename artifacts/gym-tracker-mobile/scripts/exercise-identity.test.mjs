@@ -45,13 +45,13 @@ test("five other-category press sets remain in the chart, prediction, analysis a
   assert.equal(chart.forecastStartIndex, 2);
   assert.deepEqual(chart.points.slice(0, 2).map(point => point.value), [50, 50]);
   const prediction = buildNextExercisePrediction(raw, exercise.id, now.getTime());
-  assert.equal(prediction.next.weightKg, 40); assert.equal(prediction.next.action, "hold");
+  assert.equal(prediction.next.weightKg, 50); assert.equal(prediction.next.action, "hold");
   const context = buildCoachContext(raw, "next_workout");
   assert.equal(context.sessions.flatMap(row => row.sets).filter(row => row.exerciseId === exercise.id).length, 9);
   const analysis = context.analysis.exercises.filter(row => row.exerciseId === exercise.id);
   assert.equal(analysis.length, 1); assert.equal(analysis[0].sets, 5);
   assert.equal(analysis[0].matchesCurrentCategory, true);
-  assert.equal(analysis[0].next.weightKg, 40);
+  assert.equal(analysis[0].next.weightKg, 50);
   assert.deepEqual(storage, before);
   await restoreProgress(await exportProgress());
   assert.deepEqual(state().sets, raw.sets);
