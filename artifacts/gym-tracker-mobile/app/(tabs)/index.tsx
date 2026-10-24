@@ -1,6 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useQuery } from "@tanstack/react-query";
 import { useGetActiveWorkout } from "@workspace/api-client-react";
+import { useAssets } from "expo-asset";
 import { Image } from "expo-image";
 import { useRouter, type Href } from "expo-router";
 import React, { useState } from "react";
@@ -17,7 +18,7 @@ import type { ExerciseMaintenance } from "@/lib/exerciseReplacement";
 
 // Repacked APKs store new artwork as a raw asset; EAS bundles it normally.
 const logo = process.env.EXPO_PUBLIC_GYM_REPACK_ASSETS === "1"
-  ? { uri: "file:///android_asset/branding/gymbeam-logo.png" }
+  ? "file:///android_asset/branding/gymbeam-logo.png"
   : require("@/assets/images/gymbeam-logo.png");
 
 export default function BrandScreen() {
@@ -25,6 +26,10 @@ export default function BrandScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [artworkSize, setArtworkSize] = useState(0);
+  // Older APKs embed the same pixels under a different drawable name. Resolve by hash,
+  // then use the local file instead of React Native's current resource identifier.
+  const [logoAssets] = useAssets(typeof logo === "number" ? [logo] : []);
+  const logoUri = typeof logo === "string" ? logo : logoAssets?.[0]?.localUri;
   const toast = useToast();
   const active = useGetActiveWorkout();
   const maintenance = useQuery({ queryKey: ["exercise-maintenance"], queryFn: () => coachRequest<ExerciseMaintenance[]>("/api/exercises/maintenance") });
@@ -60,7 +65,7 @@ export default function BrandScreen() {
       }}>
         <View style={{ width: artworkSize, height: artworkSize * 880 / 1254, overflow: "hidden" }}>
           <Image
-            source={logo}
+            source={logoUri ? { uri: logoUri } : undefined}
             accessibilityLabel="Стакан со штангой"
             accessible
             contentFit="contain"

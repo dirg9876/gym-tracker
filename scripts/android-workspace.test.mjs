@@ -25,6 +25,16 @@ test("the production logo is owned by Android and retains its original pixels", 
   assert.match(text(`${mobile}app/(tabs)/index.tsx`), /require\("@\/assets\/images\/gymbeam-logo\.png"\)/);
 });
 
+test("the home logo uses a materialized local asset after OTA, not a renamed drawable", () => {
+  const home = text(`${mobile}app/(tabs)/index.tsx`);
+  assert.match(home, /import \{ useAssets \} from "expo-asset"/);
+  assert.match(home, /useAssets\(typeof logo === "number" \? \[logo\] : \[\]\)/);
+  assert.match(home, /logoAssets\?\.\[0\]\?\.localUri/);
+  assert.match(home, /source=\{logoUri \? \{ uri: logoUri \} : undefined\}/);
+  assert.doesNotMatch(home, /source=\{logo\}/);
+  assert.match(home, /file:\/\/\/android_asset\/branding\/gymbeam-logo\.png/);
+});
+
 test("Android code and live gallery tools have no imports from removed applications", () => {
   function inspect(directory) {
     for (const item of readdirSync(new URL(directory, root), { withFileTypes: true })) {
