@@ -6,6 +6,8 @@ const { PROGRESS_KEY } = await import("../lib/progressStorage.ts");
 const { buildExerciseOutlook } = await import("../lib/exerciseOutlook.ts");
 const { buildExerciseTimeline } = await import("../lib/exerciseTimeline.ts");
 const { lineChartGeometry } = await import("../lib/chartGeometry.ts");
+const { buildNextExercisePrediction } = await import("../lib/trainingPrediction.ts");
+const { goalPrescription, estimateStrength } = await import("@workspace/ai-coach");
 const now = new Date("2026-10-23T17:51:00Z");
 beforeEach(async () => {
   storage.clear(); mock.timers.enable({ apis: ["Date"], now: now.getTime() });
@@ -58,8 +60,10 @@ test("60 kg is a double-progression scenario, not a frozen prescription: reps ri
   const id = raw.workouts.at(-1).id;
   for (const [kg, reps] of [[70, 5], [80, 3], [85, 1]]) raw.sets.push({ ...raw.sets.at(-1), id: raw.nextSetId++, workoutId: id, weightKg: kg, reps });
   const before = structuredClone(raw), outlook = buildExerciseOutlook(raw, 1, now);
-  assert.deepEqual(outlook.sessions.map(row => [row.targets[0].weightKg, row.targets[0].reps]), [[60, 10], [60, 11], [60, 12], [60, 12], [62.5, 8], [62.5, 9]]);
-  assert.deepEqual(outlook.progression, { nextWeightKg: 62.5, earliestDate: outlook.sessions[4].date, reps: 12, sets: 3, confirmations: 2, targetRir: 2 });
+  assert.deepEqual(outlook.sessions.map(row => [row.targets[0].weightKg, row.targets[0].reps]), [[60, 10], [60, 12], [62.5, 8], [62.5, 10], [62.5, 12], [65, 8]]);
+  assert.deepEqual(outlook.progression, { nextWeightKg: 62.5, earliestDate: outlook.sessions[2].date, reps: 12, sets: 3, confirmations: 1, targetRir: 4 });
+  assert.equal(outlook.targetRir, 2, "the actual training goal is distinct from the high-reserve scenario assumption");
+  assert.equal(outlook.scenarioRir, 4);
   assert.deepEqual(raw, before, "conditional successes must never become real measurements");
 });
 
@@ -69,6 +73,67 @@ test("history and forecast can share a repetitions axis without mixing kilograms
   const chart = buildExerciseTimeline(outlook, history, "reps");
   assert.equal(chart.metric.unit, "reps"); assert.equal(chart.points[0].value, 10);
   assert.equal(chart.points.at(-1).value, outlook.sessions.at(-1).targets[0].reps);
+});
+
+test("the reported 55 kg / 5 kg step scenario reaches 60 kg within the displayed sessions instead of staying flat through December", () => {
+  const raw = state(); raw.exercises.find(ex => ex.id === 1).weightStepKg = 5;
+  record(raw, 1, "2026-10-20", 50, 12);
+  record(raw, 1, "2026-10-22", 50, 12);
+  const before = structuredClone(raw), saved = new Map(storage);
+  const outlook = buildExerciseOutlook(raw, 1, now);
+  assert.deepEqual(outlook.sessions.map(row => [row.targets[0].weightKg, row.targets[0].reps]),
+    [[55, 8], [55, 10], [55, 12], [60, 8], [60, 10], [60, 12]]);
+  assert.equal(outlook.changeKg, 5);
+  assert.equal(outlook.progression.earliestDate, outlook.sessions[3].date);
+  assert.match(outlook.assumptions, /не обещание роста силы/);
+  assert.equal(outlook.scenarioRir, 4);
+  assert.deepEqual(raw, before); assert.deepEqual(storage, saved);
+});
+
+test("conditional high-reserve goals agree with the live numerical policy when those sets are actually recorded", () => {
+  const raw = state(), ex = raw.exercises.find(ex => ex.id === 1);
+  ex.weightStepKg = 5;
+  record(raw, 1, "2026-10-20", 50, 12);
+  record(raw, 1, "2026-10-22", 50, 12);
+  const outlook = buildExerciseOutlook(raw, 1, now), original = structuredClone(raw);
+  const policy = goalPrescription("hypertrophy", ex);
+  for (const [index, row] of outlook.sessions.entries()) {
+    const date = index ? new Date(`${row.date}T12:00:00`) : now;
+    const actual = buildNextExercisePrediction(raw, 1, date.getTime(), { ...policy, sets: row.targets.length });
+    assert.deepEqual(row.targets, row.targets.map((_, i) => ({
+      weightKg: actual.model.targets[i].weightKg, reps: actual.model.targets[i].reps,
+    })), `session ${index + 1} must use live progression, not an arbitrary upward line`);
+    const id = record(raw, 1, row.date, row.targets[0].weightKg, row.targets[0].reps, row.targets.length, { rir: outlook.scenarioRir });
+    raw.workouts.find(w => w.id === id).finishedAt = `${row.date}T13:00:00`;
+  }
+  assert.deepEqual(original.sets.length, 6, "only this test's explicit diary writes add observations");
+});
+
+test("viewing an ambitious scenario never changes the measured estimator or increases actual low-reserve prescriptions", () => {
+  const raw = state(); raw.exercises.find(ex => ex.id === 1).weightStepKg = 5;
+  record(raw, 1, "2026-10-22", 55, 10, 3, { rir: 0 });
+  const observations = () => raw.sets.map(s => ({ ...s, workoutFinishedAt: raw.workouts.find(w => w.id === s.workoutId).finishedAt }));
+  const fitted = estimateStrength(observations(), now.getTime());
+  const before = buildNextExercisePrediction(raw, 1, now.getTime());
+  const outlook = buildExerciseOutlook(raw, 1, now);
+  assert.ok(outlook.sessions.some(row => row.targets[0].weightKg > outlook.initialWeightKg));
+  assert.deepEqual(buildNextExercisePrediction(raw, 1, now.getTime()), before);
+  assert.deepEqual(estimateStrength(observations(), now.getTime()), fitted);
+  assert.equal(outlook.sessions[0].targets[0].weightKg, before.model.targets[0].weightKg);
+});
+
+test("a long gap inside a conditional schedule switches to one lighter probe instead of assuming continued growth", () => {
+  const raw = state(); raw.exercises.find(ex => ex.id === 1).weightStepKg = 5;
+  record(raw, 1, "2026-10-22", 55, 8);
+  const planning = { profile: raw.coachProfile, doneIds: new Set(raw.workouts.map(w => w.id)),
+    byWorkout: new Map(raw.workouts.map(w => [w.id, w])), monthly: false, remaining: [],
+    spacing: 7, firstDate: now, definitions: [],
+    timeline: [{ date: "2026-10-25", day: "push" }, { date: "2026-12-01", day: "push" }] };
+  const outlook = buildExerciseOutlook(raw, 1, now, planning);
+  assert.equal(outlook.sessions[0].calibration, false);
+  assert.equal(outlook.sessions[1].calibration, true);
+  assert.equal(outlook.sessions[1].targets.length, 1);
+  assert.ok(outlook.sessions[1].targets[0].weightKg < outlook.initialWeightKg);
 });
 
 test("an exercise without measurements shows calibration, not fictional observations or forecast strength", () => {

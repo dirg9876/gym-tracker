@@ -12,6 +12,7 @@ import { isTimedExercise, minimumWeight, weightLabel } from "@/lib/workoutMeasur
 import { editableTemplateExercise, templateInputErrors, withSetTargets, type TemplatePlan, type SetTarget } from "@/lib/workoutTemplates";
 import { ExercisePicker } from "./ExercisePicker";
 import { returnToBrand } from "@/lib/navigation";
+import { weightStep, type ConfiguredExercise } from "@/lib/equipmentSettings";
 
 export function SavedWorkoutPlan({ plan, onSaved, confirmation }: { plan: TemplatePlan; onSaved?: () => void; confirmation?: { title: string; label: string; apply: (plan: TemplatePlan) => Promise<void> } }) {
   const colors = useColors();
@@ -99,7 +100,7 @@ export function SavedWorkoutPlan({ plan, onSaved, confirmation }: { plan: Templa
       } catch (error) { showError(error); }
     } },
   ]);
-  return <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.background }}>
+  return <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
     <ScreenHeader title={confirmation?.title ?? (isNew ? "Новый вид тренировки" : "Вид тренировки")} onBack={back} onHome={home} />
     <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 24 }}>
       <TextInput accessibilityLabel="Название шаблона" placeholder="Название тренировки" placeholderTextColor={colors.mutedForeground} maxLength={80} editable={!busy} value={name} onChangeText={value => { setName(value); setDirty(true); }} style={{ minHeight: 48, borderBottomWidth: 1, borderColor: colors.cardBorder, color: colors.foreground, fontSize: 18 }} />
@@ -109,7 +110,7 @@ export function SavedWorkoutPlan({ plan, onSaved, confirmation }: { plan: Templa
         if (!ex) return;
         const timed = isTimedExercise(ex.name);
         const target: SetTarget = timed ? { weightKg: 0, reps: 0, durationSeconds: 30, setType: "working" } : { weightKg: minimumWeight(ex.equipment) || (ex.equipment === "bodyweight" ? 0 : 2.5), reps: 8, setType: "working" };
-        setExercises(previous => [...previous, { exerciseId: ex.id, name: ex.name, muscleGroup: ex.muscleGroup, equipment: ex.equipment, isBodyweight: ex.equipment === "bodyweight", basedOn: "level-benchmark", suggestedWeightKg: target.weightKg, sets: 3, repsMin: timed ? 30 : 8, repsMax: timed ? 30 : 12, intent: "hypertrophy", note: null, weightStepKg: ex.equipment === "dumbbell" ? 1 : 2.5, targetRir: 2, setTargets: Array.from({ length: 3 }, () => ({ ...target })) }]);
+        setExercises(previous => [...previous, { exerciseId: ex.id, name: ex.name, muscleGroup: ex.muscleGroup, equipment: ex.equipment, isBodyweight: ex.equipment === "bodyweight", basedOn: "level-benchmark", suggestedWeightKg: target.weightKg, sets: 3, repsMin: timed ? 30 : 8, repsMax: timed ? 30 : 12, intent: "hypertrophy", note: null, weightStepKg: weightStep(ex as ConfiguredExercise), targetRir: 2, setTargets: Array.from({ length: 3 }, () => ({ ...target })) }]);
         setDirty(true);
       }} />
       <FieldError message={errors.exercises} />

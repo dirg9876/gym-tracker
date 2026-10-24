@@ -717,6 +717,7 @@ async function updateExercise(
   }
   if (!validEquipmentSettings(next)) throw httpError(400, "Проверьте совместимость категории и настройки нагрузки.");
   const categoryChanged = next.equipment !== row.equipment;
+  const stepChanged = (next.weightStepKg ?? 2.5) !== (row.weightStepKg ?? 2.5);
   if (isTimedExercise(next.name) !== isTimedExercise(row.name) || !categoryChanged && isAssisted(next) !== isAssisted(row)) {
     const plans = (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX));
     const used = state.sets.some(set => set.exerciseId === exerciseId)
@@ -766,7 +767,7 @@ async function updateExercise(
       if (!isTimedExercise(next.name)) workout.draft = makeWorkoutDraft(next, { weightKg: initialWeight, reps: Math.min(workout.draft!.reps, next.equipment === "bodyweight" ? 3 : 8) });
     }
   }
-  if (categoryChanged || (next.weightStepKg ?? 2.5) !== (row.weightStepKg ?? 2.5) || (next.dumbbellCount ?? 1) !== (row.dumbbellCount ?? 1)) {
+  if (categoryChanged || stepChanged || (next.dumbbellCount ?? 1) !== (row.dumbbellCount ?? 1)) {
     for (const workout of state.workouts.filter(workout => !workout.finishedAt && workout.draft?.exerciseId === exerciseId)) {
       if ((workout.draftRevision ?? 0) >= Number.MAX_SAFE_INTEGER) throw httpError(409, "Слишком много изменений черновика.");
       workout.draftRevision = (workout.draftRevision ?? 0) + 1;
@@ -774,6 +775,34 @@ async function updateExercise(
   }
   Object.assign(row, next);
   if (next.equipment !== "dumbbell") delete row.dumbbellCount;
+  if (stepChanged && !categoryChanged) {
+    for (const [key, value] of (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX))) {
+      const workout = state.workouts.find(workout => !workout.finishedAt && PLAN_PREFIX + workout.id === key);
+      if (!workout) continue;
+      const plan = JSON.parse(value) as TemplatePlan;
+      const item = plan.exercises.find(item => item.exerciseId === exerciseId);
+      if (!item) continue;
+      const completed = completedTargets(item, state.sets.filter(set => set.workoutId === workout.id));
+      const oldTarget = plannedSet(item, completed);
+      item.weightStepKg = next.weightStepKg ?? 2.5;
+      if (plan.id === "daily" && completed < item.sets && !isTimedExercise(next.name) && !isAssisted(next)) {
+        const prediction = buildActivePrediction(state, workout.id, exerciseId, Date.now(), item);
+        item.setTargets = Array.from({ length: item.sets }, (_, index) => {
+          const target = plannedSet(item, index);
+          if (index < completed) return target;
+          const nextTarget = prediction.model.targets[index - completed] ?? prediction.next;
+          return { ...target, weightKg: nextTarget.weightKg, reps: nextTarget.reps };
+        });
+        item.note = prediction.next.reason;
+        item.suggestedWeightKg = item.setTargets[completed].weightKg;
+        // A user-edited draft remains literal; only untouched automatic input follows the new target.
+        if (workout.draft?.exerciseId === exerciseId && workout.draft.weightKg === oldTarget.weightKg && workout.draft.reps === oldTarget.reps) {
+          workout.draft = { ...workout.draft, weightKg: item.setTargets[completed].weightKg, reps: item.setTargets[completed].reps };
+        }
+      }
+      changed.push([key, JSON.stringify(plan)]);
+    }
+  }
   await saveStateAndPlans(state, changed);
   return enrichExercise(state, row);
 }

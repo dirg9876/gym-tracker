@@ -4,11 +4,11 @@ import { buildAdaptiveSplit, planningGroup, type SplitDay } from "./adaptiveWork
 import { monthProgress } from "./coachMonth";
 import { buildNextExercisePrediction } from "./trainingPrediction";
 import { isAssisted } from "./equipmentSettings";
-import { isTimedExercise, sameLoadCategory } from "./workoutMeasurement";
+import { isTimedExercise, minimumWeight, sameLoadCategory } from "./workoutMeasurement";
 import { localDateKey } from "./trainingInsights";
 import type { SetTarget } from "./workoutTemplates";
 import { bodyWeightForecast } from "./bodyWeight";
-import { progressionIncrement } from "./trainingCoach";
+import { nextWorkingLoad, progressionIncrement, reserveRepGain, returnAfterBreak } from "./trainingCoach";
 
 const daysBetween = (a: string, b: string) => (Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000;
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 12);
@@ -74,25 +74,36 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
     ? { weightKg: 0, reps: 0, durationSeconds: last?.durationSeconds ?? occurrences[0]?.durationSeconds ?? 30 }
     : assisted ? { weightKg: Math.min(last?.weightKg ?? 20, state.profile.bodyWeightKg ?? 20), reps: Math.min(last?.reps ?? 6, policy.repsMax) }
     : { weightKg: (prediction.model.targets[index] ?? prediction.next).weightKg, reps: calibration && exercise.equipment === "bodyweight" && !last ? 3 : (prediction.model.targets[index] ?? prediction.next).reps });
-  // Future successes are explicit scenario assumptions, never observations for EMA.
-  const latestSession = history.filter(row => row.workoutId === last?.workoutId);
-  const actualDate = last ? localDateKey(new Date(byWorkout.get(last.workoutId)!.finishedAt!)) : null;
-  const recent = actualDate && occurrences[0] && daysBetween(occurrences[0].date, actualDate) <= 28;
-  let successes = recent && latestSession.length === count && latestSession.every(row => row.weightKg === targets[0].weightKg && row.reps >= policy.repsMax && row.technique === "good" && (row.rir ?? 0) >= 2) ? 1 : 0;
-  let previousCount = count;
+  // A target scenario assumes successful high-reserve sets. It is not a fitted strength trend.
+  // Share live progression guards, but never pass hypothetical results to the strength estimator.
+  const scenarioRir = Math.min(5, Math.max(4, policy.targetRir + 2));
+  const scenarioHistory: Parameters<typeof nextWorkingLoad>[0] = history.map(row => ({ ...row, workoutFinishedAt: byWorkout.get(row.workoutId)!.finishedAt! }));
+  let needsCalibration = calibration;
   const sessions = occurrences.map((occurrence, index) => {
-    if (index > 0 && !calibration && !timed && !assisted) {
-      const atTop = targets.every(set => set.reps >= policy.repsMax);
-      successes = previousCount === occurrence.sets && atTop && daysBetween(occurrence.date, occurrences[index - 1].date) <= 28 ? successes + 1 : 0;
-      const increment = progressionIncrement(targets[0].weightKg, exercise.weightStepKg ?? 2.5, false, exercise.equipment);
-      const increase = successes >= 2 && increment != null && exercise.equipment !== "bodyweight";
-      targets = targets.map(set => ({ weightKg: Math.round((set.weightKg + (increase ? increment! : 0)) * 100) / 100,
-        reps: increase ? policy.repsMin : Math.min(policy.repsMax, set.reps + (atTop ? 0 : 1)) }));
-      if (increase) successes = 0;
+    if (index > 0 && !needsCalibration && !timed && !assisted) {
+      const previousDate = occurrences[index - 1].date;
+      if (daysBetween(occurrence.date, previousDate) > 28) {
+        const probe = returnAfterBreak(targets[0], exercise.weightStepKg ?? 2.5, minimumWeight(exercise.equipment), policy.repsMin, exercise.equipment === "bodyweight");
+        targets = [{ weightKg: probe.weightKg, reps: probe.reps }];
+        needsCalibration = true;
+      } else {
+        const assumed = Array.from({ length: occurrences[index - 1].sets }, (_, i) => ({
+          ...(targets[i] ?? targets.at(-1)!), exerciseId, workoutId: state.nextWorkoutId + index,
+          createdAt: `${previousDate}T12:00:00`, workoutFinishedAt: `${previousDate}T12:00:00`,
+          rir: scenarioRir, technique: "good" as const,
+        }));
+        scenarioHistory.push(...assumed);
+        const result = nextWorkingLoad(scenarioHistory, { ...policy, exerciseId, equipment: exercise.equipment,
+          sets: occurrence.sets, weightStepKg: exercise.weightStepKg ?? 2.5 }, Date.parse(`${occurrence.date}T12:00:00`));
+        const primary = Math.max(...targets.map(set => set.weightKg));
+        const increment = result.increase ? result.weightKg! - primary : 0;
+        const repGain = reserveRepGain(assumed, policy.targetRir);
+        targets = targets.map(set => ({ weightKg: Math.round((set.weightKg + increment) * 100) / 100,
+          reps: result.increase ? policy.repsMin : Math.min(policy.repsMax, set.reps + repGain) }));
+      }
     }
-    previousCount = occurrence.sets;
-    const sets = calibration ? 1 : occurrence.sets;
-    return { date: occurrence.date, conditional: index > 0, calibration, targets: Array.from({ length: sets }, (_, i) => ({ ...(targets[i] ?? targets.at(-1)!) })) };
+    const sets = needsCalibration ? 1 : occurrence.sets;
+    return { date: occurrence.date, conditional: index > 0, calibration: needsCalibration, targets: Array.from({ length: sets }, (_, i) => ({ ...(targets[i] ?? targets.at(-1)!) })) };
   });
   if (!occurrences.length) scheduleSource = assisted && state.profile.bodyWeightKg == null ? "Для подбора противовеса сначала укажите массу тела" : monthly ? "В оставшихся занятиях месяца этого упражнения нет" : !profile.equipment.includes(exercise.equipment) || profile.excludedExerciseIds.includes(exerciseId) ? "Упражнение исключено из плана" : "В ближайшем рекомендованном сценарии этого упражнения нет";
   const initialWeightKg = sessions[0]?.targets[0]?.weightKg ?? null;
@@ -101,13 +112,13 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
   const firstIncrease = initialWeightKg == null ? undefined : sessions.find(row => row.targets[0].weightKg > initialWeightKg);
   const progression = !calibration && !timed && !assisted && exercise.equipment !== "bodyweight" && initialWeightKg != null && progressionIncrement(initialWeightKg, stepKg, false, exercise.equipment) != null
     ? { nextWeightKg: Math.round((initialWeightKg + stepKg) * 100) / 100, earliestDate: firstIncrease?.date ?? null,
-      reps: policy.repsMax, sets: count, confirmations: 2, targetRir: 2 }
+      reps: policy.repsMax, sets: count, confirmations: 1, targetRir: scenarioRir }
     : null;
   return { exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isMain: exercise.isMain, isCustom: exercise.isCustom },
-    repsMin: policy.repsMin, repsMax: policy.repsMax, targetRir: 2, weightStepKg: stepKg, timed, assisted, calibration, scheduleSource, sessions, progression,
+    repsMin: policy.repsMin, repsMax: policy.repsMax, targetRir: policy.targetRir, scenarioRir, weightStepKg: stepKg, timed, assisted, calibration, scheduleSource, sessions, progression,
     initialWeightKg, changeKg: !calibration && !timed && !assisted && initialWeightKg != null && lastWeightKg != null ? Math.round((lastWeightKg - initialWeightKg) * 100) / 100 : null,
     reason: timed && !last ? "Время пока не проверено по вашим подходам; начальный ориентир требует посильной проверки без боли." : assisted ? "Противовес подбирается вручную. Уменьшение противовеса повышает, а не снижает нагрузку." : prediction.next.reason,
-    assumptions: `Даты предполагаемые: ${monthly ? "месячный план" : "настройки"}, ${monthly ? Math.round(7 / spacing) : profile.daysPerWeek} занятий в неделю; дни недели не закреплены. Следующие назначения — сценарий при выполнении всех подходов с целевым запасом и техникой, не обещание прогресса. Пропуск, изменение плана или новая запись пересчитывают прогноз.`,
+    assumptions: `Даты предполагаемые: ${monthly ? "месячный план" : "настройки"}, ${monthly ? Math.round(7 / spacing) : profile.daysPerWeek} занятий в неделю; дни недели не закреплены. ${timed || assisted || calibration ? "Нагрузку сначала проверяют фактическими подходами." : `Будущие точки — целевой сценарий при выполнении всех подходов с запасом не меньше ${scenarioRir} и хорошей техникой, не обещание роста силы.`} Меньший запас, пропуск или новая запись меняют следующие цели. Условные результаты не добавляются в историю и не обучают оценку силы.`,
   };
 }
 export type ExerciseOutlook = ReturnType<typeof buildExerciseOutlook>;

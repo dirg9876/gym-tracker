@@ -117,7 +117,7 @@ test("exercise outlook is deterministic/read-only and never logs imagined future
   assert.ok(a.sessions.every(row => row.targets.length === 3 && row.targets.every(set => set.reps <= 12 && set.weightKg <= 72.5)));
   assert.ok(a.sessions.every((row, i) => row.date >= "2026-10-22" && (!i || row.date > a.sessions[i - 1].date)));
 });
-test("upper-range progress needs two full sessions; a five kg quantum can fit while an oversized quantum is held", async () => {
+test("actual upper-range data waits for confirmation; high-reserve future goals allow a five kg quantum but hold an oversized one", async () => {
   const raw = await seed(); session(raw, 1, 1, 12, 70, "2026-10-20");
   let value = buildExerciseOutlook(raw, 1, now);
   assert.equal(value.sessions[0].targets[0].weightKg, 70); assert.equal(value.sessions[0].targets[0].reps, 12);

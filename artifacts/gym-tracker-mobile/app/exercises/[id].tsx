@@ -4,7 +4,7 @@ import {
   useGetExerciseProgress,
 } from "@workspace/api-client-react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,13 +14,14 @@ import { LineChart } from "@/components/LineChart";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { StandardsPanel } from "@/components/StandardsPanel";
 import { ExerciseOutlook } from "@/components/ExerciseOutlook";
+import { ExerciseWeightStep } from "@/components/ExerciseWeightStep";
 import type { ExerciseOutlook as Outlook } from "@/lib/exerciseOutlook";
 import { coachRequest } from "@/lib/coachApi";
 import type { RankedExercise } from "@/lib/exerciseStandards";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
 import { durationOf, maxDurationOf, formatSeconds, isTimedExercise } from "@/lib/workoutMeasurement";
-import { isAssisted } from "@/lib/equipmentSettings";
+import { isAssisted, type ConfiguredExercise } from "@/lib/equipmentSettings";
 
 
 export default function ExerciseProgressScreen() {
@@ -29,6 +30,7 @@ export default function ExerciseProgressScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const id = parseInt(params.id || "0", 10);
+  const [stepSaving, setStepSaving] = useState(false);
   const outlook = useQuery({ queryKey: ["exercise-outlook", id], queryFn: () => coachRequest<Outlook>(`/api/exercises/${id}/outlook`), enabled: !!id, refetchOnMount: "always" });
 
   const { data: progress, isLoading } = useGetExerciseProgress(id, {
@@ -71,9 +73,10 @@ export default function ExerciseProgressScreen() {
           gap: 18,
         }}
       >
+        {!timed ? <ExerciseWeightStep key={id} exercise={exercise as ConfiguredExercise} onPendingChange={setStepSaving} /> : null}
         <View style={{ gap: 12, borderBottomWidth: 1, borderColor: colors.cardBorder, paddingBottom: 18 }}>
           <Text style={{ color: colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold" }}>Следующие тренировки</Text>
-          {outlook.data ? <ExerciseOutlook outlook={outlook.data} /> : outlook.isPending ? <ActivityIndicator color={colors.accent} /> : <Pressable accessibilityRole="button" onPress={() => { void outlook.refetch(); }} style={{ minHeight: 44 }}><Text style={{ color: colors.accent }}>Повторить загрузку прогноза</Text></Pressable>}
+          {stepSaving || outlook.isPending ? <ActivityIndicator color={colors.accent} /> : outlook.data ? <ExerciseOutlook outlook={outlook.data} /> : <Pressable accessibilityRole="button" onPress={() => { void outlook.refetch(); }} style={{ minHeight: 44 }}><Text style={{ color: colors.accent }}>Повторить загрузку прогноза</Text></Pressable>}
         </View>
         {/* Records */}
         <View style={{ flexDirection: "row", gap: 8 }}>

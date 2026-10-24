@@ -17,6 +17,7 @@ export function validEquipmentSettings(exercise: { equipment: Equipment; name: s
 
 export const isAssisted = (exercise?: object | null) => (exercise as EquipmentSettings | null | undefined)?.loadMode === "assisted";
 export const weightStep = (exercise?: EquipmentSettings | null) => exercise?.weightStepKg ?? 2.5;
+export const WEIGHT_STEP_PRESETS = [0.25, 0.5, 1, 1.25, 2.5, 5, 10];
 
 export function weightPresets(exercise?: { equipment: Equipment } & EquipmentSettings, bodyWeightKg?: number | null): number[] {
   const min = exercise?.equipment === "barbell" || !exercise ? 20 : 0;
