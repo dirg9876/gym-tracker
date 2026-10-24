@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { roundWeightDown } from "@workspace/ai-coach";
+import type { LoadGuard } from "@workspace/ai-coach";
 
 export const coachFieldsSchema = z.object({
   // Legacy tags remain importable; all approaches now count as working.
@@ -43,6 +44,29 @@ export function extendTimer(timer: TrainingTimer, seconds: number, now = Date.no
 type RecordedSet = CoachFields & { exerciseId: number; workoutId?: number; workoutFinishedAt?: string; createdAt: string; weightKg: number; reps: number; durationSeconds?: number };
 type Goal = Progression & { exerciseId: number; sets: number; repsMin: number; repsMax: number; equipment: string };
 
+export function reserveRepGain(rows: Pick<RecordedSet, "rir" | "technique">[], targetRir: number) {
+  return rows.length && rows.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(4, targetRir + 2)) ? 2 : 1;
+}
+
+export function respondToReserve(current: RecordedSet[], goal: Goal): LoadGuard | null {
+  const last = current.at(-1), targetRir = goal.targetRir ?? 2;
+  if (!last || last.durationSeconds != null || last.reps < goal.repsMin || last.rir == null || last.rir < Math.max(4, targetRir + 2)
+    || current.some(row => row.technique !== "good" || row.rir == null || row.rir < targetRir)) return null;
+  const step = goal.weightStepKg ?? 2.5;
+  const increment = goal.equipment === "bodyweight" ? null : progressionIncrement(last.weightKg, step, false, goal.equipment);
+  const anchor = current.find(row => row.durationSeconds == null && row.reps >= goal.repsMin)!;
+  // Inherited RIR defaults must not compound into unlimited same-session weight jumps.
+  const sessionCeiling = Math.max(anchor.weightKg * 1.1, anchor.weightKg + (progressionIncrement(anchor.weightKg, step, false, goal.equipment) ?? 0));
+  if (increment != null && (last.reps >= goal.repsMax || last.rir >= targetRir + 3) && last.weightKg + increment <= sessionCeiling + 1e-8) {
+    return { weightKg: Math.round((last.weightKg + increment) * 100) / 100,
+      reps: last.reps >= goal.repsMax ? goal.repsMin : last.reps, action: "increase",
+      reason: `Последний подход: ${last.weightKg} кг × ${last.reps}, запас ${last.rir}, техника сохранена. Следующая цель: +${increment} кг; снова оцените запас. Прибавка внутри занятия ограничена, это не гарантия результата.` };
+  }
+  const extra = Math.min(2, last.rir - targetRir - 1), reps = Math.min(goal.repsMax, last.reps + extra);
+  return reps > last.reps ? { weightKg: last.weightKg, reps, action: "progress_reps",
+    reason: `Запас ${last.rir} выше целевого ${targetRir}: следующая цель +${reps - last.reps} повт. при том же весе, не выше ${goal.repsMax}. Сохраняйте технику; при тяжёлом подходе цель будет снижена.` } : null;
+}
+
 // An equipment quantum is not a universal 2.5 kg ceiling. Percentages are a programming guard, not an individual optimum.
 export function progressionIncrement(weightKg: number, stepKg: number, clearlyEasy = false, equipment = "barbell"): number | null {
   if (!Number.isFinite(weightKg) || weightKg < 0 || !Number.isFinite(stepKg) || stepKg <= 0) return null;
@@ -82,16 +106,29 @@ export function nextWorkingLoad(sets: RecordedSet[], goal: Goal, now = Date.now(
   const session = eligible.filter(set => set.workoutId === latest.workoutId);
   const previousId = eligible.filter(set => set.workoutId !== latest.workoutId).at(-1)?.workoutId;
   const previous = previousId == null ? [] : eligible.filter(set => set.workoutId === previousId);
-  const success = (rows: RecordedSet[]) => rows.length === goal.sets && rows.every((set, i) => set.weightKg === session[i]?.weightKg && set.reps >= goal.repsMax && set.technique === "good" && set.rir != null && set.rir >= Math.max(2, goal.targetRir ?? 2));
+  const success = (rows: RecordedSet[]) => rows.length >= goal.sets && rows.length === session.length && rows.every((set, i) => set.weightKg === session[i]?.weightKg && set.reps >= goal.repsMax && set.technique === "good" && set.rir != null && set.rir >= Math.max(2, goal.targetRir ?? 2));
   const step = goal.weightStepKg ?? (goal.equipment === "dumbbell" ? 1 : 2.5);
   const baseline = workingBaseline(session, [], goal.repsMin) ?? session[0];
   const clearlyEasy = [...session, ...previous].every(set => set.rir != null && set.rir >= Math.max(4, (goal.targetRir ?? 2) + 2));
-  const increment = progressionIncrement(baseline.weightKg, step, clearlyEasy, goal.equipment);
   const date = (set: RecordedSet) => Date.parse(set.workoutFinishedAt ?? set.createdAt);
-  const recent = now >= date(latest) && now - date(latest) <= 28 * 86400000 && previous.length > 0 && date(latest) - date(previous.at(-1)!) <= 28 * 86400000;
-  const increase = goal.equipment !== "bodyweight" && latest.workoutId != null && recent && success(session) && success(previous) && increment != null;
+  const recent = now >= date(latest) && now - date(latest) <= 28 * 86400000;
+  const confirmedTwice = previous.length > 0 && date(latest) - date(previous.at(-1)!) <= 28 * 86400000 && success(session) && success(previous);
+  const fastTrack = success(session) && session.every(set => set.rir! >= Math.max(4, (goal.targetRir ?? 2) + 2))
+    && previous.every(set => set.technique === "good" && set.rir != null && set.rir >= (goal.targetRir ?? 2));
+  const increment = progressionIncrement(baseline.weightKg, step, confirmedTwice && clearlyEasy, goal.equipment);
+  const increase = goal.equipment !== "bodyweight" && latest.workoutId != null && recent && (confirmedTwice || fastTrack) && increment != null;
   const weightKg = Math.round((baseline.weightKg + (increase ? increment! : 0)) * 100) / 100;
-  return { weightKg, increase, reason: increase ? `Верх диапазона (${goal.repsMax}) повторён во всех ${goal.sets} подходах двух тренировок с запасом и техникой. Прибавка ${increment} кг${clearlyEasy && increment! > step ? " (два шага при большом запасе, не более 10%)" : ""}; вернитесь к ${goal.repsMin} повт.` : session.some(set => set.technique === "breakdown") ? "Без повышения. При нарушении техники уменьшите нагрузку или смените вариант упражнения" : goal.equipment === "bodyweight" ? `Сохраняйте добавленный вес и технику. Повторы растут только до ${goal.repsMax}; новое отягощение требует отдельной оценки, не формулы штанги.` : increment == null ? "Шаг оборудования превышает 10% рабочего веса. Нужен меньший шаг или ручное подтверждение нагрузки." : latest.reps >= goal.repsMax ? `Не превышайте ${goal.repsMax} повт. Удерживайте вес: для прибавки нужны два полных сопоставимых занятия по ${goal.sets} подхода с запасом и сохранённой техникой.` : `Повторы растут только до ${goal.repsMax}. Для прибавки веса нужны два полных сопоставимых занятия с запасом и сохранённой техникой.` };
+  let reason: string;
+  if (increase) {
+    const confirmation = confirmedTwice
+      ? `Верх диапазона (${goal.repsMax}) повторён во всех ${session.length} подходах двух тренировок с запасом и техникой.`
+      : `Во всех ${session.length} подходах выполнено по ${goal.repsMax} повт. с запасом не меньше ${Math.max(4, (goal.targetRir ?? 2) + 2)} и сохранённой техникой: можно проверить один шаг уже на следующем занятии.`;
+    reason = `${confirmation} Прибавка ${increment} кг${confirmedTwice && clearlyEasy && increment! > step ? " (два шага при большом запасе, не более 10%)" : ""}; вернитесь к ${goal.repsMin} повт.`;
+  } else if (session.some(set => set.technique === "breakdown")) reason = "Без повышения. При нарушении техники уменьшите нагрузку или смените вариант упражнения";
+  else if (goal.equipment === "bodyweight") reason = `Сохраняйте добавленный вес и технику. Повторы растут только до ${goal.repsMax}; новое отягощение требует отдельной оценки, не формулы штанги.`;
+  else if (increment == null) reason = "Шаг оборудования превышает 10% рабочего веса. Нужен меньший шаг или ручное подтверждение нагрузки.";
+  else reason = `Повторы растут только до ${goal.repsMax}. Для прибавки нужны два полных сопоставимых занятия либо полный верх диапазона с большим запасом и сохранённой техникой; один лёгкий подход уже меняет ближайшую цель.`;
+  return { weightKg, increase, reason };
 }
 
 export function weeklyWork(sets: Array<RecordedSet & { muscleGroup: string }>, now = new Date()) {

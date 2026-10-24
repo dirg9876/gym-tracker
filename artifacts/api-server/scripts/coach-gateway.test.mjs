@@ -126,7 +126,9 @@ test("dialogue is fingerprinted, bounded and cached without conflating different
 });
 test("research grounding and remaining-work instructions are sent without enabling web tools", () => {
   const body = coachBody(ctx()); const input = JSON.parse(body.input);
-  assert.equal(input.research.version, "acsm-2026-iusca-2021-progression-v3");
+  assert.equal(input.research.version, "acsm-2026-iusca-2021-progression-v4");
+  assert.match(input.research.principles.join(" "), /RIR 4-5 is a qualitative signal/);
+  assert.match(input.research.principles.join(" "), /repeated increases are capped/);
   assert.equal(input.research.url, "https://pubmed.ncbi.nlm.nih.gov/41843416/");
   assert.equal(input.research.sources[1].url, "https://doi.org/10.47206/ijsc.v1i1.81");
   assert.match(body.instructions, /8-12 reps for compound exercises and 10-15 for isolation/);

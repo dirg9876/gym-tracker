@@ -72,6 +72,22 @@ export-qa-1.1.12.ps1 жёстко5556/visualqa; для5554 заменять то
 собственном вызове scriptblock. Папка экспорта5554 Documents/GymTracker,5556 Documents.
 После reload явно открыть updates повторно, а не ожидать сохранения маршрута.
 
+## Итог Публикации
+
+Source9a6a85a11360c595a9a96447c0b7f8b985df4170, master/origin/master.
+CI PASS: https://github.com/dirg9876/gym-tracker/actions/runs/40094057606
+APK153058977байт: https://github.com/dirg9876/gym-tracker/releases/download/v1.1.19/gym-beam-1.1.19.apk
+SHA выше, asset digest GitHub совпал. Audit10staged/APK/204OTAfiles PASS.
+OTA production/update01a16de2-df89-7cd4-83a3-e8b6f8eef9ba,
+group e5ec05ea-0d74-4274-b45b-0aab58474c56, 2026-10-24T12:29:07.337Z.
+На прежнем APK1.1.7/code13 подтверждено Updates1.1.19/01a16de2; стакан вернулся
+без переустановки, screenshot release-1.1.19-legacy-ota-home.png. Wi-Fi/data off,
+force-stop/cold start: стакан виден, release-1.1.19-legacy-offline-home.png.
+Связь восстановлена. Экспорт after-ota-logo-1.1.19-legacy.json state/plans точно
+равен before-ota-logo-1.1.19-legacy.json. На свежем APK19 state/plans также не
+изменились. Оба запущенных QA AVD остановлены; SDK/AVD/data не удалялись.
+Логотип исправлен и опубликован; незавершённых проверок этого выпуска нет.
+
 Новый запрос во время завершения19: амбициозные, но обоснованные цели при хорошем
 ходе тренировок; большой RIR должен корректировать следующий подход, а не ждать
 нескольких занятий. Реализовать отдельным следующим логическим выпуском20 после

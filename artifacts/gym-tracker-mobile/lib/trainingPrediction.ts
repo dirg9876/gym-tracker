@@ -2,7 +2,7 @@ import { controlPrediction, estimateStrength, goalPrescription, modelForecastSch
 import type { OfflineState } from "./offlineApi";
 import { sameLoadCategory, isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
-import { assessedProbe, nextWorkingLoad, returnAfterBreak, workingBaseline } from "./trainingCoach";
+import { assessedProbe, nextWorkingLoad, respondToReserve, reserveRepGain, returnAfterBreak, workingBaseline } from "./trainingCoach";
 import { relatedCalibration } from "./relatedLoads";
 
 type Range = { sets: number; repsMin: number; repsMax: number; targetRir: number; weightStepKg: number };
@@ -12,6 +12,7 @@ export function explainLoadCalculation(prediction: ReturnType<typeof forecastWor
   const format = (value: number) => value.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
   if (model.status === "unsupported") return "Формула к этой категории не применяется; нагрузка подбирается по выполненным подходам и обратной связи.";
   if (next.action === "calibrate") return "Проверочный вес требует первого подхода с RIR и техникой; расчётная оценка не заменяет эту проверку.";
+  if (model.unroundedWeightKg == null && /Запас|Последний подход:/.test(next.reason)) return "Цель скорректирована по записанному запасу и технике, с ограничением шага и диапазона. Из RIR 4–5 не вычисляется точный 1ПМ.";
   if (model.status !== "ready" || model.unroundedWeightKg == null || model.estimated1RMKg == null) return "Нет пригодного измерения для формулы; вес задан историей или подборочным подходом, не выдуманным 1ПМ.";
   return `Оценка 1ПМ ${format(model.estimated1RMKg)} кг; расчёт при RIR ${model.targetRir}: ${format(model.unroundedWeightKg)} кг до округления. Шаг ${format(stepKg)} кг; с учётом ограничений: ${format(next.weightKg)} кг × ${next.reps}.`;
 }
@@ -26,7 +27,8 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
   const last = current.at(-1) ?? history.at(-1);
   const hasFeedback = last?.rir != null && last.technique != null;
   const latestSession = history.filter(row => row.workoutId === history.at(-1)?.workoutId);
-  const latestMeasured = current.length ? firstToday != null : latestSession.some(row => row.weightKg >= minimumKg && qualityEstimate(row) != null);
+  const reserveDriven = current.length > 0 && last?.technique === "good" && last.rir != null && last.rir >= Math.max(4, range.targetRir + 2);
+  const latestMeasured = current.length ? firstToday != null && !reserveDriven : latestSession.some(row => row.weightKg >= minimumKg && qualityEstimate(row) != null);
   const status = !supported ? "unsupported" : strength != null && latestMeasured ? "ready" : fitted.stale && fitted.estimated1RMKg != null ? "stale" : "insufficient";
   const targets: Array<{ weightKg: number; reps: number }> = [];
   let first = { ...guard, predictedReps: null as number | null, unroundedWeightKg: null as number | null };
@@ -40,7 +42,7 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
     targets.push({ weightKg: result.weightKg, reps: result.reps });
     if (i === 0) first = result;
   }
-  const note = !supported ? "Формула не применяется к секундам, собственному весу, противовесу и категории «Другое». Здесь действуют обычные правила и калибровка." : status === "stale" ? "Нет качественного измерения за 28 дней. Нужна повторная оценка; старый расчёт не повышает нагрузку." : status === "insufficient" ? "В последнем занятии нет подхода для формулы: нужны 2–10 повторений, RIR 0–3 и сохранённая техника. Цель задана правилами прогрессии или калибровки, а не старым прогнозом." : "Приближённая оценка Эпли + RIR, EMA 0,2 по одному подходу на занятие. Не рекорд и не норматив. Прогноз не определяет восстановление; RIR и техника субъективны.";
+  const note = !supported ? "Формула не применяется к секундам, собственному весу, противовесу и категории «Другое». Здесь действуют обычные правила и калибровка." : reserveDriven ? "Свежий запас 4–5 используется как сигнал для следующей цели, не для вычисления точного 1ПМ. Более старый расчёт не отменяет эту обратную связь; шаг и диапазон ограничены, новую цель нужно проверить подходом." : status === "stale" ? "Нет качественного измерения за 28 дней. Нужна повторная оценка; старый расчёт не повышает нагрузку." : status === "insufficient" ? "В последнем занятии нет подхода для формулы: нужны 2–10 повторений, RIR 0–3 и сохранённая техника. Цель задана правилами прогрессии или калибровки, а не старым прогнозом." : "Приближённая оценка Эпли + RIR, EMA 0,2 по одному подходу на занятие. Не рекорд и не норматив. Прогноз не определяет восстановление; RIR и техника субъективны.";
   return { next: { weightKg: first.weightKg, reps: first.reps, action: first.action, reason: first.reason },
     model: modelForecastSchema.parse({ version: "epley-rir-ema-v1", status,
       estimated1RMKg: supported ? strength ?? fitted.estimated1RMKg : null, sessions: fitted.sessions,
@@ -70,10 +72,14 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   const probe = assessedProbe(baseline, range.repsMin, range.targetRir, exercise.equipment === "bodyweight");
   const progression = nextWorkingLoad(history, { ...range, equipment: exercise.equipment, exerciseId }, now);
   let guard: LoadGuard = { weightKg: baseline?.weightKg ?? (exercise.equipment === "barbell" ? 20 : exercise.equipment === "bodyweight" ? 0 : exercise.equipment === "machine" ? 5 : 2.5), reps: Math.min(baseline?.reps ?? 8, range.repsMax), action: last ? "hold" : "calibrate", reason: progression.reason };
-  if (!current.length && progression.increase) guard = { weightKg: progression.weightKg!, reps: range.repsMin, action: "increase", reason: progression.reason };
-  if (current.length === 1 && !history.length && last?.technique === "good" && last.rir != null && last.rir >= 4 && range.weightStepKg <= 2.5 && exercise.equipment !== "bodyweight" && !isAssisted(exercise) && !isTimedExercise(exercise.name)) guard = { ...guard, weightKg: last.weightKg + range.weightStepKg, action: "increase", reason: "После первого лёгкого подборочного подхода разрешён один шаг оборудования. Оцените запас и технику снова." };
+  if (!current.length && progression.increase && !isAssisted(exercise) && !isTimedExercise(exercise.name)) guard = { weightKg: progression.weightKg!, reps: range.repsMin, action: "increase", reason: progression.reason };
+  const responsive = !isAssisted(exercise) && !isTimedExercise(exercise.name) ? respondToReserve(current, { ...range, exerciseId, equipment: exercise.equipment }) : null;
+  if (responsive) guard = responsive;
   const lastSession = history.filter(row => row.workoutId === last?.workoutId);
-  if (!current.length && !progression.increase && baseline && baseline.reps >= range.repsMin && baseline.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) guard = { ...guard, reps: baseline.reps + 1, action: "progress_reps", reason: "Сначала добавьте повторение в диапазоне, сохраняя запас и технику. Формула проверит расчётный запас." };
+  if (!current.length && !progression.increase && baseline && baseline.reps >= range.repsMin && baseline.reps < range.repsMax && lastSession.every(row => row.technique === "good" && row.rir != null && row.rir >= Math.max(2, range.targetRir))) {
+    const reps = Math.min(range.repsMax, baseline.reps + reserveRepGain(lastSession, range.targetRir));
+    guard = { ...guard, reps, action: "progress_reps", reason: `Следующая цель: +${reps - baseline.reps} повт. в диапазоне до ${range.repsMax}, с учётом запаса и техники последнего занятия. Формула проверит расчётный запас.` };
+  }
   if (probe) {
     const assessed = (current.length ? current : lastSession).every(row => row.technique === "good" && row.rir != null && row.rir >= range.targetRir);
     guard = assessed ? probe : { weightKg: baseline!.weightKg, reps: baseline!.reps, action: "calibrate", reason: "Короткий подход сохранён, но не все оценки подтверждают переход в рабочий диапазон. Повторно проверьте запас и технику на измеренном весе." };

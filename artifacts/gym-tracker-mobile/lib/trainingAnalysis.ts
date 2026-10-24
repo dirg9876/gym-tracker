@@ -2,7 +2,7 @@ import { trainingAnalysisSchema, calibrationWeight, goalPrescription, type Train
 import type { OfflineState } from "./offlineApi";
 import { isTimedExercise, minimumWeight, sameLoadCategory } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
-import { assessedProbe, nextWorkingLoad, returnAfterBreak, workingBaseline } from "./trainingCoach";
+import { assessedProbe, nextWorkingLoad, reserveRepGain, returnAfterBreak, workingBaseline } from "./trainingCoach";
 import { forecastWorkingSets } from "./trainingPrediction";
 
 export function formatAnalysisResult(row: TrainingAnalysis["exercises"][number], target: boolean): string {
@@ -87,7 +87,7 @@ export function buildTrainingAnalysis(state: OfflineState, workoutId?: number, n
       next = { weightKg: baseline.weightKg, reps: Math.min(baseline.reps, range.repsMax), seconds: 0, action: "hold", reason: missing ? "Не хватает RIR или оценки техники. Повторите вес и отметьте усилие." : failure ? "Есть подход до отказа. Не повышайте нагрузку, сначала восстановите запас повторений." : result.reason };
       if (breakdown) next = { ...next, weightKg: Math.max(minimumWeight(last.equipment), Math.min(baseline.weightKg, session.at(-1)!.weightKg) - range.weightStepKg), reps: Math.max(1, Math.min(baseline.reps - 1, range.repsMin)), action: "reduce", reason: "Отмечено нарушение техники. Уменьшите нагрузку; если техника не сохраняется или есть боль, остановите упражнение." };
       else if (!missing && !failure && result.increase) next = { ...next, weightKg: result.weightKg!, reps: range.repsMin, action: "increase", reason: result.reason };
-      else if (!missing && !failure && session.every(row => row.technique === "good" && (row.rir ?? 0) >= range.targetRir) && baseline.reps < range.repsMax) next = { ...next, reps: baseline.reps + 1, action: "progress_reps", reason: "Сначала добавьте одно повторение при том же весе, сохраняя целевой запас и технику." };
+      else if (!missing && !failure && session.every(row => row.technique === "good" && (row.rir ?? 0) >= range.targetRir) && baseline.reps < range.repsMax) next = { ...next, reps: Math.min(range.repsMax, baseline.reps + reserveRepGain(session, range.targetRir)), action: "progress_reps", reason: "Добавьте повторения в целевом диапазоне при том же весе: большой запас позволяет цель смелее, без выхода за верхнюю границу." };
     }
     if (!timed && !isAssisted(last) && cutoff - Date.parse(last.workoutFinishedAt) > 28 * 86400000) next = { ...returnAfterBreak(baseline, range.weightStepKg, minimumWeight(last.equipment), range.repsMin, last.equipment === "bodyweight"), seconds: 0 };
     const forecast = forecastWorkingSets(all.map(row => ({ ...row, workoutStartedAt: row.date })), range, next,

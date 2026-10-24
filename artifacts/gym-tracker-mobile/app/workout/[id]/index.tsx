@@ -364,10 +364,10 @@ export default function ActiveWorkoutScreen() {
             {(selectedExercise?.equipment === "bodyweight" || assisted) && !timed ? profile?.bodyWeightKg != null
               ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Вес тела: {formatKg(profile.bodyWeightKg)} · {assisted ? "Расчётная" : "Общая"} нагрузка: {formatKg(assisted ? Math.max(0, profile.bodyWeightKg - weight) : profile.bodyWeightKg + weight)}</Text>
               : <Button title="Указать вес тела" variant="ghost" disabled={formBusy} icon={<Feather name="user" size={16} color={colors.foreground} />} onPress={() => router.push("/levels")} /> : null}
-            {prediction && prediction.model.status !== "unsupported" ? <View style={{ gap: 8, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.cardBorder }}>
-              <Text style={{ color: colors.success, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Расчёт нагрузки: {formatKg(prediction.next.weightKg)} × {prediction.next.reps}</Text>
+            {prediction && !timed && !assisted ? <View style={{ gap: 8, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.cardBorder }}>
+              <Text style={{ color: colors.success, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Цель следующего подхода: {selectedExercise?.equipment === "bodyweight" ? "+" : ""}{formatKg(prediction.next.weightKg)} × {prediction.next.reps}</Text>
               <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 19 }}>{prediction.next.reason}</Text>
-              {prediction.model.note !== prediction.next.reason || prediction.model.status === "ready" ? <ModelForecast model={prediction.model} perDumbbell={selectedExercise?.equipment === "dumbbell"} /> : null}
+              {prediction.model.status !== "unsupported" && (prediction.model.note !== prediction.next.reason || prediction.model.status === "ready") ? <ModelForecast model={prediction.model} perDumbbell={selectedExercise?.equipment === "dumbbell"} /> : null}
               <Button title="Применить расчёт" variant="secondary" disabled={formBusy || !!draft.error} icon={<Feather name="check" size={16} color={colors.foreground} />} onPress={() => changeDraft({ weightKg: prediction.next.weightKg, reps: prediction.next.reps })} />
             </View> : null}
             <View style={{ minHeight: 16 }}><Text accessibilityLiveRegion="polite" style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 16 }}>{draft.saving ? "Сохранение черновика..." : ""}</Text></View>

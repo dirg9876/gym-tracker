@@ -1210,6 +1210,17 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
   };
   state.sets.push(set);
   if (calibration && plan) plan.exercises = plan.exercises.map(ex => ex === calibration ? calibrateRemaining({ ...ex, weightStepKg: exercise.weightStepKg ?? ex.weightStepKg }, { ...set, setType: "working" }, completedTargets(ex, state.sets.filter(row => row.workoutId === workout.id))) : ex);
+  let planChanged = !!calibration;
+  // Only today's algorithm-led plan adapts automatically. Saved/manual templates stay literal.
+  if (plan?.id === "daily" && !timed && !isAssisted(exercise) && set.rir != null && set.technique != null) {
+    const item = plan.exercises.find(ex => ex.exerciseId === set.exerciseId);
+    const completed = item ? completedTargets(item, state.sets.filter(row => row.workoutId === workout.id)) : 0;
+    if (item?.setTargets && !item.calibration && completed < item.sets) {
+      const target = buildActivePrediction(state, workout.id, exercise.id, Date.now(), item).next;
+      item.setTargets[completed] = { ...item.setTargets[completed], weightKg: target.weightKg, reps: target.reps };
+      planChanged = true;
+    }
+  }
   if (workout.draft) {
     const { sourceTimer: _sourceTimer, ...draft } = workout.draft;
     workout.draft = draft.exerciseId === set.exerciseId ? { ...draft, rir: set.rir ?? null, technique: set.technique ?? null } : undefined;
@@ -1224,7 +1235,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
       }
     }
   }
-  if (calibration && plan) await saveStateAndPlans(state, [[PLAN_PREFIX + workout.id, JSON.stringify(plan)]]);
+  if (planChanged && plan) await saveStateAndPlans(state, [[PLAN_PREFIX + workout.id, JSON.stringify(plan)]]);
   else await saveState(state);
   return enrichSet(state, set);
 }

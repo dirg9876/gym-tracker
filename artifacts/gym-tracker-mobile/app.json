@@ -5,7 +5,7 @@
     "platforms": [
       "android"
     ],
-    "version": "1.1.19",
+    "version": "1.1.20",
     "runtimeVersion": "1.1.0",
     "updates": {
       "url": "https://u.expo.dev/dabd3128-415f-4a2f-8c73-3b0a52585149",
@@ -28,7 +28,7 @@
     "backgroundColor": "#0a0a0a",
     "android": {
       "package": "com.dirg9876.gymtracker",
-      "versionCode": 25,
+      "versionCode": 26,
       "backgroundColor": "#0a0a0a",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/gymbeam-adaptive.png",
