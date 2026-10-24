@@ -24,6 +24,7 @@ import { calibrateRemaining, completedTargets, plannedSet, templateInputSchema, 
 import { draftRevisionSchema, workoutDraftSchema, validDraftForExercise, makeWorkoutDraft, selectWorkoutDraft, sameTimer, type DraftResponse, type WorkoutDraft } from "./workoutDraft";
 import { exerciseStandard, standardProgress, type RankedExercise } from "./exerciseStandards";
 import { coachFieldsSchema, timerSchema, remainingMs, weeklyWork, type CoachFields, type TrainingTimer, type Progression } from "./trainingCoach";
+import { weeklyMuscleWorkload } from "./muscleWorkload";
 import type {
   ActiveWorkoutResponse,
   AddSetInput,
@@ -495,7 +496,7 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
   }
   if (method === "GET" && path === "/api/stats/weekly") {
     const sets = getFinishedSets(state);
-    return { groups: weeklyWork(sets), exercises: weeklyWork(sets.map(set => ({ ...set, muscleGroup: String(set.exerciseId) }))).map(row => ({ ...row, exerciseId: Number(row.muscleGroup), name: findExercise(state, Number(row.muscleGroup))?.name ?? "Упражнение" })) };
+    return { groups: weeklyWork(sets), ...weeklyMuscleWorkload(sets), exercises: weeklyWork(sets.map(set => ({ ...set, muscleGroup: String(set.exerciseId) }))).map(row => ({ ...row, exerciseId: Number(row.muscleGroup), name: findExercise(state, Number(row.muscleGroup))?.name ?? "Упражнение" })) };
   }
   if (method === "GET" && path === "/api/stats/progress") return getProgress(state);
 
@@ -1658,7 +1659,7 @@ function getExerciseProgress(state: OfflineState, exerciseId: number): ExerciseP
         maxWeight: aggregate.maxWeight,
         durationSeconds: sets.reduce((sum, set) => sum + durationOf(set), 0),
         maxDurationSeconds: Math.max(...sets.map(durationOf)),
-        topSet: { weightKg: topSet.weightKg, reps: topSet.reps, durationSeconds: durationOf(topSet) },
+        topSet,
       };
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

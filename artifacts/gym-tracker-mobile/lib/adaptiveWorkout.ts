@@ -96,10 +96,10 @@ function slots(day: SplitDay): Slot[] {
   ];
 }
 
-function isComparableWorkingSet(row: SetRow, ex: Exercise): boolean {
+function isComparableWorkingSet(row: SetRow, ex: Exercise, goal: CoachProfile["goal"]): boolean {
   if (row.technique === "breakdown" || isAssisted(ex)) return false;
   if (isTimedExercise(ex.name)) return row.durationSeconds != null && row.durationSeconds > 0;
-  return row.durationSeconds == null && row.reps >= 5 && row.reps <= 30;
+  return row.durationSeconds == null && row.reps >= Math.min(5, goalPrescription(goal, ex).repsMin) && row.reps <= 30;
 }
 
 /**
@@ -122,6 +122,7 @@ export function buildAdaptiveSplit(
   const minimumFailures = new Map<number, { at: number; failed: boolean }>();
   const workload = new Map<SplitDay, number>(SPLIT_DAYS.map(day => [day, 0]));
   const latestPhase = new Map<SplitDay, number>();
+  const latestGroup = new Map<string, number>();
   for (const row of state.sets) {
     const finishedAt = finished.get(row.workoutId), ex = catalog.get(row.exerciseId);
     if (finishedAt != null && ex && sameLoadCategory(row, ex) && !isTimedExercise(ex.name)) {
@@ -130,7 +131,7 @@ export function buildAdaptiveSplit(
         row.weightKg <= minimumWeight(ex.equipment) && row.reps < goalPrescription(profile.goal, ex).repsMin &&
         (row.technique === "breakdown" || row.rir === 0) });
     }
-    if (finishedAt == null || !ex || !isComparableWorkingSet(row, ex)) continue;
+    if (finishedAt == null || !ex || !(isTimedExercise(ex.name) ? (row.durationSeconds ?? 0) > 0 : row.reps > 0)) continue;
     const phase = phaseForGroup(planningGroup(ex));
     if (!phase) continue;
     // Decayed load covers *all* completed records, but recent sets matter most.
@@ -138,6 +139,13 @@ export function buildAdaptiveSplit(
     workload.set(phase, (workload.get(phase) ?? 0) + Math.exp(-ageDays / 9) *
       (["Бицепс", "Трицепс", "Икры", "Пресс"].includes(planningGroup(ex)) ? 0.5 : 1));
     latestPhase.set(phase, Math.max(finishedAt, latestPhase.get(phase) ?? 0));
+    latestGroup.set(planningGroup(ex), Math.max(finishedAt, latestGroup.get(planningGroup(ex)) ?? 0));
+    // A heavy conventional hinge exposes the legs too; this is a planning signal, not an effective-set estimate.
+    if (phase === "pull" && /становая тяга/i.test(ex.name)) {
+      workload.set("legs", (workload.get("legs") ?? 0) + Math.exp(-ageDays / 9) * 0.5);
+      latestPhase.set("legs", Math.max(finishedAt, latestPhase.get("legs") ?? 0));
+    }
+    if (!isComparableWorkingSet(row, ex, profile.goal)) continue;
     if (ex.deletedAt || ex.replacementPending || !sameLoadCategory(row, ex) ||
       (ex.equipment === "dumbbell" && (row.dumbbellCount ?? 1) !== (ex.dumbbellCount ?? 1))) continue;
     const sessions = familiarity.get(ex.id) ?? new Set<number>();
@@ -162,7 +170,13 @@ export function buildAdaptiveSplit(
   const maxSlots = profile.sessionMinutes >= 90 ? 6 : profile.sessionMinutes >= 70 ? 5 : 4;
   const selected: AdaptiveDefinition[] = [], used = new Set<number>();
   const replacedMinimumLoads = new Set<string>();
-  for (const slot of slots(day).slice(0, maxSlots)) {
+  const orderedSlots = slots(day);
+  if (day === "legs" && maxSlots === 4) {
+    orderedSlots.splice(3, 2, ...orderedSlots.slice(3, 5).sort((a, b) =>
+      (latestGroup.get(a.group) ?? 0) - (latestGroup.get(b.group) ?? 0) || (a.group === "Пресс" ? -1 : 1)));
+  }
+  for (const slot of orderedSlots) {
+    if (selected.length >= maxSlots) break;
     const matches = eligible.filter(ex => !used.has(ex.id) && slot.matches(ex));
     const alternatives = matches.filter(ex => !minimumFailures.get(ex.id)?.failed);
     const candidates = alternatives.length ? alternatives : matches;

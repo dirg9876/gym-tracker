@@ -9,6 +9,7 @@ import { LineChart } from "./LineChart";
 export function ExerciseOutlook({ outlook, compact = false, showChart = true }: { outlook: Outlook; compact?: boolean; showChart?: boolean }) {
   const colors = useColors();
   const [expanded, setExpanded] = useState(!compact);
+  const [explanation, setExplanation] = useState(false);
   const text = { color: colors.foreground, fontSize: 14, lineHeight: 21 };
   const muted = { color: colors.mutedForeground, fontSize: 12, lineHeight: 19 };
   const { timed, assisted, calibration } = outlook;
@@ -22,7 +23,7 @@ export function ExerciseOutlook({ outlook, compact = false, showChart = true }: 
     {outlook.changeKg != null && outlook.changeKg !== 0 ? <Text style={{ ...text, color: outlook.changeKg > 0 ? colors.success : colors.mutedForeground }}>Возможное изменение веса в сценарии: {outlook.changeKg > 0 ? "+" : ""}{formatKg(outlook.changeKg)}</Text> : null}
     {outlook.progression ? <View style={{ gap: 6 }}>
       <Text style={text}>Следующий шаг: {formatKg(outlook.progression.nextWeightKg)}{outlook.progression.earliestDate ? ` · около ${formatDate(`${outlook.progression.earliestDate}T12:00:00`)}` : ""}</Text>
-      <Text style={muted}>Для следующего шага в этом сценарии: во всех назначенных подходах по {outlook.progression.reps} повт., с запасом не меньше {outlook.progression.targetRir} и сохранённой техникой. До верха диапазона цель растёт по повторам, затем по весу. Дата условная.</Text>
+      {!compact ? <Text style={muted}>Для следующего шага в этом сценарии: во всех назначенных подходах по {outlook.progression.reps} повт., с запасом не меньше {outlook.progression.targetRir} и сохранённой техникой. До верха диапазона цель растёт по повторам, затем по весу. Дата условная.</Text> : null}
     </View> : null}
     {showChart && !calibration && outlook.sessions.length > 1 ? <LineChart points={outlook.sessions.map(row => ({ date: `${row.date}T12:00:00`, value: value(row.targets[0]) }))} height={130} color={colors.success} forecastStartIndex={0} zeroBaseline={false} label="Условный прогноз нагрузки" minimumSpan={timed ? 5 : bodyweight ? 1 : (outlook.weightStepKg ?? 2.5) * 2} formatPoint={index => timed ? `${outlook.sessions[index].targets[0].durationSeconds} с` : `${formatKg(outlook.sessions[index].targets[0].weightKg)} × ${outlook.sessions[index].targets[0].reps}`} formatValue={timed ? n => `${formatNumber(n)} с` : bodyweight ? n => `${formatNumber(n)} повт.` : formatKg} /> : null}
     {outlook.sessions.map((session, index) => compact && !expanded && session.targets.every(set => set.weightKg === session.targets[0].weightKg && set.reps === session.targets[0].reps && set.durationSeconds === session.targets[0].durationSeconds) ? <View key={`${session.date}-${index}`} style={{ gap: 5, borderTopWidth: 1, borderColor: colors.cardBorder, paddingVertical: 10 }}>
@@ -41,7 +42,7 @@ export function ExerciseOutlook({ outlook, compact = false, showChart = true }: 
       </View>)}
     </View>)}
     {compact && outlook.sessions.length ? <Pressable accessibilityRole="button" accessibilityLabel="Подходы следующих занятий" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Text style={{ ...muted, color: colors.accent, flex: 1 }}>{expanded ? "Свернуть подходы" : "По подходам"}</Text><Feather name={expanded ? "chevron-up" : "chevron-down"} size={18} color={colors.accent} /></Pressable> : null}
-    <Text style={muted}>{outlook.reason}</Text>
-    <Text style={muted}>{outlook.assumptions}</Text>
+    {compact ? <Pressable accessibilityRole="button" accessibilityLabel="Расчёт и условия прогноза" accessibilityState={{ expanded: explanation }} onPress={() => setExplanation(value => !value)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="info" size={17} color={colors.accent} /><Text style={{ ...muted, flex: 1, color: colors.accent }}>Расчёт и условия</Text><Feather name={explanation ? "chevron-up" : "chevron-down"} size={18} color={colors.accent} /></Pressable> : null}
+    {!compact || explanation ? <><Text style={muted}>{outlook.reason}</Text><Text style={muted}>{outlook.assumptions}</Text></> : null}
   </View>;
 }

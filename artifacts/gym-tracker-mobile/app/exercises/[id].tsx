@@ -4,7 +4,7 @@ import {
   useGetExerciseProgress,
 } from "@workspace/api-client-react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,12 +15,16 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { StandardsPanel } from "@/components/StandardsPanel";
 import { ExerciseOutlook } from "@/components/ExerciseOutlook";
 import { ExerciseWeightStep } from "@/components/ExerciseWeightStep";
+import { ExerciseAnatomy } from "@/components/ExerciseAnatomy";
+import { Segmented } from "@/components/Segmented";
+import { ExerciseEditor } from "@/components/ExerciseEditor";
+import { Button } from "@/components/Button";
 import type { ExerciseOutlook as Outlook } from "@/lib/exerciseOutlook";
 import { coachRequest } from "@/lib/coachApi";
 import type { RankedExercise } from "@/lib/exerciseStandards";
 import { useColors } from "@/hooks/useColors";
 import { formatKg, formatNumber } from "@/lib/format";
-import { durationOf, maxDurationOf, formatSeconds, isTimedExercise } from "@/lib/workoutMeasurement";
+import { durationOf, maxDurationOf, formatSeconds, isTimedExercise, formatSetResult, formatSetContext, type MeasuredSet } from "@/lib/workoutMeasurement";
 import { isAssisted, type ConfiguredExercise } from "@/lib/equipmentSettings";
 
 
@@ -28,9 +32,12 @@ export default function ExerciseProgressScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; view?: string }>();
   const id = parseInt(params.id || "0", 10);
   const [stepSaving, setStepSaving] = useState(false);
+  const [view, setView] = useState(params.view === "progress" ? "progress" : "muscles");
+  const [editing, setEditing] = useState(false);
+  const scroll = useRef<ScrollView>(null);
   const outlook = useQuery({ queryKey: ["exercise-outlook", id], queryFn: () => coachRequest<Outlook>(`/api/exercises/${id}/outlook`), enabled: !!id, refetchOnMount: "always" });
 
   const { data: progress, isLoading } = useGetExerciseProgress(id, {
@@ -65,7 +72,11 @@ export default function ExerciseProgressScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScreenHeader title={exercise.name} subtitle={exercise.muscleGroup} />
+      <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.cardBorder }}>
+        <Segmented label="Раздел упражнения" value={view} options={[{ value: "muscles", label: "Мышцы" }, { value: "progress", label: "Прогресс" }, ...(!timed ? [{ value: "settings", label: "Настройки" }] : [])]} disabled={stepSaving} onChange={value => { setView(value); scroll.current?.scrollTo({ y: 0, animated: false }); }} />
+      </View>
       <ScrollView
+        ref={scroll}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 12,
@@ -73,10 +84,15 @@ export default function ExerciseProgressScreen() {
           gap: 18,
         }}
       >
-        {!timed ? <ExerciseWeightStep key={id} exercise={exercise as ConfiguredExercise} onPendingChange={setStepSaving} /> : null}
+        {view === "muscles" ? <ExerciseAnatomy exercise={exercise} /> : null}
+        {view === "settings" ? <View style={{ gap: 16 }}>
+          {!timed ? <ExerciseWeightStep key={id} exercise={exercise as ConfiguredExercise} onPendingChange={setStepSaving} /> : null}
+          <Button title="Категория и параметры" variant="secondary" disabled={stepSaving} icon={<Feather name="sliders" size={18} color={colors.foreground} />} onPress={() => setEditing(true)} />
+        </View> : null}
+        {view === "progress" ? <>
         <View style={{ gap: 12, borderBottomWidth: 1, borderColor: colors.cardBorder, paddingBottom: 18 }}>
           <Text style={{ color: colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold" }}>Следующие тренировки</Text>
-          {stepSaving || outlook.isPending ? <ActivityIndicator color={colors.accent} /> : outlook.data ? <ExerciseOutlook outlook={outlook.data} /> : <Pressable accessibilityRole="button" onPress={() => { void outlook.refetch(); }} style={{ minHeight: 44 }}><Text style={{ color: colors.accent }}>Повторить загрузку прогноза</Text></Pressable>}
+          {stepSaving || outlook.isPending ? <ActivityIndicator color={colors.accent} /> : outlook.data ? <ExerciseOutlook outlook={outlook.data} compact /> : <Pressable accessibilityRole="button" onPress={() => { void outlook.refetch(); }} style={{ minHeight: 44 }}><Text style={{ color: colors.accent }}>Повторить загрузку прогноза</Text></Pressable>}
         </View>
         {/* Records */}
         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -97,7 +113,7 @@ export default function ExerciseProgressScreen() {
                   color: colors.mutedForeground,
                   fontSize: 9,
                   fontFamily: "Inter_700Bold",
-                  letterSpacing: 0.6,
+                  letterSpacing: 0,
                   textTransform: "uppercase",
                   textAlign: "center",
                 }}
@@ -186,16 +202,16 @@ export default function ExerciseProgressScreen() {
                     <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
                       {new Date(p.date).toLocaleDateString("ru-RU")}
                     </Text>
-                    <Text style={{ color: colors.foreground, fontSize: 15, fontFamily: "Inter_700Bold" }}>
-                      {timed ? durationOf(p.topSet) > 0 ? formatSeconds(durationOf(p.topSet)) : "Время не указано" : repBased ? `${p.topSet.reps} повт.${p.topSet.weightKg > 0 ? ` + ${formatKg(p.topSet.weightKg)}` : ""}` : `${formatKg(p.topSet.weightKg)} × ${p.topSet.reps}`}
-                    </Text>
+                    <View style={{ flex: 1, minWidth: 0, gap: 3, alignItems: "flex-end", paddingLeft: 8 }}><Text style={{ color: colors.foreground, fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "right" }}>{formatSetResult(p.topSet as MeasuredSet)}</Text>{formatSetContext(p.topSet as MeasuredSet) ? <Text style={{ color: colors.mutedForeground, fontSize: 11, textAlign: "right" }}>{formatSetContext(p.topSet as MeasuredSet)}</Text> : null}</View>
                   </Pressable>
                 ))}
               </Card>
             </View>
           </>
         )}
+        </> : null}
       </ScrollView>
+      {editing ? <ExerciseEditor exercise={exercise} onClose={() => setEditing(false)} /> : null}
     </View>
   );
 }

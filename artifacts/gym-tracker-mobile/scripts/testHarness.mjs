@@ -45,7 +45,7 @@ const mockStorage = "data:text/javascript," + encodeURIComponent(`
 `);
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (["./equipmentSettings", "./trainingInsights", "./exerciseReplacement", "./trainingAnalysis", "./trainingPrediction", "./dailyWorkout", "./adaptiveWorkout", "./relatedLoads", "./bodyWeight", "./exerciseOutlook"].includes(specifier)) return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
+    if (["./equipmentSettings", "./trainingInsights", "./exerciseReplacement", "./trainingAnalysis", "./trainingPrediction", "./dailyWorkout", "./adaptiveWorkout", "./relatedLoads", "./bodyWeight", "./exerciseOutlook", "./exerciseAnatomy", "./muscleWorkload"].includes(specifier)) return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
     if (specifier === "expo-secure-store") return {
       url: "data:text/javascript," + encodeURIComponent(`
         export const WHEN_UNLOCKED_THIS_DEVICE_ONLY = 6;

@@ -131,13 +131,21 @@ export function nextWorkingLoad(sets: RecordedSet[], goal: Goal, now = Date.now(
   return { weightKg, increase, reason };
 }
 
-export function weeklyWork(sets: Array<RecordedSet & { muscleGroup: string }>, now = new Date()) {
+export function weeklySets<T extends { createdAt: string; workoutStartedAt?: string; workoutFinishedAt?: string }>(sets: T[], now = new Date()) {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).getTime();
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  return sets.filter(set => {
+    const date = Date.parse(set.workoutStartedAt ?? set.createdAt);
+    const finished = set.workoutFinishedAt == null ? null : Date.parse(set.workoutFinishedAt);
+    return Number.isFinite(date) && date >= start && date < end && date <= now.getTime()
+      && (finished == null || Number.isFinite(finished) && finished >= date && finished <= now.getTime());
+  });
+}
+
+export function weeklyWork(sets: Array<RecordedSet & { muscleGroup: string; workoutStartedAt?: string }>, now = new Date()) {
   const days = new Map<string, { working: number; days: Set<string> }>();
-  for (const set of sets) {
-    const date = new Date(set.createdAt);
-    if (date.getTime() < start || date.getTime() >= end) continue;
+  for (const set of weeklySets(sets, now)) {
+    const date = new Date(set.workoutStartedAt ?? set.createdAt);
     const group = days.get(set.muscleGroup) ?? { working: 0, days: new Set<string>() };
     group.working++;
     group.days.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);

@@ -11,6 +11,7 @@ import { TrainingCalendar } from "@/components/TrainingCalendar";
 import { BodyWeightStats } from "@/components/BodyWeightStats";
 import { ExerciseOutlook } from "@/components/ExerciseOutlook";
 import { ExerciseProgressChart } from "@/components/ExerciseProgressChart";
+import { WeeklyTraining } from "@/components/WeeklyTraining";
 import type { buildExerciseOutlook } from "@/lib/exerciseOutlook";
 import type { bodyWeightForecast } from "@/lib/bodyWeight";
 import { useColors } from "@/hooks/useColors";
@@ -54,6 +55,7 @@ export default function StatsScreen() {
   const colors = useColors();
   const { fontScale } = useWindowDimensions();
   const [period, setPeriod] = useState<"28" | "84" | "all">("28");
+  const [view, setView] = useState("summary");
   const [exerciseId, setExerciseId] = useState<number>();
   const outlook = useQuery({ queryKey: ["progress-outlook"], queryFn: () => coachRequest<{ body: ReturnType<typeof bodyWeightForecast> & { currentKg: number | null }; exercises: ReturnType<typeof buildExerciseOutlook>[] }>("/api/stats/outlook") });
   const { data, isLoading, isError, isRefetching, refetch } = useQuery({ queryKey: ["training-insights", period], queryFn: () => coachRequest<TrainingInsights>(`/api/stats/insights?days=${period}`) });
@@ -65,9 +67,9 @@ export default function StatsScreen() {
   const section = { borderTopWidth: 1, borderColor: colors.cardBorder, paddingTop: 20, gap: 14 };
   const title = { color: colors.foreground, fontSize: 17, fontFamily: "Inter_700Bold" };
   return <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 24 }} refreshControl={<RefreshControl refreshing={isRefetching || outlook.isRefetching || allHistory.isRefetching} tintColor={colors.primary} onRefresh={() => { void refetch(); void outlook.refetch(); void allHistory.refetch(); }} />}>
-    <Segmented label="Период" value={period} options={[{ value: "28", label: "28 дней" }, { value: "84", label: "12 недель" }, { value: "all", label: "Всё время" }]} onChange={setPeriod} />
-    {outlook.data ? <>
-      <BodyWeightStats body={outlook.data.body} />
+    <Segmented label="Статистика" value={view} options={[{ value: "summary", label: "Обзор" }, { value: "exercises", label: "Упражнения" }]} onChange={setView} />
+    {view === "summary" ? <Segmented label="Период сводки" value={period} options={[{ value: "28", label: "28 дней" }, { value: "84", label: "12 недель" }, { value: "all", label: "Всё время" }]} onChange={setPeriod} /> : null}
+    {view === "exercises" ? outlook.data ? <>
       <View style={section}>
         <Text style={title}>Упражнение · история и прогноз</Text>
         {selectedOutlook ? <><ExercisePicker exercises={outlook.data.exercises.map(row => row.exercise)} selectedId={selectedOutlook.exercise.id} onSelect={setExerciseId} />
@@ -78,8 +80,8 @@ export default function StatsScreen() {
           {selected ? <ExerciseInsight key={selectedId} item={selected} /> : allHistory.isPending ? <ActivityIndicator color={colors.accent} /> : allHistory.isError ? <Button title="Повторить загрузку истории" variant="secondary" onPress={() => { void allHistory.refetch(); }} /> : <Text style={{ color: colors.mutedForeground }}>Нет завершённых подходов этого упражнения</Text>}
         </> : <Text style={{ color: colors.mutedForeground }}>Нет доступных упражнений</Text>}
       </View>
-    </> : outlook.isError ? <Button title="Повторить загрузку прогнозов" variant="secondary" onPress={() => { void outlook.refetch(); }} /> : <ActivityIndicator color={colors.accent} />}
-    {isLoading ? <View style={{ minHeight: 240, justifyContent: "center" }}><ActivityIndicator color={colors.primary} /></View> : isError || !data ? <Button title="Повторить загрузку статистики" variant="secondary" onPress={() => { void refetch(); }} /> : <>
+    </> : outlook.isError ? <Button title="Повторить загрузку прогнозов" variant="secondary" onPress={() => { void outlook.refetch(); }} /> : <ActivityIndicator color={colors.accent} /> : null}
+    {view === "summary" ? isLoading ? <View style={{ minHeight: 240, justifyContent: "center" }}><ActivityIndicator color={colors.primary} /></View> : isError || !data ? <Button title="Повторить загрузку статистики" variant="secondary" onPress={() => { void refetch(); }} /> : <>
       <View style={{ gap: 14 }}>
         <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{data.from ? `${formatDate(dateOf(data.from))} - ${formatDate(dateOf(data.to))}` : "За всё время"}</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -91,6 +93,8 @@ export default function StatsScreen() {
         </View>
         {data.previous && data.period ? <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>Предыдущий период: {data.period} {pluralizeDays(data.period)}</Text> : null}
       </View>
+      <View style={section}><WeeklyTraining /></View>
+      {outlook.data ? <View style={section}><BodyWeightStats body={outlook.data.body} /></View> : null}
       {data.totals.workouts === 0 ? <View style={{ minHeight: 160, justifyContent: "center", alignItems: "center", gap: 16 }}>
         <Feather name="bar-chart-2" size={32} color={colors.accent} />
         <Text style={{ color: colors.mutedForeground, fontSize: 14, textAlign: "center" }}>Нет завершённых тренировок за этот период</Text>
@@ -111,6 +115,6 @@ export default function StatsScreen() {
         {data.groups.length ? <BarChart bars={data.groups.map((group, index) => ({ label: group.muscleGroup, value: group.sets, detail: `Дней с нагрузкой: ${group.days}`, color: index % 2 ? colors.accent : colors.primary }))} formatValue={setCount} /> : <Text style={{ color: colors.mutedForeground }}>Нет записанных подходов за этот период</Text>}
       </View>
       </>}
-    </>}
+    </> : null}
   </ScrollView>;
 }

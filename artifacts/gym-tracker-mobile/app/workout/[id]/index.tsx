@@ -141,6 +141,7 @@ export default function ActiveWorkoutScreen() {
 
   const deleteSet = useDeleteSet({
     mutation: {
+      onError: error => toast.show("error", error instanceof Error ? error.message : "Не удалось удалить подход"),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetWorkoutQueryKey(workoutId) });
         queryClient.invalidateQueries({ queryKey: getGetActiveWorkoutQueryKey() });
@@ -326,6 +327,7 @@ export default function ActiveWorkoutScreen() {
                 createExercise.mutateAsync({ data: { name, muscleGroup, equipment, ...settings } })
               }
             />
+            {selectedExerciseId ? <Pressable accessibilityRole="button" accessibilityLabel="Мышцы и техника выбранного упражнения" onPress={() => router.push(`/exercises/${selectedExerciseId}`)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="info" size={17} color={colors.accent} /><Text style={{ flex: 1, color: colors.accent, fontSize: 13 }}>Мышцы и техника</Text><Feather name="chevron-right" size={16} color={colors.accent} /></Pressable> : null}
             {selectedExerciseId ? <PreviousExerciseSets key={selectedExerciseId} exerciseId={selectedExerciseId} /> : null}
             {selectedPlan ? <Text style={{ color: selectedSetCount >= selectedPlan.sets ? colors.success : colors.mutedForeground, fontSize: 12 }}>Подходы: {selectedSetCount} / {selectedPlan.sets}</Text> : null}
             {rankHint && profile ? <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 8, alignItems: "flex-start", paddingVertical: 6 }}>
@@ -441,6 +443,7 @@ export default function ActiveWorkoutScreen() {
                     key={set.id}
                     set={set}
                     index={idx + 1}
+                    disabled={formBusy}
                     onDelete={() => { if (!formBusy) deleteSet.mutate({ setId: set.id }); }}
                   />
                 ))}

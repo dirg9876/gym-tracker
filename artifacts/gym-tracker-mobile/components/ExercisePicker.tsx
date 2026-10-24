@@ -24,7 +24,7 @@ import { MuscleGroupPicker } from "@/components/MuscleGroupPicker";
 import { EquipmentPicker } from "@/components/EquipmentPicker";
 import { EquipmentSettingsFields } from "@/components/EquipmentSettingsFields";
 import type { EquipmentSettings } from "@/lib/equipmentSettings";
-import { isTimedExercise } from "@/lib/workoutMeasurement";
+import { exerciseNameKey, isTimedExercise } from "@/lib/workoutMeasurement";
 
 type Props = {
   exercises: Exercise[];
@@ -52,12 +52,12 @@ export function ExercisePicker({ exercises, selectedId, onSelect, onCreate, prof
   const selected = exercises.find((e) => e.id === selectedId);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = exerciseNameKey(search);
     if (!q) return exercises;
     return exercises.filter(
       (e) =>
-        e.name.toLowerCase().includes(q) ||
-        e.muscleGroup.toLowerCase().includes(q),
+        exerciseNameKey(e.name).includes(q) ||
+        exerciseNameKey(e.muscleGroup).includes(q),
     );
   }, [exercises, search]);
 

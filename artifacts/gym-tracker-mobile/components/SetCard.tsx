@@ -1,7 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
 import * as Haptics from "expo-haptics";
-import React from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { WorkoutSet } from "@workspace/api-client-react";
 
@@ -12,10 +12,13 @@ type Props = {
   set: WorkoutSet;
   index: number;
   onDelete: () => void;
+  disabled?: boolean;
 };
 
-export function SetCard({ set, index, onDelete }: Props) {
+export function SetCard({ set, index, onDelete, disabled = false }: Props) {
   const colors = useColors();
+  const deletion = useRef({ disabled, onDelete });
+  useEffect(() => { deletion.current = { disabled, onDelete }; }, [disabled, onDelete]);
 
   return (
     <View
@@ -38,18 +41,28 @@ export function SetCard({ set, index, onDelete }: Props) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Удалить подход ${index}: ${formatSetResult(set)}`}
+        accessibilityLabel={`Удалить подход ${index}: ${set.exerciseName}, ${formatSetResult(set)}`}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
         onPress={() => {
-          if (Platform.OS !== "web") {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-          }
-          onDelete();
+          if (disabled) return;
+          Alert.alert("Удалить подход?", `${set.exerciseName}\nПодход ${index}: ${formatSetResult(set)}`, [
+            { text: "Отмена", style: "cancel" },
+            { text: "Удалить", style: "destructive", onPress: () => {
+              if (deletion.current.disabled) return;
+              if (Platform.OS !== "web") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+              }
+              deletion.current.onDelete();
+            } },
+          ]);
         }}
         hitSlop={10}
         style={({ pressed }) => [
           styles.deleteBtn,
           {
             backgroundColor: pressed ? colors.destructiveSoft : "transparent",
+            opacity: disabled ? 0.35 : 1,
           },
         ]}
       >

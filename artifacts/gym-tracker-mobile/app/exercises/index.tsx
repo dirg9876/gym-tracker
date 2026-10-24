@@ -13,6 +13,7 @@ import { useColors } from "@/hooks/useColors";
 import type { RankedExercise } from "@/lib/exerciseStandards";
 import { coachRequest } from "@/lib/coachApi";
 import type { ExerciseMaintenance } from "@/lib/exerciseReplacement";
+import { exerciseNameKey } from "@/lib/workoutMeasurement";
 
 export default function ExercisesScreen() {
   const colors = useColors();
@@ -32,9 +33,9 @@ export default function ExercisesScreen() {
   });
   const grouped = useMemo(() => {
     const groups = new Map<string, Exercise[]>();
-    const query = search.trim().toLowerCase();
+    const query = exerciseNameKey(search);
     for (const ex of exercises ?? []) {
-      if (!ex.name.toLowerCase().includes(query) && !ex.muscleGroup.toLowerCase().includes(query)) continue;
+      if (!exerciseNameKey(ex.name).includes(query) && !exerciseNameKey(ex.muscleGroup).includes(query)) continue;
       groups.set(ex.muscleGroup, [...(groups.get(ex.muscleGroup) ?? []), ex]);
     }
     return [...groups.entries()];
