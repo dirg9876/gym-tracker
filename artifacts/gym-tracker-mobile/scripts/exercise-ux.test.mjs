@@ -93,8 +93,8 @@ for (const screen of ["picker", "catalog"]) test(`${screen} search normalizes ca
       const list = nodes(tree, node => node.type === "FlatList")[0];
       ids = Array.from(list.props.data.filter(row => row.type === "item"), row => row.ex.id);
     } else {
-      const { default: ExercisesScreen } = loadView("../app/exercises/index.tsx", { states: [search], exercises });
-      const names = nodes(ExercisesScreen(), node => node.type === "Text").map(node => node.props.children);
+      const { ExerciseLibrary } = loadView("../components/ExerciseLibrary.tsx", { states: [search], exercises });
+      const names = nodes(ExerciseLibrary({ embedded: true }), node => node.type === "Text").map(node => node.props.children);
       ids = exercises.filter(exercise => names.includes(exercise.name)).map(exercise => exercise.id);
     }
     assert.deepEqual(ids, expected, search);

@@ -494,6 +494,15 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     if (!["28", "84", "all"].includes(days)) throw httpError(400, "Неверный период статистики");
     return buildTrainingInsights(state.workouts, getFinishedSets(state), state.exercises, days === "all" ? null : days === "84" ? 84 : 28);
   }
+  if (method === "GET" && path === "/api/stats/body-weight") {
+    return { ...bodyWeightForecast(state.bodyWeightLog), currentKg: state.profile.bodyWeightKg };
+  }
+  match = /^\/api\/exercises\/(\d+)\/insights$/.exec(path);
+  if (match && method === "GET") {
+    const exercise = findExercise(state, Number(match[1]));
+    if (!exercise) throw httpError(404, "Упражнение не найдено");
+    return buildTrainingInsights(state.workouts, getFinishedSets(state).filter(set => set.exerciseId === exercise.id), [exercise], null).exercises[0] ?? null;
+  }
   if (method === "GET" && path === "/api/stats/weekly") {
     const sets = getFinishedSets(state);
     return { groups: weeklyWork(sets), ...weeklyMuscleWorkload(sets), exercises: weeklyWork(sets.map(set => ({ ...set, muscleGroup: String(set.exerciseId) }))).map(row => ({ ...row, exerciseId: Number(row.muscleGroup), name: findExercise(state, Number(row.muscleGroup))?.name ?? "Упражнение" })) };

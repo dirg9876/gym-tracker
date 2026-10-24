@@ -26,3 +26,45 @@ release:patch23/code29/runtime1.1.0; build-release.ps1/export/audit/publishmaste
 APK/OTA/apply+preservation. Чужие .agents/untrackedassets не трогать.
 5556 gymbeam_visualqa запущен, baseline2sets точно совпал послеOTA22. Личные
 экспорты пользователя не импортировать, использовать только ownQA и exactrestore.
+
+## Реализация Перед Финальными Проверками
+
+В app/(tabs)/_layout title Тренировки, programs.tsx две вкладки: Упражнения
+по умолчанию и Шаблоны. ExerciseLibrary.tsx вынесен из старого route, embedding
+без второгоheader/вложенногоScrollView. Старый/exercises route оставленwrapper.
+Вход из каталога/WeeklyTraining открывает detail?view=progress, из activeguide
+по-прежнему открываются мышцы. В detail прежние разрозненные графики заменены
+единым ExerciseProgressChart +полной ExerciseJournal5sessions/page+compactfuture.
+Нормативы/рекорды скрытыподраскрытие; мышцы/settings сохранены. Outlook/journal
+загружаютсятолькопривкладкеProgress, focusrefetchподдерживаетактуальность.
+OfflineAPI новые readonly /api/stats/body-weight и /api/exercises/id/insights.
+Stats workerNash01a16eb2-168f-7a41-9cda-0e699575aae0 переписал толькоstats.tsx:
+Обзор(period/totals/calendar/weeks),Нагрузка(WeeklyTraining),Вес тела(BodyWeightStats).
+Lazyqueries/focus/pullrefreshтолькоактивнойвкладки, ошибки/retryнепрячутся.
+Новыхсхемbackup/native/sharedAI/Workerнет, реальные данные не мигрируют.
+
+Initial519tests/types PASS.6новыхnavigation/APItests+6search/deleteUItests PASS,
+добавленаещёоднаstaticregressionstatslazy. release:patch23/code29/runtime1.1.0
+выполнен,4русскиезаметки. Следующийшаг: полный526tests/types/build/export,
+NativeQAкаталог→прогресс/анатомия/шаблоны/Stats3views/планка/read-onlypreservation,
+audit/commit/push/GitHubAPK/OTA/verify/restore+stopownAVD/finalcheckpoint.
+
+## Финальные Проверки Перед Публикацией
+
+526tests PASS:15repo/455mobile/21gateway/13Worker/22gallery. Workspace types,
+release check, build-release.ps1, Android export PASS. APK code29/runtime1.1.0:
+SHA794FDE0E1611DD5CDE61BDDE7582CEE22F62A0F8A60C9AB75C5CDDA5434985E1.
+Export entry-ad5953aa02860de08c7c32a69a4e56d0.hbc. Full tests/type/build/export
+logs ignoredartifacts/apk/verified/*1.1.23*.
+
+5556visualqa install-r: state/plans baseline2sets preserved exactly vsOTA22.
+OwnQA9sets+active4: Training→catalogrowopensProgress directly, graph contains
+allobservedhistoryandconditionalfuture; completejournal2sessions/6benchsets visible,
+templatesempty(default), stats3views/period/calendar/load/body all checked.
+Compact320dp rendering inspected, wm size/density reset. firstbody screenshot
+caught transientframe; stableafter2sidle showsall3tabs, notamissinglabelbug.
+after-navigation-qa-1.1.23-visualqa.json EXACT fullstate/plans matchedowninput,
+notjustsets. No user-phone data touched. Original2sets restored, after-restore
+fullstate/plans exactlymatchesbaseline. Privateaudit18staged/APK/204OTAfiles PASS.
+Next sourcecommit/master, GitHubAPK/OTA,
+verifyappliedID/state/offline, finalcheckpoint/docscommit/stopownAVD.

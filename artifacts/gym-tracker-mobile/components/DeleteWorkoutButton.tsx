@@ -32,7 +32,7 @@ export function DeleteWorkoutButton({ workoutId, name, disabled, onDeleted, onPe
     disabled={disabled || remove.isPending}
     onPress={event => {
       event.stopPropagation();
-      Alert.alert("Удалить тренировку?", `${name}\nВсе подходы этой тренировки будут удалены. Статистика и уровни пересчитаются. Сохранённые виды тренировок останутся.`, [
+      Alert.alert("Удалить тренировку?", `${name}\nВсе подходы этой тренировки будут удалены. Статистика и уровни пересчитаются. Сохранённые шаблоны останутся.`, [
         { text: "Отмена", style: "cancel" },
         { text: "Удалить", style: "destructive", onPress: () => remove.mutate({ workoutId }) },
       ]);

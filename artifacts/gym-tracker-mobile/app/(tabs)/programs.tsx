@@ -1,32 +1,36 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useListPrograms } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { useColors } from "@/hooks/useColors";
+import { ExerciseLibrary } from "@/components/ExerciseLibrary";
+import { Segmented } from "@/components/Segmented";
 
 export default function WorkoutTypesScreen() {
   const colors = useColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useListPrograms();
   const programs = data?.programs ?? [];
+  const [view, setView] = useState("exercises");
 
   return (
-    <ScrollView
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ padding: 16, paddingBottom: 8 }}><Segmented label="Тренировки" value={view} options={[{ value: "exercises", label: "Упражнения" }, { value: "templates", label: "Шаблоны" }]} onChange={setView} /></View>
+      {view === "exercises" ? <ExerciseLibrary embedded /> : <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24, gap: 20 }}
     >
-      <Button title="Создать вид тренировки" icon={<Feather name="plus" size={18} color={colors.primaryForeground} />} onPress={() => router.push("/programs/new")} />
-      <Button title="Управление упражнениями" variant="secondary" icon={<Feather name="edit-3" size={18} color={colors.foreground} />} onPress={() => router.push("/exercises")} />
+      <Button title="Создать шаблон" icon={<Feather name="plus" size={18} color={colors.primaryForeground} />} onPress={() => router.push("/programs/new")} />
       {isLoading ? <ActivityIndicator color={colors.primary} /> : isError ? (
         <Button title="Повторить загрузку" variant="secondary" icon={<Feather name="refresh-cw" size={18} color={colors.foreground} />} onPress={() => { void refetch(); }} />
       ) : programs.length === 0 ? (
         <View style={styles.empty}>
           <Feather name="grid" size={36} color={colors.mutedForeground} />
-          <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>Нет сохранённых видов тренировок</Text>
+          <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>Нет сохранённых шаблонов</Text>
         </View>
       ) : (
         <View style={{ gap: 10 }}>
@@ -47,7 +51,8 @@ export default function WorkoutTypesScreen() {
           ))}
         </View>
       )}
-    </ScrollView>
+    </ScrollView>}
+    </View>
   );
 }
 

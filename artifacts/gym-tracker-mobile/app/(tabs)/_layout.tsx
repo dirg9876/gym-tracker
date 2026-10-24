@@ -44,9 +44,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="programs"
         options={{
-          title: "Виды тренировок",
-          tabBarAccessibilityLabel: "Виды тренировок",
-          tabBarLabel: ({ color }) => <TabCaption title={"Виды\nтренировок"} color={color} />,
+          title: "Тренировки",
+          tabBarAccessibilityLabel: "Тренировки",
+          tabBarLabel: ({ color }) => <TabCaption title="Тренировки" color={color} />,
           tabBarIcon: ({ color }) => <Feather name="grid" size={22} color={color} />,
         }}
       />

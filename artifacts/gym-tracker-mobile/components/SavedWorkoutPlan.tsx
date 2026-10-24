@@ -101,7 +101,7 @@ export function SavedWorkoutPlan({ plan, onSaved, confirmation }: { plan: Templa
     } },
   ]);
   return <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
-    <ScreenHeader title={confirmation?.title ?? (isNew ? "Новый вид тренировки" : "Вид тренировки")} onBack={back} onHome={home} />
+    <ScreenHeader title={confirmation?.title ?? (isNew ? "Новый шаблон" : "Шаблон тренировки")} onBack={back} onHome={home} />
     <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 24 }}>
       <TextInput accessibilityLabel="Название шаблона" placeholder="Название тренировки" placeholderTextColor={colors.mutedForeground} maxLength={80} editable={!busy} value={name} onChangeText={value => { setName(value); setDirty(true); }} style={{ minHeight: 48, borderBottomWidth: 1, borderColor: colors.cardBorder, color: colors.foreground, fontSize: 18 }} />
       <FieldError message={errors.name} />
@@ -147,8 +147,8 @@ export function SavedWorkoutPlan({ plan, onSaved, confirmation }: { plan: Templa
           <Button title="Добавить подход" variant="ghost" icon={<Feather name="plus" size={16} color={colors.foreground} />} disabled={busy} onPress={() => changeSets(index, [...ex.setTargets!, { ...ex.setTargets!.at(-1)! }])} />
         </View>;
       })}
-      {dirty || isNew ? <Button title={confirmation?.label ?? "Сохранить вид тренировки"} icon={<Feather name={confirmation ? "check" : "save"} size={18} color={colors.primaryForeground} />} onPress={save} disabled={!valid || busy} loading={confirming || update.isPending || add.isPending} /> : null}
-      {!isNew ? <Button title="Удалить вид тренировки" variant="ghost" icon={<Feather name="trash-2" size={18} color={colors.foreground} />} onPress={deleteTemplate} disabled={busy} /> : null}
+      {dirty || isNew ? <Button title={confirmation?.label ?? "Сохранить шаблон"} icon={<Feather name={confirmation ? "check" : "save"} size={18} color={colors.primaryForeground} />} onPress={save} disabled={!valid || busy} loading={confirming || update.isPending || add.isPending} /> : null}
+      {!isNew ? <Button title="Удалить шаблон" variant="ghost" icon={<Feather name="trash-2" size={18} color={colors.foreground} />} onPress={deleteTemplate} disabled={busy} /> : null}
     </ScrollView>
     {!isNew ? <View style={{ padding: 16, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderColor: colors.cardBorder }}>
       <Button title={active?.workout ? "Открыть текущую тренировку" : "Начать тренировку"} onPress={start} disabled={busy || dirty || !valid} loading={create.isPending} icon={<Feather name="play" size={18} color={colors.primaryForeground} />} />
