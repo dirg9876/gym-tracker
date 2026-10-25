@@ -4,8 +4,9 @@ import {
   useGetWorkout,
 } from "@workspace/api-client-react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Feather from "@expo/vector-icons/Feather";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
@@ -14,6 +15,8 @@ import { WorkoutAnalysis } from "@/components/WorkoutAnalysis";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { SaveWorkoutTemplate } from "@/components/SaveWorkoutTemplate";
 import { DeleteWorkoutButton } from "@/components/DeleteWorkoutButton";
+import { SetEditor } from "@/components/SetEditor";
+import type { EditableSet } from "@/lib/setEditing";
 import { useColors } from "@/hooks/useColors";
 import { formatDate, formatKg, formatNumber } from "@/lib/format";
 import { durationOf, formatSeconds, formatSetResult, formatSetContext, isTimedExercise } from "@/lib/workoutMeasurement";
@@ -24,6 +27,7 @@ export default function HistoryDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const id = parseInt(params.id || "0", 10);
+  const [editingSet, setEditingSet] = useState<EditableSet | null>(null);
 
   const { data: workout, isLoading } = useGetWorkout(id, {
     query: { enabled: !!id, queryKey: getGetWorkoutQueryKey(id) },
@@ -75,7 +79,7 @@ export default function HistoryDetailScreen() {
         title={workout.name || "Тренировка"}
         subtitle={formatDate(workout.startedAt)}
         onBack={() => router.replace("/history")}
-        right={<DeleteWorkoutButton workoutId={id} name={workout.name || "Тренировка"} onDeleted={() => router.replace("/history")} />}
+        right={<DeleteWorkoutButton workoutId={id} name={workout.name || "Тренировка"} disabled={!!editingSet} onDeleted={() => router.replace("/history")} />}
       />
       <ScrollView
         contentContainerStyle={{
@@ -117,8 +121,8 @@ export default function HistoryDetailScreen() {
                     alignItems: "center",
                     padding: 14,
                     backgroundColor: colors.muted,
-                    borderTopLeftRadius: 18,
-                    borderTopRightRadius: 18,
+                    borderTopLeftRadius: 8,
+                    borderTopRightRadius: 8,
                     borderBottomWidth: 1,
                     borderBottomColor: colors.cardBorder,
                   }}
@@ -161,6 +165,7 @@ export default function HistoryDetailScreen() {
                         {formatSetResult(set)}
                       </Text>
                       {formatSetContext(set) ? <Text style={{ color: colors.mutedForeground, fontSize: 11, textAlign: "right" }}>{formatSetContext(set)}</Text> : null}</View>
+                      <Pressable accessibilityRole="button" accessibilityLabel={`Изменить подход ${idx + 1}: ${set.exerciseName}`} onPress={() => setEditingSet(set as EditableSet)} style={{ width: 44, height: 44, marginLeft: 8, alignItems: "center", justifyContent: "center" }}><Feather name="edit-3" size={18} color={colors.accent} /></Pressable>
                     </View>
                   ))}
                 </View>
@@ -169,6 +174,7 @@ export default function HistoryDetailScreen() {
           })}
         </View>
       </ScrollView>
+      {editingSet ? <SetEditor key={editingSet.id} set={editingSet} onClose={() => setEditingSet(null)} /> : null}
     </View>
   );
 }
@@ -177,7 +183,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 0.6,
+    letterSpacing: 0,
     textTransform: "uppercase",
   },
   value: { fontSize: 22, fontFamily: "Inter_700Bold", marginTop: 4 },

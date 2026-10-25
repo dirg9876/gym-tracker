@@ -11,11 +11,12 @@ import { formatSetResult, formatSetContext } from "@/lib/workoutMeasurement";
 type Props = {
   set: WorkoutSet;
   index: number;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
   disabled?: boolean;
 };
 
-export function SetCard({ set, index, onDelete, disabled = false }: Props) {
+export function SetCard({ set, index, onDelete, onEdit, disabled = false }: Props) {
   const colors = useColors();
   const deletion = useRef({ disabled, onDelete });
   useEffect(() => { deletion.current = { disabled, onDelete }; }, [disabled, onDelete]);
@@ -39,7 +40,8 @@ export function SetCard({ set, index, onDelete, disabled = false }: Props) {
           {formatSetContext(set)}
         </Text> : null}
       </View>
-      <Pressable
+      {onEdit ? <Pressable accessibilityRole="button" accessibilityLabel={`Изменить подход ${index}: ${set.exerciseName}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onEdit} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Feather name="edit-3" size={18} color={colors.accent} /></Pressable> : null}
+      {onDelete ? <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Удалить подход ${index}: ${set.exerciseName}, ${formatSetResult(set)}`}
         accessibilityState={{ disabled }}
@@ -53,7 +55,7 @@ export function SetCard({ set, index, onDelete, disabled = false }: Props) {
               if (Platform.OS !== "web") {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
               }
-              deletion.current.onDelete();
+              deletion.current.onDelete?.();
             } },
           ]);
         }}
@@ -67,7 +69,7 @@ export function SetCard({ set, index, onDelete, disabled = false }: Props) {
         ]}
       >
         <Feather name="trash-2" size={16} color={colors.destructive} />
-      </Pressable>
+      </Pressable> : null}
     </View>
   );
 }

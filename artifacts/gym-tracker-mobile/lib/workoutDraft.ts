@@ -4,6 +4,8 @@ import { coachFieldsSchema, timerSchema } from "./trainingCoach";
 import { isTimedExercise, minimumWeight, sameLoadCategory } from "./workoutMeasurement";
 
 export const draftRevisionSchema = z.number().int().nonnegative().safe();
+export const draftAssessmentSchema = z.object({ rir: z.boolean(), technique: z.boolean() }).strict();
+export type DraftAssessment = z.infer<typeof draftAssessmentSchema>;
 export const workoutDraftSchema = z.object({
   exerciseId: z.number().int().positive().safe(),
   weightKg: z.number().finite().nonnegative(),
@@ -17,7 +19,11 @@ export const workoutDraftSchema = z.object({
   : draft.reps > 0 && Number.isFinite(draft.weightKg * draft.reps));
 export const draftCommitSchema = z.object({ revision: draftRevisionSchema, setId: z.number().int().positive().safe() });
 export type WorkoutDraft = z.infer<typeof workoutDraftSchema>;
-export type DraftResponse = { draft: WorkoutDraft | null; revision: number };
+export type DraftResponse = { draft: WorkoutDraft | null; revision: number; assessment?: DraftAssessment };
+export function assessmentForDraft(workout: { draft?: Pick<WorkoutDraft, "rir" | "technique">; draftRevision?: number; draftAssessment?: DraftAssessment & { revision: number } }): DraftAssessment {
+  const current = workout.draftAssessment?.revision === (workout.draftRevision ?? 0) ? workout.draftAssessment : null;
+  return { rir: workout.draft?.rir != null && current?.rir === true, technique: workout.draft?.technique != null && current?.technique === true };
+}
 
 export function validDraftForExercise(draft: WorkoutDraft, exercise: { id: number; name: string; equipment: Equipment; deletedAt?: string }) {
   return !exercise.deletedAt && exercise.id === draft.exerciseId && (isTimedExercise(exercise.name)

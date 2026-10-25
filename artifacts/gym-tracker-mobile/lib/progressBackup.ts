@@ -11,7 +11,7 @@ import { isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { equipmentSettingsSchema, validEquipmentSettings, isAssisted } from "./equipmentSettings";
 import { templateExerciseSchema, validateTargets } from "./workoutTemplates";
 import { coachFieldsSchema, timerSchema } from "./trainingCoach";
-import { draftRevisionSchema, draftCommitSchema, workoutDraftSchema, validDraftForExercise } from "./workoutDraft";
+import { draftRevisionSchema, draftAssessmentSchema, draftCommitSchema, workoutDraftSchema, validDraftForExercise } from "./workoutDraft";
 import {
   AUTO_BACKUP_JOBS_KEY, LAST_EXPORT_KEY, PLAN_PREFIX, PROGRESS_KEY, RECOVERY_KEY,
   readProgressEntries, quarantineProgress, readQuarantinedProgress, commitProgressTransaction, ProgressRecoveryRequired, withProgressLock,
@@ -37,13 +37,14 @@ const stateSchema = z.object({
     deletedAt: date.optional(),
     replacementPending: z.boolean().optional(),
   }).extend(equipmentSettingsSchema.shape).passthrough().refine(validEquipmentSettings)),
-  workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional(), splitDay: z.enum(["push", "pull", "legs"]).optional() }).passthrough()),
+  workouts: z.array(z.object({ id, name: z.string().nullable(), startedAt: date, finishedAt: date.nullable(), timer: timerSchema.optional(), restSeconds: z.number().int().min(30).max(900).optional(), draft: workoutDraftSchema.optional(), draftRevision: draftRevisionSchema.optional(), draftAssessment: draftAssessmentSchema.extend({ revision: draftRevisionSchema }).optional(), lastDraftCommit: draftCommitSchema.optional(), coachCycle: coachCycleAssignmentSchema.optional(), trainingMode: z.literal("office").optional(), splitDay: z.enum(["push", "pull", "legs"]).optional() }).passthrough()),
   sets: z.array(z.object({
     id, workoutId: id, exerciseId: id, weightKg: amount,
     equipment: equipment.optional(),
     bodyWeightKg: z.number().finite().min(20).max(500).optional(),
     loadMode: z.enum(["weight", "assisted"]).optional(), dumbbellCount: z.union([z.literal(1), z.literal(2)]).optional(),
     reps: z.number().int().nonnegative().safe(), durationSeconds: id.max(86400).optional(), createdAt: date,
+    revision: draftRevisionSchema.optional(), editedAt: date.optional(),
   }).extend(coachFieldsSchema.shape).passthrough().refine(set => set.durationSeconds != null ? set.reps === 0 && set.weightKg === 0 && set.rir == null : set.reps > 0)),
   profile: z.object({
     bodyWeightKg: z.number().finite().min(20).max(500).nullable(),

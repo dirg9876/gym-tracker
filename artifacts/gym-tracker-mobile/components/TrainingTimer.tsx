@@ -11,7 +11,7 @@ import { Stepper } from "./Stepper";
 import { ProgressTrack } from "./ProgressTrack";
 import { countdownLabel } from "@/lib/displayProgress";
 
-export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled = false, onTransfer }: { workoutId: number; plank?: { id: number; name: string }; seconds: number; restSignal: number; disabled?: boolean; onTransfer: (timer: Timer) => Promise<{ timer: Timer | null; restSeconds: number }> }) {
+export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled = false, compact = false, onTransfer }: { workoutId: number; plank?: { id: number; name: string }; seconds: number; restSignal: number; disabled?: boolean; compact?: boolean; onTransfer: (timer: Timer) => Promise<{ timer: Timer | null; restSeconds: number }> }) {
   const colors = useColors();
   const client = useQueryClient();
   const url = `/api/workouts/${workoutId}/timer`;
@@ -68,6 +68,18 @@ export function TrainingTimer({ workoutId, plank, seconds, restSignal, disabled 
     if (timer && (remainingMs(timer) > 0 || timer.kind === "plank")) Alert.alert("Заменить таймер?", timer.kind === "plank" ? "Время текущего удержания не будет перенесено в подход." : "Текущий отсчёт будет сброшен.", [{ text: "Отмена", style: "cancel" }, { text: "Заменить", onPress: () => mutation.mutate(startTimer(next.kind, next.totalMs / 1000, next.exerciseId)) }]);
     else mutation.mutate(next);
   };
+  if (compact) return <View style={{ gap: 8, paddingVertical: 6, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.cardBorder }}>
+    {isError ? <Button variant="secondary" title="Повторить загрузку таймера" onPress={() => { void refetch(); }} /> : <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minHeight: 56 }}>
+      <View style={{ flex: 1, minWidth: 68, gap: 2 }}><Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{timer?.kind === "plank" ? "Удержание" : "Отдых"}{timer?.endsAt == null && left > 0 ? " · пауза" : ""}</Text><Text accessibilityLabel="Осталось времени" style={{ color: timer && left === 0 ? colors.success : colors.foreground, fontSize: 24, lineHeight: 30, fontFamily: "Inter_700Bold", fontVariant: ["tabular-nums"] }}>{isLoading ? "..." : timer ? countdownLabel(left) : `${restSeconds} с`}</Text></View>
+      {!timer && !isLoading ? <Pressable accessibilityRole="button" accessibilityLabel={`Начать отдых: ${restSeconds} с`} disabled={disabled || mutation.isPending} onPress={() => replace(startTimer("rest", restSeconds))} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Feather name="play" size={21} color={colors.primary} /></Pressable> : null}
+      {timer?.kind === "rest" ? <Pressable accessibilityRole="button" accessibilityLabel="Добавить 30 секунд отдыха" disabled={disabled || mutation.isPending || timer.totalMs > 86370000} onPress={() => mutation.mutate(extendTimer(timer, 30))} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Feather name="plus" size={17} color={colors.foreground} /><Text style={{ color: colors.foreground, fontSize: 10 }}>30 с</Text></Pressable> : null}
+      {timer && left > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={timer.endsAt == null ? "Продолжить таймер" : "Пауза таймера"} disabled={disabled || mutation.isPending} onPress={() => mutation.mutate(timer.endsAt == null ? resumeTimer(timer) : pauseTimer(timer))} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Feather name={timer.endsAt == null ? "play" : "pause"} size={21} color={colors.primary} /></Pressable> : null}
+      {timer ? <Pressable accessibilityRole="button" accessibilityLabel="Сбросить таймер" disabled={disabled || mutation.isPending} onPress={() => mutation.mutate(null)} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Feather name="x" size={20} color={colors.mutedForeground} /></Pressable> : null}
+      <Pressable accessibilityRole="button" accessibilityLabel="Настроить длительность отдыха" accessibilityState={{ expanded: configure }} onPress={() => setConfigure(v => !v)} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Feather name="sliders" size={18} color={colors.mutedForeground} /></Pressable>
+    </View>}
+    {configure ? <Stepper label="Отдых после подхода" unit="с" value={restSeconds} disabled={disabled || mutation.isPending} onChange={value => mutation.mutate({ restSeconds: value })} min={30} max={900} step={30} chips={[60, 120, 180, 300]} /> : null}
+    {timer?.kind === "plank" ? <Button title="Перенести время в подход" variant="secondary" disabled={disabled || mutation.isPending || timer.totalMs - left < 1000} onPress={finishPlank} icon={<Feather name="check" size={16} color={colors.foreground} />} /> : plank ? <Button title={`Удержание · ${seconds} с`} variant="secondary" disabled={disabled || mutation.isPending} onPress={() => replace(startTimer("plank", seconds, plank.id))} icon={<Feather name="play" size={16} color={colors.foreground} />} /> : null}
+  </View>;
   return <View style={{ gap: 8, paddingVertical: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.cardBorder }}>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
       <Feather name="clock" size={16} color={timer && left === 0 ? colors.success : colors.accent} />

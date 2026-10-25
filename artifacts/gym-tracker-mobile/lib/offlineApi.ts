@@ -21,10 +21,11 @@ import { AUTO_BACKUP_JOBS_KEY, PLAN_PREFIX, PROGRESS_KEY, isProgressKey, readPro
 import { validateStoredProgress } from "./progressBackup";
 import { readAutomaticBackupJobs, readAutomaticBackupSettings } from "./automaticBackupState";
 import { calibrateRemaining, completedTargets, plannedSet, templateInputSchema, validateTargets, type SetTarget, type TemplateExercise, type TemplatePlan } from "./workoutTemplates";
-import { draftRevisionSchema, workoutDraftSchema, validDraftForExercise, makeWorkoutDraft, selectWorkoutDraft, sameTimer, type DraftResponse, type WorkoutDraft } from "./workoutDraft";
+import { draftRevisionSchema, draftAssessmentSchema, workoutDraftSchema, validDraftForExercise, makeWorkoutDraft, selectWorkoutDraft, sameTimer, assessmentForDraft, type DraftAssessment, type DraftResponse, type WorkoutDraft } from "./workoutDraft";
 import { exerciseStandard, standardProgress, type RankedExercise } from "./exerciseStandards";
 import { coachFieldsSchema, timerSchema, remainingMs, weeklyWork, type CoachFields, type TrainingTimer, type Progression } from "./trainingCoach";
 import { weeklyMuscleWorkload } from "./muscleWorkload";
+import { equalSetValues, setEditSchema, setValues } from "./setEditing";
 import type {
   ActiveWorkoutResponse,
   AddSetInput,
@@ -78,6 +79,7 @@ type WorkoutRow = {
   restSeconds?: number;
   draft?: WorkoutDraft;
   draftRevision?: number;
+  draftAssessment?: DraftAssessment & { revision: number };
   lastDraftCommit?: { revision: number; setId: number };
   coachCycle?: { planId: string; slot: number };
   trainingMode?: "office";
@@ -96,6 +98,8 @@ type SetRow = CoachFields & {
   reps: number;
   durationSeconds?: number;
   createdAt: string;
+  revision?: number;
+  editedAt?: string;
 };
 
 type CustomProgramRow = {
@@ -392,7 +396,9 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
       const draft = workoutDraftSchema.safeParse(body.draft);
       const exercise = draft.success ? findExercise(state, draft.data.exerciseId) : null;
       if (!draft.success || !exercise || !validDraftForExercise(draft.data, exercise)) throw httpError(400, "Проверьте упражнение и значения черновика");
+      const assessment = assessmentAfterInput(state, workout, draft.data, body.assessment);
       workout.draft = draft.data;
+      workout.draftAssessment = { ...assessment, revision: (workout.draftRevision ?? 0) + 1 };
       workout.draftRevision = (workout.draftRevision ?? 0) + 1;
       await saveState(state);
       return draftResponse(workout);
@@ -400,7 +406,8 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
     if (method === "POST" && match[2] === "commit") {
       requireDraftRevision(workout, body.revision);
       if (!workout.draft) throw httpError(400, "Сначала выберите упражнение");
-      const set = await addSet(state, workout.id, workout.draft, body.revision as number);
+      const assessment = assessmentForDraft(workout);
+      const set = await addSet(state, workout.id, { ...workout.draft, rir: assessment.rir ? workout.draft.rir : null, technique: assessment.technique ? workout.draft.technique : null }, body.revision as number);
       return { set, ...draftResponse(workout) };
     }
   }
@@ -439,6 +446,12 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
   if (match && method === "POST") return addSet(state, Number(match[1]), body);
 
   match = /^\/api\/sets\/(\d+)$/.exec(path);
+  if (match && method === "GET") {
+    const set = state.sets.find(row => row.id === Number(match![1]));
+    if (!set) throw httpError(404, "Подход не найден");
+    return enrichSet(state, set);
+  }
+  if (match && method === "PATCH") return editSet(state, Number(match[1]), body);
   if (match && method === "DELETE") return deleteSet(state, Number(match[1]));
 
   match = /^\/api\/workouts\/(\d+)\/finish$/.exec(path);
@@ -1192,7 +1205,22 @@ async function deleteWorkout(state: OfflineState, workoutId: number): Promise<vo
 }
 
 function draftResponse(workout: WorkoutRow): DraftResponse {
-  return { draft: workout.draft ?? null, revision: workout.draftRevision ?? 0 };
+  return { draft: workout.draft ?? null, revision: workout.draftRevision ?? 0, ...(workout.draft ? { assessment: assessmentForDraft(workout) } : {}) };
+}
+
+function assessmentAfterInput(state: OfflineState, workout: WorkoutRow, draft: WorkoutDraft, input: unknown): DraftAssessment {
+  const parsed = input == null ? null : draftAssessmentSchema.partial().safeParse(input);
+  if (parsed && !parsed.success) throw httpError(400, "Неверное подтверждение оценки");
+  const explicit = parsed?.success ? parsed.data : {};
+  const sameExercise = workout.draft?.exerciseId === draft.exerciseId;
+  const prior = sameExercise ? workout.draft : state.sets.slice().reverse().find(set => set.workoutId === workout.id && set.exerciseId === draft.exerciseId);
+  const confirmed = sameExercise ? assessmentForDraft(workout) : { rir: false, technique: false };
+  const result = { rir: false, technique: false };
+  for (const field of ["rir", "technique"] as const) {
+    if (explicit[field] && draft[field] == null) throw httpError(400, "Сначала укажите оценку подхода");
+    result[field] = draft[field] != null && (explicit[field] ?? (prior?.[field] !== draft[field] || confirmed[field]));
+  }
+  return result;
 }
 
 function requireDraftRevision(workout: WorkoutRow, revision: unknown) {
@@ -1262,7 +1290,7 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
   }
   if (workout.draft) {
     const { sourceTimer: _sourceTimer, ...draft } = workout.draft;
-    workout.draft = draft.exerciseId === set.exerciseId ? { ...draft, rir: set.rir ?? null, technique: set.technique ?? null } : undefined;
+    workout.draft = draft.exerciseId === set.exerciseId ? { ...draft, rir: commitRevision != null ? draft.rir : set.rir ?? null, technique: commitRevision != null ? draft.technique : set.technique ?? null } : undefined;
     workout.draftRevision = (workout.draftRevision ?? 0) + 1;
     if (commitRevision != null) {
       workout.lastDraftCommit = { revision: commitRevision, setId: set.id };
@@ -1270,12 +1298,76 @@ async function addSet(state: OfflineState, workoutId: number, body: RequestBody,
         const sets = state.sets.filter(set => set.workoutId === workout.id);
         const remaining = (ex: TemplateExercise) => completedTargets(ex, sets) < ex.sets;
         const next = plan.exercises.find(ex => ex.exerciseId === set.exerciseId && remaining(ex)) ?? plan.exercises.find(remaining);
-        if (next && (next.setTargets || next.exerciseId !== set.exerciseId)) workout.draft = selectWorkoutDraft(findExercise(state, next.exerciseId)!, plannedSet(next, completedTargets(next, sets)), null, sets);
+        if (next && (next.setTargets || next.exerciseId !== set.exerciseId)) {
+          workout.draft = selectWorkoutDraft(findExercise(state, next.exerciseId)!, plannedSet(next, completedTargets(next, sets)), null, sets);
+          if (next.exerciseId === draft.exerciseId) workout.draft = { ...workout.draft, rir: draft.rir, technique: draft.technique };
+        }
       }
     }
+    workout.draftAssessment = { rir: false, technique: false, revision: workout.draftRevision };
   }
   if (planChanged && plan) await saveStateAndPlans(state, [[PLAN_PREFIX + workout.id, JSON.stringify(plan)]]);
   else await saveState(state);
+  return enrichSet(state, set);
+}
+
+async function editSet(state: OfflineState, setId: number, body: RequestBody): Promise<MeasuredSet> {
+  const parsed = setEditSchema.safeParse(body);
+  if (!parsed.success) throw httpError(400, "Проверьте вес, повторы, время и оценку подхода");
+  const set = state.sets.find(row => row.id === setId);
+  if (!set) throw httpError(404, "Подход не найден");
+  const { revision, values } = parsed.data;
+  if (revision !== (set.revision ?? 0)) {
+    if (equalSetValues(setValues(set), values)) return enrichSet(state, set);
+    throw httpError(409, "Подход уже изменён. Загрузите актуальные значения.");
+  }
+  if (equalSetValues(setValues(set), values)) return enrichSet(state, set);
+  if (revision === Number.MAX_SAFE_INTEGER) throw httpError(409, "Слишком много изменений подхода");
+  const exercise = findExercise(state, set.exerciseId)!;
+  const timed = set.durationSeconds != null || isTimedExercise(exercise.name);
+  const equipment = set.equipment ?? exercise.equipment;
+  if (timed ? values.durationSeconds == null || values.weightKg !== 0 || values.reps !== 0 || values.rir != null
+    : values.durationSeconds != null || values.reps < 1 || !Number.isFinite(values.weightKg * values.reps) || equipment === "barbell" && values.weightKg < BAR_WEIGHT_KG) {
+    throw httpError(400, timed ? "Для удержания укажите секунды без веса, повторов и RIR" : "Проверьте вес и повторы; вес штанги включает гриф 20 кг");
+  }
+  if (isAssisted(set) && (set.bodyWeightKg == null || values.weightKg > set.bodyWeightKg)) throw httpError(400, "Противовес не должен превышать массу тела в исходной записи");
+  Object.assign(set, values, { revision: revision + 1, editedAt: new Date().toISOString() });
+  const writes: [string, string][] = [];
+  for (const [key, value] of (await readProgressEntries()).filter(([key]) => key.startsWith(PLAN_PREFIX))) {
+    const workout = state.workouts.find(w => !w.finishedAt && PLAN_PREFIX + w.id === key);
+    if (!workout) continue;
+    const plan = JSON.parse(value) as TemplatePlan;
+    const item = plan.exercises.find(item => item.exerciseId === set.exerciseId);
+    if (!item || plan.id !== "daily" || timed || isAssisted(exercise)) continue;
+    const completed = completedTargets(item, state.sets.filter(row => row.workoutId === workout.id));
+    if (completed >= item.sets) continue;
+    const oldTarget = plannedSet(item, completed);
+    const prediction = buildActivePrediction(state, workout.id, exercise.id, Date.now(), item);
+    item.setTargets = Array.from({ length: item.sets }, (_, index) => {
+      const target = plannedSet(item, index);
+      if (index < completed) return target;
+      const next = prediction.model.targets[index - completed] ?? prediction.next;
+      return { ...target, weightKg: next.weightKg, reps: next.reps };
+    });
+    item.suggestedWeightKg = item.setTargets[completed].weightKg;
+    item.note = prediction.next.reason;
+    if (workout.draft?.exerciseId === exercise.id && workout.draft.weightKg === oldTarget.weightKg && workout.draft.reps === oldTarget.reps) {
+      workout.draft = { ...workout.draft, weightKg: item.setTargets[completed].weightKg, reps: item.setTargets[completed].reps };
+    }
+    writes.push([key, JSON.stringify(plan)]);
+  }
+  // A correction invalidates old advice/input versions without discarding a pending user's draft or timer.
+  for (const workout of state.workouts.filter(w => !w.finishedAt && w.draft?.exerciseId === set.exerciseId)) {
+    if ((workout.draftRevision ?? 0) >= Number.MAX_SAFE_INTEGER) throw httpError(409, "Слишком много изменений черновика");
+    workout.draftRevision = (workout.draftRevision ?? 0) + 1;
+  }
+  const workout = state.workouts.find(w => w.id === set.workoutId)!;
+  if (workout.finishedAt && (await readAutomaticBackupSettings()).enabled) {
+    const jobs = (await readAutomaticBackupJobs()).filter(job => job.workoutId !== workout.id);
+    jobs.push({ workoutId: workout.id, finishedAt: workout.finishedAt });
+    writes.push([AUTO_BACKUP_JOBS_KEY, JSON.stringify(jobs)]);
+  }
+  await saveStateAndPlans(state, writes);
   return enrichSet(state, set);
 }
 
@@ -1295,6 +1387,7 @@ async function finishWorkout(state: OfflineState, workoutId: number): Promise<Wo
   delete workout.timer;
   delete workout.draft;
   delete workout.draftRevision;
+  delete workout.draftAssessment;
   delete workout.lastDraftCommit;
   const report = buildWorkoutReport(state, workout);
   const jobs = (await readAutomaticBackupJobs()).filter(job => job.workoutId !== workoutId);
@@ -1369,6 +1462,8 @@ function enrichSet(state: OfflineState, set: SetRow): MeasuredSet {
     ...(set.rir !== undefined ? { rir: set.rir } : {}),
     ...(set.technique !== undefined ? { technique: set.technique } : {}),
     createdAt: set.createdAt,
+    ...(set.revision != null ? { revision: set.revision } : {}),
+    ...(set.editedAt ? { editedAt: set.editedAt } : {}),
   };
 }
 

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getGetActiveWorkoutQueryKey, getGetWorkoutQueryKey, type WorkoutSet } from "@workspace/api-client-react";
 import { coachRequest } from "@/lib/coachApi";
-import { retryDraftAction, sameDraft, type DraftResponse, type WorkoutDraft } from "@/lib/workoutDraft";
+import { retryDraftAction, sameDraft, type DraftAssessment, type DraftResponse, type WorkoutDraft } from "@/lib/workoutDraft";
 import type { TrainingTimer } from "@/lib/trainingCoach";
 
 export function useWorkoutDraft(workoutId: number) {
@@ -19,7 +19,7 @@ export function useWorkoutDraft(workoutId: number) {
   useEffect(() => { if (!pending.current && query.data) latest.current = query.data; }, [query.data]);
 
   const apply = useCallback((result: DraftResponse) => {
-    const snapshot = { draft: result.draft, revision: result.revision };
+    const snapshot = { draft: result.draft, revision: result.revision, assessment: result.assessment };
     latest.current = snapshot;
     client.setQueryData(key, snapshot);
   }, [client, key]);
@@ -43,14 +43,14 @@ export function useWorkoutDraft(workoutId: number) {
     } finally { pending.current = false; setSaving(false); }
   };
 
-  const save = (draft: WorkoutDraft, expected?: { revision: number; coachFingerprint: string }) => run(async current => {
+  const save = (draft: WorkoutDraft, expected?: { revision: number; coachFingerprint: string }, assessment?: Partial<DraftAssessment>) => run(async current => {
     if (expected && expected.revision !== current.revision) throw new Error("Черновик изменился. Запросите новый совет.");
-    try { return await coachRequest<DraftResponse>(url, "PUT", { draft, revision: current.revision, ...(expected ? { coachFingerprint: expected.coachFingerprint } : {}) }); }
+    try { return await coachRequest<DraftResponse>(url, "PUT", { draft, revision: current.revision, ...(assessment ? { assessment } : {}), ...(expected ? { coachFingerprint: expected.coachFingerprint } : {}) }); }
     catch (error) {
       // A native write can commit before its acknowledgement is lost.
       try {
         const stored = await coachRequest<DraftResponse>(url);
-        if (sameDraft(stored.draft, draft)) return stored;
+        if (sameDraft(stored.draft, draft) && (!assessment || Object.entries(assessment).every(([key, value]) => stored.assessment?.[key as keyof DraftAssessment] === value))) return stored;
       } catch { /* Keep the unsaved input visible for an explicit retry. */ }
       throw error;
     }
@@ -70,6 +70,7 @@ export function useWorkoutDraft(workoutId: number) {
 
   return {
     value: query.data?.draft ?? null,
+    assessment: query.data?.assessment ?? { rir: false, technique: false },
     ready: !!query.data && !query.isFetching,
     saving,
     committedSetId,

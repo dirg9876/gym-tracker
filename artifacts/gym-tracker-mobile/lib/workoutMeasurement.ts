@@ -6,6 +6,7 @@ import { isAssisted, type EquipmentSettings } from "./equipmentSettings";
 export type DurationMetrics = { durationSeconds?: number; maxDurationSeconds?: number };
 export type MeasuredSet = WorkoutSet & DurationMetrics & CoachFields & EquipmentSettings & {
   equipment?: Equipment; bodyWeightKg?: number; bodyWeightEstimated?: boolean; effectiveWeightKg?: number;
+  revision?: number; editedAt?: string;
 };
 
 export const exerciseNameKey = (name: string): string => name.trim().replace(/\s+/g, " ").toLocaleLowerCase("ru-RU").replace(/ё/g, "е");
@@ -62,5 +63,5 @@ export function formatSetContext(set: WorkoutSet): string {
   const recorded = set as MeasuredSet;
   const body = (recorded.equipment === "bodyweight" || isAssisted(recorded)) && recorded.durationSeconds == null
     ? recorded.bodyWeightKg != null ? `Вес тела ${recorded.bodyWeightKg.toLocaleString("ru-RU")} кг${recorded.bodyWeightEstimated ? " (расчётный)" : ""}` : "Вес тела не указан; тоннаж неполный" : null;
-  return [body, isAssisted(recorded) ? `Расчётная нагрузка ${recorded.effectiveWeightKg ?? 0} кг` : null, recorded.rir != null ? `Запас ${recorded.rir === 5 ? "5+" : recorded.rir}` : null, recorded.technique === "good" ? "техника сохранена" : recorded.technique === "breakdown" ? "техника нарушалась" : null].filter(Boolean).join(" · ");
+  return [body, isAssisted(recorded) ? `Расчётная нагрузка ${recorded.effectiveWeightKg ?? 0} кг` : null, recorded.rir != null ? `Запас ${recorded.rir === 5 ? "5+" : recorded.rir}` : null, recorded.technique === "good" ? "техника сохранена" : recorded.technique === "breakdown" ? "техника нарушалась" : null, recorded.editedAt ? "исправлен" : null].filter(Boolean).join(" · ");
 }

@@ -30,7 +30,7 @@ test("draft persists all confirmed fields and round-trips without inventing a pe
   const workout = await create();
   assert.deepEqual(await request(url(workout.id)), { draft: null, revision: 0 });
   const saved = await save(workout.id, bench);
-  assert.deepEqual(saved, { draft: bench, revision: 1 });
+  assert.deepEqual(saved, { draft: bench, revision: 1, assessment: { rir: true, technique: true } });
   const stats = await request("/api/stats/overview");
   assert.equal(stats.totalWorkouts, 0);
   assert.equal((await request(`/api/workouts/${workout.id}`)).sets.length, 0);
@@ -76,7 +76,7 @@ test("plank transfer saves elapsed seconds and clears the timer in the same stat
     assert.equal(result.draft.reps, 0);
     const backup = await exportProgress();
     await restoreProgress(backup);
-    assert.deepEqual(await request(url(workout.id)), { draft: result.draft, revision: result.revision });
+    assert.deepEqual(await request(url(workout.id)), { draft: result.draft, revision: result.revision, assessment: result.assessment });
     assert.equal((await request(`/api/workouts/${workout.id}/timer`)).timer, null);
     assert.equal((await request(`/api/workouts/${workout.id}`)).sets.length, 0);
     assert.deepEqual(await transfer(workout.id, timer), result);
@@ -113,7 +113,7 @@ test("a stale transfer cannot clear a replaced timer or replace a newer draft", 
   assert.deepEqual((await request(`/api/workouts/${workout.id}/timer`)).timer, newer);
 });
 
-test("one draft confirmation creates one set, retains chosen ratings and safely replays", async () => {
+test("one draft confirmation creates one set, retains chosen ratings without silently confirming them again and safely replays", async () => {
   const workout = await create();
   const saved = await save(workout.id, bench);
   const [first, repeated] = await Promise.all([commit(workout.id, saved.revision), commit(workout.id, saved.revision)]);
@@ -124,8 +124,9 @@ test("one draft confirmation creates one set, retains chosen ratings and safely 
   assert.equal((await request(`/api/workouts/${workout.id}`)).sets.length, 1);
   const next = await commit(workout.id, first.revision);
   assert.notEqual(next.set.id, first.set.id);
-  assert.equal(next.set.rir, 2);
-  assert.equal(next.set.technique, "good");
+  assert.equal(next.set.rir, null);
+  assert.equal(next.set.technique, null);
+  assert.equal(next.draft.rir, 2); assert.equal(next.draft.technique, "good");
   assert.equal((await request(`/api/workouts/${workout.id}`)).sets.length, 2);
 });
 
@@ -158,7 +159,7 @@ test("next planned target is persisted together with the performed set", async (
   assert.equal(result.draft.rir, 2);
   assert.equal(result.draft.technique, "good");
   await restoreProgress(await exportProgress());
-  assert.deepEqual(await request(url(workout.id)), { draft: result.draft, revision: result.revision });
+  assert.deepEqual(await request(url(workout.id)), { draft: result.draft, revision: result.revision, assessment: result.assessment });
   result = await commit(workout.id, result.revision);
   assert.deepEqual(result.draft, plank);
 });
