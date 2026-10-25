@@ -1,7 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useListExercises } from "@workspace/api-client-react";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,7 +56,7 @@ export default function CoachMonthScreen() {
           {template.exercises.map(ex => <View key={ex.exerciseId} style={{ gap: 4 }}><Text style={{ color: colors.foreground, fontSize: 14 }}>{catalog.data?.find(item => item.id === ex.exerciseId)?.name ?? proposal?.context.catalog.find(item => item.id === ex.exerciseId)?.name ?? "Удалённое упражнение"} · {ex.targets.length} подх.</Text><Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 18 }}>{ex.targets.map(set => set.durationSeconds != null ? `${set.durationSeconds} с` : `${set.weightKg == null ? "вес подбирается" : `${set.weightKg} кг`} × ${set.reps}`).join(" · ")}</Text><Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{ex.reason}</Text></View>)}
         </View>)}
         {proposed ? <Button title="Сохранить план на месяц" icon={<Feather name="save" size={18} color={colors.primaryForeground} />} onPress={confirmSave} disabled={save.isPending} loading={save.isPending} /> : <>
-          {saved.data?.slots.some(slot => !slot.completed) ? <Button title="Следующая тренировка по плану" disabled={saved.data.slots.find(slot => !slot.completed)?.unavailable} icon={<Feather name="play" size={18} color={colors.primaryForeground} />} onPress={() => router.push("/coach-session?mode=next")} /> : <Text style={{ color: colors.success, fontSize: 16 }}>Месячный план выполнен</Text>}
+          {saved.data?.slots.some(slot => !slot.completed) ? <Button title="Ближайшее занятие" disabled={saved.data.slots.find(slot => !slot.completed)?.unavailable} icon={<Feather name="arrow-right" size={18} color={colors.primaryForeground} />} onPress={() => router.push("/start-workout" as Href)} /> : <Text style={{ color: colors.success, fontSize: 16 }}>Месячный план выполнен</Text>}
           {saved.data?.slots.find(slot => !slot.completed)?.unavailable ? <Text accessibilityRole="alert" style={{ color: colors.amber, fontSize: 13 }}>Упражнения следующей тренировки удалены. Нужен новый месячный план.</Text> : null}
           <Button title="Составить новый месячный план" variant="secondary" icon={<Feather name="calendar" size={18} color={colors.foreground} />} onPress={() => router.push("/coach-session?mode=month")} />
           <Button title="Удалить месячный план" variant="ghost" disabled={remove.isPending} loading={remove.isPending} icon={<Feather name="trash-2" size={18} color={colors.foreground} />} onPress={() => Alert.alert("Удалить месячный план?", "Выполненные тренировки останутся в истории.", [{ text: "Отмена", style: "cancel" }, { text: "Удалить", style: "destructive", onPress: () => remove.mutate() }])} />

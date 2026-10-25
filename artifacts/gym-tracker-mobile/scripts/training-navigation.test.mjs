@@ -11,7 +11,8 @@ test("Training embeds one exercise library and keeps templates separate without 
   const screen = source("app/(tabs)/programs.tsx"), tabs = source("app/(tabs)/_layout.tsx");
   assert.match(tabs, /title: "Тренировки"/); assert.doesNotMatch(tabs, /Виды\\nтренировок/);
   assert.match(screen, /<ExerciseLibrary embedded/); assert.match(screen, /label: "Шаблоны"/);
-  assert.match(screen, /useState\("exercises"\)/);
+  assert.match(screen, /useState<TrainingView>\(validView\(params.view\) \? params.view : "plan"\)/);
+  assert.match(screen, /<TrainingPlanOverview/);
   assert.doesNotMatch(screen, /Начать тренировку|start-workout|Управление упражнениями/);
 });
 test("library and weekly shortcuts open the exercise progress; active workout anatomy stays on its original route", () => {

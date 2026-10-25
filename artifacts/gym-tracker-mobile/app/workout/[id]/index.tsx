@@ -35,6 +35,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { AiCoachPanel } from "@/components/AiCoachPanel";
 import { ExercisePicker } from "@/components/ExercisePicker";
+import { ExerciseWeightStep } from "@/components/ExerciseWeightStep";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { DeleteWorkoutButton } from "@/components/DeleteWorkoutButton";
 import { SetCard } from "@/components/SetCard";
@@ -91,6 +92,9 @@ export default function ActiveWorkoutScreen() {
   const [showDetails, setShowDetails] = useState(false);
   const [editingSet, setEditingSet] = useState<EditableSet | null>(null);
   const [showPerformed, setShowPerformed] = useState(false);
+  const [showWeightStep, setShowWeightStep] = useState(false);
+  const [stepSaving, setStepSaving] = useState(false);
+  useEffect(() => { setShowWeightStep(false); }, [selectedExerciseId]);
   const calibration = !isAssisted(exercises?.find(ex => ex.id === selectedExerciseId)) && planExercises.find(ex => ex.exerciseId === selectedExerciseId)?.calibration && !workout?.sets.some(set => set.exerciseId === selectedExerciseId);
   const selectedExercise = exercises?.find(exercise => exercise.id === selectedExerciseId) as ConfiguredExercise | undefined;
   const { data: prediction } = useQuery({ queryKey: ["training-prediction", workoutId, selectedExerciseId, workout?.sets.map(set => set.id).join(":")],
@@ -228,7 +232,7 @@ export default function ActiveWorkoutScreen() {
   const uniqueExercises = setsByExercise.length;
   const selectedPlan = planExercises.find(ex => ex.exerciseId === selectedExerciseId);
   const selectedSetCount = selectedPlan ? completedTargets(selectedPlan, workout?.sets ?? []) : 0;
-  const formBusy = !draft.ready || draft.saving || addSet.isPending || deleteSet.isPending || finishWorkout.isPending || deleting || !!editingSet;
+  const formBusy = !draft.ready || draft.saving || addSet.isPending || deleteSet.isPending || finishWorkout.isPending || deleting || !!editingSet || stepSaving;
   const inherited = (!timed && rir != null && !draft.assessment.rir) || (technique != null && !draft.assessment.technique);
 
   if (isLoading || isExercisesLoading) {
@@ -273,6 +277,10 @@ export default function ActiveWorkoutScreen() {
         </View>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>{weightPresets(selectedExercise, profile?.bodyWeightKg).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={`${assisted ? "Противовес" : weightLabel(selectedExercise?.equipment)}: ${value}`} accessibilityState={{ selected: weight === value, disabled: formBusy || !selectedExercise }} disabled={formBusy || !selectedExercise} onPress={() => changeDraft({ weightKg: value })} style={{ minWidth: 44, minHeight: 44, paddingHorizontal: 10, alignItems: "center", justifyContent: "center", borderRadius: 4, backgroundColor: weight === value ? colors.primary : colors.card, borderWidth: 1, borderColor: weight === value ? colors.primary : colors.cardBorder }}><Text style={{ color: weight === value ? colors.primaryForeground : colors.mutedForeground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>{formatNumber(value)}</Text></Pressable>)}</View>
       </>}
+      {selectedExercise && !timed ? <View style={{ gap: 8 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Изменить шаг веса" accessibilityState={{ expanded: showWeightStep, disabled: formBusy || !!draft.error }} disabled={formBusy || !!draft.error} onPress={() => setShowWeightStep(value => !value)} onLongPress={() => toast.show("info", "Изменить шаг веса")} style={{ minHeight: 44, flexDirection: "row", gap: 8, alignItems: "center" }}><Feather name="sliders" size={17} color={colors.accent} /><Text style={{ flex: 1, color: colors.accent, fontSize: 13 }}>Шаг: {formatKg(weightStep(selectedExercise))}</Text><Feather name={showWeightStep ? "chevron-up" : "chevron-down"} size={17} color={colors.mutedForeground} /></Pressable>
+        {showWeightStep ? <ExerciseWeightStep key={selectedExercise.id} exercise={selectedExercise} disabled={formBusy || !!draft.error} onPendingChange={setStepSaving} onSaved={() => setShowWeightStep(false)} /> : null}
+      </View> : null}
       {selectedExercise?.equipment === "dumbbell" && !timed ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{selectedExercise.dumbbellCount === 2 ? `Две гантели · суммарно ${formatKg(weight * 2)}` : "Одна гантель"}</Text> : null}
       {(selectedExercise?.equipment === "bodyweight" || assisted) && !timed ? profile?.bodyWeightKg != null
         ? <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Масса тела {formatKg(profile.bodyWeightKg)} · нагрузка {formatKg(assisted ? Math.max(0, profile.bodyWeightKg - weight) : profile.bodyWeightKg + weight)}</Text>

@@ -1,7 +1,7 @@
 import Feather from "@expo/vector-icons/Feather";
-import { useListPrograms } from "@workspace/api-client-react";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { getListProgramsQueryKey, useListPrograms } from "@workspace/api-client-react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
@@ -9,18 +9,24 @@ import { Button } from "@/components/Button";
 import { useColors } from "@/hooks/useColors";
 import { ExerciseLibrary } from "@/components/ExerciseLibrary";
 import { Segmented } from "@/components/Segmented";
+import { TrainingPlanOverview } from "@/components/TrainingPlanOverview";
+
+type TrainingView = "plan" | "exercises" | "templates";
+const validView = (value?: string): value is TrainingView => value === "plan" || value === "exercises" || value === "templates";
 
 export default function WorkoutTypesScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { data, isLoading, isError, refetch } = useListPrograms();
+  const params = useLocalSearchParams<{ view?: string }>();
+  const [view, setView] = useState<TrainingView>(validView(params.view) ? params.view : "plan");
+  useEffect(() => { if (validView(params.view)) setView(params.view); }, [params.view]);
+  const { data, isLoading, isError, refetch } = useListPrograms({ query: { queryKey: getListProgramsQueryKey(), enabled: view === "templates" } });
   const programs = data?.programs ?? [];
-  const [view, setView] = useState("exercises");
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ padding: 16, paddingBottom: 8 }}><Segmented label="Тренировки" value={view} options={[{ value: "exercises", label: "Упражнения" }, { value: "templates", label: "Шаблоны" }]} onChange={setView} /></View>
-      {view === "exercises" ? <ExerciseLibrary embedded /> : <ScrollView
+      <View style={{ padding: 16, paddingBottom: 8 }}><Segmented label="Тренировки" value={view} options={[{ value: "plan", label: "План" }, { value: "exercises", label: "Упражнения" }, { value: "templates", label: "Шаблоны" }]} onChange={setView} /></View>
+      {view === "plan" ? <TrainingPlanOverview /> : view === "exercises" ? <ExerciseLibrary embedded /> : <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24, gap: 20 }}
     >

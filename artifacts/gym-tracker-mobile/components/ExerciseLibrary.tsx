@@ -52,7 +52,7 @@ export function ExerciseLibrary({ embedded = false }: { embedded?: boolean }) {
   };
   const iconStyle = { width: 44, height: 44, alignItems: "center" as const, justifyContent: "center" as const };
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
-    {!embedded ? <ScreenHeader title="Упражнения" onBack={() => router.canGoBack() ? router.back() : router.replace("/programs")} /> : null}
+    {!embedded ? <ScreenHeader title="Упражнения" onBack={() => router.canGoBack() ? router.back() : router.replace("/programs?view=exercises")} /> : null}
     <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 16 }}>
       <Button title="Добавить упражнение" icon={<Feather name="plus" size={18} color={colors.primaryForeground} />} onPress={() => setEditing(null)} />
       {pending.length ? <View style={{ borderLeftWidth: 3, borderColor: colors.primary, paddingLeft: 12, gap: 8 }}><Text style={{ color: colors.foreground, lineHeight: 21 }}>Выберите замену для ранее удалённых упражнений: {pending.length}. Подходы сохранены.</Text>{pending.map(row => <Button key={row.exercise.id} title={row.exercise.name} variant="secondary" icon={<Feather name="repeat" size={17} color={colors.foreground} />} onPress={() => router.push(`/exercise-replacement?exerciseId=${row.exercise.id}`)} />)}</View> : null}
