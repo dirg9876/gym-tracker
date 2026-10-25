@@ -6,6 +6,7 @@ import { monthProgress } from "./coachMonth";
 import { canReplaceExercise, migrateExerciseCatalog, requiresExerciseReplacement } from "./exerciseReplacement";
 import { buildTrainingInsights } from "./trainingInsights";
 import { buildTrainingAnalysis } from "./trainingAnalysis";
+import { buildWorkoutRecap } from "./workoutRecap";
 import { buildActivePrediction, buildNextExercisePrediction } from "./trainingPrediction";
 import { buildDailyWorkout, buildDailyChoices, type DailyPreview } from "./dailyWorkout";
 import type { SplitDay } from "./adaptiveWorkout";
@@ -459,6 +460,14 @@ const handleOfflineRequest: CustomFetchHandler = async ({ url, method, options }
 
   match = /^\/api\/workouts\/(\d+)\/comparison$/.exec(path);
   if (match && method === "GET") return getWorkoutComparison(state, Number(match[1]));
+
+  match = /^\/api\/workouts\/(\d+)\/recap$/.exec(path);
+  if (match && method === "GET") {
+    const workout = state.workouts.find(row => row.id === Number(match![1]));
+    if (!workout) throw httpError(404, "Тренировка не найдена");
+    if (!workout.finishedAt) throw httpError(409, "Тренировка ещё продолжается");
+    return buildWorkoutRecap(state, workoutResponse(state, workout));
+  }
 
   match = /^\/api\/workouts\/(\d+)\/analysis$/.exec(path);
   if (match && method === "GET") return buildTrainingAnalysis(state, Number(match[1]));

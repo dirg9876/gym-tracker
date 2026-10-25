@@ -177,7 +177,7 @@ export default function ActiveWorkoutScreen() {
         queryClient.invalidateQueries({ queryKey: ["previous-workout"] });
         queryClient.removeQueries({ queryKey: ["coach-timer", workoutId] });
         queryClient.removeQueries({ queryKey: ["workout-draft", workoutId] });
-        router.replace(`/workout/${workoutId}/report`);
+        router.replace(`/workout/${workoutId}/report?celebrate=1`);
       },
       onError: () => toast.show("error", "Не удалось завершить"),
     },
