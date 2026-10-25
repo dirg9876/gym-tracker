@@ -1,6 +1,8 @@
 # Gym-Beam: Текущий Checkpoint
 
-В работе: [1.1.25, план и шаг веса прямо в тренировке](CHECKPOINT_2026-10-25_PLAN_AND_QUICK_STEP_1_1_25.md).
+Завершена и опубликована: [1.1.25, план и шаг веса прямо в тренировке](CHECKPOINT_2026-10-25_PLAN_AND_QUICK_STEP_1_1_25.md).
+Master, GitHub APK и production OTA;558тестов/types/CI/native QA PASS. Runtime1.1.0,
+code31; исходные state/plans точно сохранены после QA, OTA и офлайн-запуска.
 
 Завершена и опубликована: [1.1.24, компактная тренировка, подтверждение оценок и правка подходов](CHECKPOINT_2026-10-25_WORKOUT_FLOW_1_1_24.md).
 Master, GitHub APK и production OTA;543теста/types/CI/native QA PASS. Дневник

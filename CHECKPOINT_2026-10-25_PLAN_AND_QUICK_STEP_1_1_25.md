@@ -1,95 +1,106 @@
 # Gym-Beam 1.1.25: План И Шаг Веса В Тренировке
 
-Работа в C:\gymbeam, master, 25 октября 2026. Исходный выпуск1.1.24/code30,
-runtime1.1.0, backupv11, source af606b1/docs11f3206. Пользователь попросил
-продолжить улучшения, менять шаг прямо в тренировке и улучшить разделы.
+Дата: 25 октября 2026. Workspace C:\gymbeam, master. Работа завершена и опубликована.
+Пользователь попросил продолжить улучшения, менять шаг веса прямо в упражнении
+во время тренировки и улучшить организацию разделов.
 
-## Решения
+## Реализовано
 
-Добавить компактное раскрытие текущего шага под весом/повторами активного
-упражнения; использовать существующий ExerciseWeightStep и PATCH exercise,
-не новый ввод веса. Шаг0.25–20кг, presets как в настройках. Сохранение должно
-обновлять Stepper, prediction, plans и draft; ручные значения/таймер/история
-сохраняются по существующим правилам. Сохраняемый шаг блокирует конкурирующие
-действия. Не показывать кг для планки. Прямого TextInput веса не добавлять.
+- Под весом/повторами активного упражнения строка «Шаг: N кг». Раскрывает существующий ExerciseWeightStep с presets и Stepper0.25–20кг; после сохранения закрывается. Прямого ввода веса нет. У планки настройка килограммов не показывается.
+- Существующий PATCH exercise пересчитывает кнопки веса, прогнозы, оставшиеся automatic daily targets и untouched draft. Ручной вес, записанные подходы, шаблоны и таймер сохраняются. Сохранение шага блокирует конкурирующие действия, защищено синхронным lock; ошибка позволяет повторить, отмена не пишет данные.
+- Тренировки теперь План/Упражнения/Шаблоны; default План. Ближайший расчёт математической модели виден без старта, без обязательного ИИ и без платного запроса. При активной тренировке вместо нового предложения показана она с переходом обратно.
+- Месячный план доступен из Плана. Его ближайшее занятие открывается через start-workout и математический алгоритм вместо обязательного AI session. Просмотр сохранённого месяца остаётся офлайн.
+- Из упражнения ближайшего плана переход сразу в объединённую историю/прогноз. Сводка сохраняет порядок разных весов и различает противовес, свой/добавленный вес, кг на гантель, секунды; дополнительные после калибровки подходы помечены условными.
+- Сохранены5нижнихвкладок, увеличенная центральная Главная и одна основная кнопка старта на ней. История = факт занятий, Статистика = общие тенденции, карточка упражнения = его история/прогноз. Шаблоны, каталог и план загружаются по необходимости.
 
-Раздел Тренировки: План, Упражнения, Шаблоны. План по умолчанию, readonly
-ближайшее предложение математической модели, текущая тренировка при наличии,
-доступ к сохранённому месяцу. Не делать скрытый старт, AI запрос или генерацию
-месяца при просмотре. Запуск по-прежнему одной кнопкой на Главной. История =
-занятия; Статистика = общие итоги/нагрузка/масса; прогресс упражнения остаётся
-в карточке упражнения. Сохранить5нижнихвкладок и центральную Главную.
+## Технические Решения
 
-## Промежуточный Результат
+Версия1.1.25, Android versionCode31, expo.runtimeVersion1.1.0. Native dependencies,
+разрешения, подпись и shared API contracts не менялись; backup остаётсяv11.
+Офлайн-модель/RIR/прогрессия из1.1.24 сохранены. Новых backend endpoints нет.
+TrainingPlanOverview использует existing GET active/daily/month/catalog; query
+daily выключен при active/неизвестном active status и вне фокуса. Выбор вкладки
+поддерживает view=plan/exercises/templates deep links. Нет автоматического POST,
+AI.ask или создания тренировки при просмотре. Неизвестные параметры упражнения
+не превращаются молча в обычные кг, есть загрузка/повтор.
 
-Реализованы inline step disclosure и переиспользование ExerciseWeightStep,
-external disabled/onSaved props и защита double-save. Новый readonly
-components/TrainingPlanOverview.tsx, pure lib/planSummary.ts. Тренировки default
-План/Упражнения/Шаблоны с view deep links и lazy template query. План использует
-existing GET daily/active/month, catalog для единиц; не делает POST/AI/старт.
-При active/unknown status не считает следующий день. Месячный переход ведёт
-в start-workout, не mandatoryAI. docs/NAVIGATION_2026-10-25.md фиксирует структуру
-и кандидаты следующего выпуска; goal/settings внеAI пока не внедрены.
+ExerciseWeightStep расширен optional disabled/onSaved; старый экран настроек
+продолжает работать. Активная форма включает stepSaving в formBusy. Успешное
+сохранение инвалидирует cache, затем разблокирует форму и сворачивает редактор.
+Произвольный пользовательский вес не округляется задним числом под новый шаг.
 
-Новые15тестов в scripts/plan-quick-step.test.mjs: реальные TSX обработчики
-сохранения/двойной клик/ошибка/retry/отмена/disabled, UI branches/routing/lazy,
-единицы summary/readonlyAPI и сохранение timer/manualdraft/assessment positions.
-pnpm test558PASS (15root/487mobile/21API/13Worker/22art), workspace typecheck PASS.
-Версия штатно1.1.25/code31/runtime1.1.0, release:check PASS. APK/export идут,
-логи в ignored artifacts/apk/verified/*1.1.25*. Запущен own AVD5556.
-Исходный baseline25 ещё не экспортирован; последние owned snapshots24 имеют
-2sets/2finished/0active и были точно восстановлены после OTA24.
-Ничего по25 ещё не закоммичено/не опубликовано.
+## Файлы
 
-## Native QA В Процессе
+В artifacts/gym-tracker-mobile новые components/TrainingPlanOverview.tsx,
+lib/planSummary.ts, scripts/plan-quick-step.test.mjs. Изменены
+app/(tabs)/programs.tsx, app/workout/[id]/index.tsx, app/coach-month.tsx,
+components/ExerciseWeightStep.tsx, components/ExerciseLibrary.tsx,
+scripts/testHarness.mjs, scripts/training-navigation.test.mjs, app.json/release.json.
+В корне AGENTS.md/CHECKPOINT.md и этот checkpoint. Организация и кандидаты
+следующего этапа: docs/NAVIGATION_2026-10-25.md.
 
-APK BUILD SUCCESSFUL, aapt1.1.25/code31;153155201bytes, SHA256
+## Проверки
+
+pnpm test:558PASS (15root/487mobile/21API/13Worker/22art), новые15тестов включают
+реальные TSX save/doubleclick/error/retry/cancel/disabled handlers с native hooks
+stubbed, overview branches/routes/lazy, summary units, readonly API, сохранение
+timer/manualdraft/позиций оценки. Workspace pnpm typecheck, release:check,
+git diff --check PASS. build-release.ps1 BUILD SUCCESSFUL, embedded manifest и
+JS свежие; Android export entry-c4dcc039c9280f7931fe9cd749f00218.hbc.
+Private audit16stagedfiles/APK entries/204OTAfiles PASS, секреты не печатались.
+CI source SUCCESS: https://github.com/dirg9876/gym-tracker/actions/runs/40175399961
+
+Native QA только own gymbeam_visualqa/emulator-5556: baseline2sets/2finished/
+0active/1customtemplate/32catalog. before-plan-qa-1.1.25.json точно совпал с
+restored24. Установка поверх предыдущей версии успешна. Импортировался только
+owned synthetic gym-beam-qa-step-1.1.25.json (9historicsets+active4).
+Step2.5→5 обновил draft/target52.5→55; plus5 дал60; step1.25 сохранил ручной60,
+plus дал61.25, automatic target51.25; forecast в Progress также51.25.
+Таймер остался на паузе1:29 (remaining88592ms),9historysets exact unchanged.
+Это подтверждено after-plan-step-qa-1.1.25.json. Навигация Plan/active/catalog/
+Progress/Templates, default1080×2400 и320dp, авто/manual release notes осмотрены.
+
+После QA восстановлен owned gym-beam-original-1.1.25.json. after-restore-1.1.25.json
+и after-ota-offline-1.1.25.json точно совпали по полным state/plans с baseline.
+OTA реально применено; offline cold start, стакан и ближайший план работают.
+Size/density и airplane mode восстановлены, собственный AVD остановлен.
+Ошибок ReactNativeJS/AndroidRuntime в PID приложения нет. Были SystemUI ANR
+при старте эмулятора во время сборки и transient uiautomator accessibility/dump
+errors; повторная проверка после стабилизации успешна. Внешний PowerShell build
+wrapper ждал conhost после завершения сборки и остановлен; готовый APK проверен.
+Скриншоты, логи, own backups и QA helpers только в ignored artifacts/apk/verified.
+Реальные пользовательские экспорты не импортировались, платных AI-вызовов нет.
+
+## Публикация
+
+Source master/origin commit dd73753ec9477a328f870d9f3000b2f910971217.
+GitHub Release v1.1.25, APK153155201bytes, uploaded digest совпадает с локальным:
 C453DF74B8D58E18BEF83A51C98E8590264D7C6382251C375280DBF348A58773.
-Export dist entry-c4dcc039c9280f7931fe9cd749f00218.hbc. Внешний build PowerShell
-ждал conhost после завершения всех build processes; остановлен только этот
-ожидающий wrapper. APK guard/manifest/bundle freshness и install прошли.
+https://github.com/dirg9876/gym-tracker/releases/download/v1.1.25/gym-beam-1.1.25.apk
 
-5556: на запуске AVD во время сборки был SystemUI ANR, кнопка Wait восстановила
-систему; ошибок ReactNativeJS/AndroidRuntime нет. before-plan-qa-1.1.25.json
-точно совпал state/plans с restored24. Исходный owned2sets/2finished/0active,
-сохранён gym-beam-original-1.1.25.json. Установлен новый APK поверх24. Автоnotes
-и Plan default осмотрены. Затем импортирован только owned synthetic
-gym-beam-qa-step-1.1.25.json (9sets+active4), helper import-qa-1.1.25.ps1
-защищает AVD и whitelist имени. Реальные пользовательские backups не трогались.
+EAS Android production/runtime1.1.0,25.10.2026 08:08:11UTC:
+update01a1721a-56f8-7db7-8a4b-6328d128fb84,
+group057cbeec-abda-47fe-9ea8-a3ca5a044cc4, gitCommitHash соответствует source.
+На устройстве реально показано «Обновление 01a1721a».
+Обновление: Главная > облако > Проверить обновления > Применить обновление после
+завершения активной тренировки. APK можно установить поверх с прежней подписью.
+Финальный checkpoint отправляется отдельным documentation commit, версия та же.
 
-Quickstep5 обновил untouched draft/target52.5→55. Plus5 дал60 ручного веса;
-при смене на1.25 ручной60 сохранился, plus дал61.25, auto target стал51.25.
-Таймер сохранён на паузе1:29 (remaining88592ms, UI округляет вверх). Export
-after-plan-step-qa-1.1.25.json проверяет exact9historysets, step/manualtarget/
-automaticplan/timer. Первый assert ошибочно сравнил округлённый countdown89s
-с точными миллисекундами; исправлен QA assert ceil, приложение не менялось.
-Current screen default и320dp осмотрены, size/density сброшены. Training Plan
-показывает активную4 и возвращает туда, без нового старта. Допроверяются
-catalog/templates/progress navigation; далее exact original restore и export.
-Sourcecommit/publication25 пока отсутствуют.
+## Продолжение
 
-## Готово К Публикации
+Обязательных работ по запросу нет. Следующий кандидат: отдельные параметры цели,
+графика и оборудования вне настроек подключения ИИ. Они используются и локальным
+алгоритмом; это предложение пока не внедрено. Ещё кандидаты в docs/NAVIGATION.
+Новая логическая доработка должна получить1.1.26 через release:patch с русским
+JSON-array notes и release:check. Сохранить runtime1.1.0 для native-compatibleJS.
+Не выдавать прогноз/синтетическую проверку за гарантированный прирост или реальное
+исследование атлетов. Физический телефон и платный end-to-end AI не тестировались.
 
-Native catalog→exercise Progress показал forecast51.25 с новым1.25step;
-Templates empty state проверен. Original restore фактически завершился, но
-helper получил transient ADB/UI dump error на перерисовке; никакая повторная
-подмена данных не нужна: after-restore-1.1.25.json точно совпал по state/plans
-с before-plan-qa-1.1.25.json. Восстановлены исходные2sets/2finished/0active,
-1customtemplate,32catalog. Plan screenshot320dp переснят после layout reload,
-подписи и контролы читаемы; size/density reset. Автоnotes/manualnotes проверены.
-Файлы во verified ignored, новых app errors нет. Следующий шаг stage audit,
-sourcecommit/push, GitHubAPK/EASproduction/CI/реальное OTAapply/offline
-preservation и финальный checkpoint. Код после final558tests/types не менялся.
-
-## Далее
-
-Реализовать UI с существующими offline APIs и lazy queries, покрыть новый
-маршрут/сохранение шага/таймер/ручные значения тестами; fulltests/types;
-release:patch1.1.25 с реальными русскими notes, release:check, штатный APK,
-export/native QA5556 только own synthetic и exact baseline restore,
-audit/sourcecommit/master/GitHubAPK/productionOTA/CI/application verification,
-финальный checkpoint. Нативных изменений/нового runtime не планируется.
-
-Посторонние .agents/agent_assets_metadata.toml и untracked attached_assets,
-старые3checkpoint/error.log сохранить, не staging. Секреты/ключи/backups в Git
-не добавлять. Последний тестовый AVD остановлен, новая сессия ещё не запускалась.
+Рабочая среда: Node24.14 C:\Users\Dirg9\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin,
+pnpm10.33.2, JDK17 C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot,
+ANDROID_HOME=C:\gymbeam\artifacts\android-sdk, ANDROID_AVD_HOME=C:\gymbeam\artifacts\android-avd.
+APK только scripts/build-release.ps1 с прежним закрытым ключом. Не генерировать
+замену. Секреты/ключи/owner-token/connection/личные backups/SDK/AVD не добавлять в Git.
+Посторонние .agents/agent_assets_metadata.toml и untracked attached_assets/старые
+checkpoint/error.log не тронуты и не включены в релиз. Ветка публикации master,
+без force-push; APK только в Release assets. Работать дальше по AGENTS.md.
