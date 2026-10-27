@@ -1,9 +1,11 @@
 # Gym-Beam: Текущий Checkpoint
 
-В работе: [1.1.27, адаптация прогноза к быстрому прогрессу](CHECKPOINT_2026-10-27_FAST_PROGRESS_1_1_27.md).
+Завершена и опубликована: [1.1.27, адаптация прогноза к быстрому прогрессу](CHECKPOINT_2026-10-27_FAST_PROGRESS_1_1_27.md).
 Исправлены выбор первого лёгкого подхода и ограничение свежего результата старым EMA;
 добавлены ранняя прибавка после полного лёгкого занятия и объяснение снижения по RIR.
-Далее итоговые проверки, native QA, сборка и публикация. Личный экспорт только read-only.
+Master/APK/production OTA;597tests/types/CI/native QA PASS. Runtime1.1.0/code33,
+state/plans точно сохранены после APK/QA/OTA/offline. Личный экспорт только read-only.
+Следующий логический app release1.1.28. Обязательной работы по этому запросу нет.
 
 Завершена и опубликована: [1.1.26, анимация и содержательный итог тренировки](CHECKPOINT_2026-10-25_WORKOUT_RECAP_1_1_26.md).
 Master, GitHub APK и production OTA;582теста/types/CI/native QA PASS. Runtime1.1.0,
@@ -52,10 +54,9 @@ Android QA, применение OTA и точная сохранность пр
 Git bundle. Старый PR #1 закрыт без слияния, теги и релизы сохранены.
 448 тестов и workspace typecheck PASS; выполненная работа не меняла код приложения.
 
-Текущий выпуск1.1.21/versionCode27/native runtime1.1.0:499tests/typecheck/CI/native
-PASS. Runtime/backupv11/Worker evidencev4/Free/ledger5USD не менялись. Audit,
-применение OTA и сохранность прогресса PASS. Следующий логический app release1.1.22.
-Проверки и параметры резервной копии перечислены в текущем checkpoint.
+Текущая версия и следующий логический выпуск указаны в верхнем checkpoint;
+ниже и выше сохранены исторические этапы. Runtime/backupv11/Worker evidencev4/
+Free/ledger5USD не менялись. Проверки и параметры копий — в текущем checkpoint.
 
 - [Очистка описаний Gym-Beam: 448 тестов, типы и CI PASS](CHECKPOINT_2026-10-23_REPOSITORY_BRANDING.md).
 - [Android-only: структура, сборка и проверки](CHECKPOINT_2026-10-23_ANDROID_ONLY.md).

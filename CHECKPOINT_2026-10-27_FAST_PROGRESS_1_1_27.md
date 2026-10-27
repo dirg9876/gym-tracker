@@ -1,7 +1,7 @@
 # Gym-Beam 1.1.27: Адаптация К Быстрому Прогрессу
 
-27 октября 2026, C:\gymbeam, master. Код, сборка и native QA завершены;
-готов к публикации, фактические publication IDs будут дописаны после выпуска.
+27 октября 2026, C:\gymbeam, master. Работа завершена и опубликована:
+master, GitHub APK, production OTA; CI/native QA/сохранность прогресса PASS.
 
 ## Цель И Исходные Данные
 
@@ -86,16 +86,42 @@ Release notes1.1.27 один раз показались наHome послеим
 активной тренировки окно не проверяли (ограничение прежних тестов сохранено).
 Разрешения/папка автокопий не менялись, только явный разовый export Documents.
 
-Own original27 восстановлен; before-fast-progress-qa-1.1.27.json и
-after-restore-apk-1.1.27.json ТОЧНО совпали по полнымstate/plans. Размер/density
+Own original27 восстановлен; before-fast-progress-qa-1.1.27.json,
+after-restore-apk-1.1.27.json и after-ota-offline-1.1.27.json ТОЧНО совпали по
+полнымstate/plans. Размер/density
 сброшены. Helpers/screens/logs/own backups толькоignored artifacts/apk/verified.
 Первый экспорт QA потребовал ручного завершения выбора папки после transient
 UiAutomation null-root; helper27 добавляет retry и Trim имени файла в nativeAlert.
-Это не изменение приложения/данных. AVD пока открыт для проверки OTA.
+Это не изменение приложения/данных. OTA реально применено: экранUpdates показал
+«Обновление 01a17f0b». После холодного старта без сети доступны прогноз/история
+упражнения3, реальный10x12/RIR3; для нового упражнения1 корректно только подбор.
+App PID ReactNativeJS/AndroidRuntime error logs пусты. Airplane0/WiFi1 восстановлены,
+default1080x2400/420dpi восстановлен; собственный AVD остановлен, других не было.
 
-Следующий шаг: commit/pushmaster, GitHub APK/CI, productionOTA/runtime1.1.0,
-проверить реальное применение, offline-повторное открытие и свежий экспорт
-с точным сравнением baseline. Затем остановить ownAVD и дописать этот checkpoint.
+## Публикация
+
+Source master/origin f45f7ec442c53518c63ecac5636647913bcc6ff3.
+GitHub Release v1.1.27 опубликован, не draft; asset uploaded153169253bytes,
+uploaded digest совпал с локальным SHA256 выше.
+https://github.com/dirg9876/gym-tracker/releases/download/v1.1.27/gym-beam-1.1.27.apk
+CI source SUCCESS: https://github.com/dirg9876/gym-tracker/actions/runs/40578038166
+
+EAS Android production/runtime1.1.0,27.10.2026 20:27:21.744UTC:
+update01a17f0b-cb10-7d69-b305-9c1ad22f03c8,
+groupedce001d-38e7-4285-b214-200acd67d736, gitCommitHash совпадает с source.
+PowerShell перенаправление native stderr warnings оставило outer status1, хотя
+EAS выдал Published!/валидные metadata и устройство реально скачало/применило
+точно этот update. Повторной публикации/дубликата не делалось. Не трактовать это
+как недоставленный релиз. Worker не развёртывался, платных AI-запросов не было.
+
+Обновление на телефоне: Главная > облако > Проверить обновления > Применить
+обновление после завершения текущей тренировки. APK также ставится поверх,
+без удаления данных, с прежней подписью. Ручные цели/активные drafts не заменяются
+ради теста; свежие автоматические планы используют исправленный общий расчёт.
+
+Обязательной работы по запросу не осталось. Этот checkpoint отправляется
+отдельным documentation commit без нового app version. Следующее логическое
+изменение приложения1.1.28 через release:patch/release:check по AGENTS.md.
 
 Безусловное ускорение всех упражнений не вводилось. ПриRIR0/1, неизвестных
 оценках, слишком большом шаге или плохой технике прогрессия ограничивается.
