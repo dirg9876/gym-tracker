@@ -1,4 +1,4 @@
-import { controlPrediction, estimateStrength, goalPrescription, modelForecastSchema, predictReps, predictWeight, roundWeightDown, qualityEstimate, type LoadGuard, type StrengthObservation } from "@workspace/ai-coach";
+import { controlPrediction, estimateStrength, goalPrescription, modelForecastSchema, predictReps, predictWeight, roundWeightDown, qualityEstimate, strongestMeasurement, type LoadGuard, type StrengthObservation } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { sameLoadCategory, isTimedExercise, minimumWeight } from "./workoutMeasurement";
 import { isAssisted } from "./equipmentSettings";
@@ -21,19 +21,25 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
   const supported = ["barbell", "dumbbell", "machine"].includes(equipment.equipment) && !equipment.timed && !equipment.assisted;
   const minimumKg = equipment.equipment === "barbell" ? 20 : 0;
   const fitted = estimateStrength(supported ? history.filter(row => row.weightKg >= minimumKg) : [], now);
-  const firstToday = current.find(row => row.weightKg >= minimumKg && qualityEstimate(row) != null);
-  const todayStrength = firstToday ? qualityEstimate(firstToday) : null;
-  const strength = supported ? todayStrength ?? (!fitted.stale ? fitted.estimated1RMKg : null) : null;
+  const latestSession = history.filter(row => row.workoutId === history.at(-1)?.workoutId);
+  const todayReference = strongestMeasurement(current.filter(row => row.weightKg >= minimumKg));
+  const latestMeasurement = strongestMeasurement(latestSession.filter(row => row.weightKg >= minimumKg));
+  const todayStrength = todayReference ? qualityEstimate(todayReference) : null;
+  // EMA describes the trend; fresh measured capacity owns prescriptions in either direction.
+  const strength = supported ? todayStrength ?? (!fitted.stale && latestMeasurement ? qualityEstimate(latestMeasurement) : null) : null;
   const last = current.at(-1) ?? history.at(-1);
   const hasFeedback = last?.rir != null && last.technique != null;
-  const latestSession = history.filter(row => row.workoutId === history.at(-1)?.workoutId);
-  const reserveDriven = current.length > 0 && last?.technique === "good" && last.rir != null && last.rir >= Math.max(4, range.targetRir + 2);
-  const latestMeasured = current.length ? firstToday != null && !reserveDriven : latestSession.some(row => row.weightKg >= minimumKg && qualityEstimate(row) != null);
+  const feedbackRows = current.length ? current : latestSession;
+  const reference = todayReference ?? latestMeasurement;
+  const reserveDriven = last?.technique === "good" && last.rir != null && last.rir >= Math.max(4, range.targetRir + 2)
+    && feedbackRows.every(row => row.technique === "good" && row.rir != null && row.rir >= range.targetRir);
+  const strongerUnmodelledSet = reference != null && feedbackRows.some(row => row.weightKg > reference.weightKg && row.reps >= range.repsMin && row.technique === "good" && row.rir != null && row.rir >= range.targetRir && qualityEstimate(row) == null);
+  const latestMeasured = (current.length ? todayReference != null : latestMeasurement != null) && !reserveDriven && !strongerUnmodelledSet;
   const status = !supported ? "unsupported" : strength != null && latestMeasured ? "ready" : fitted.stale && fitted.estimated1RMKg != null ? "stale" : "insufficient";
   const targets: Array<{ weightKg: number; reps: number }> = [];
   let first = { ...guard, predictedReps: null as number | null, unroundedWeightKg: null as number | null };
   for (let i = 0; i < 6; i++) {
-    const fatigueReps = (fitted.fatigueBeta ?? 0) * (current.length - (firstToday ? current.indexOf(firstToday) : 0) + i);
+    const fatigueReps = (fitted.fatigueBeta ?? 0) * (current.length - (todayReference ? current.indexOf(todayReference) : 0) + i);
     const result = equipment.equipment === "bodyweight" && !equipment.timed && !equipment.assisted
       ? { ...guard, reps: Math.min(range.repsMax, guard.reps), predictedReps: null, unroundedWeightKg: null }
       : controlPrediction({ strengthKg: supported && hasFeedback && latestMeasured ? strength : null, guard,
@@ -42,7 +48,11 @@ export function forecastWorkingSets(history: StrengthObservation[], range: Range
     targets.push({ weightKg: result.weightKg, reps: result.reps });
     if (i === 0) first = result;
   }
-  const note = !supported ? "Формула не применяется к секундам, собственному весу, противовесу и категории «Другое». Здесь действуют обычные правила и калибровка." : reserveDriven ? "Свежий запас 4–5 используется как сигнал для следующей цели, не для вычисления точного 1ПМ. Более старый расчёт не отменяет эту обратную связь; шаг и диапазон ограничены, новую цель нужно проверить подходом." : status === "stale" ? "Нет качественного измерения за 28 дней. Нужна повторная оценка; старый расчёт не повышает нагрузку." : status === "insufficient" ? "В последнем занятии нет подхода для формулы: нужны 2–10 повторений, RIR 0–3 и сохранённая техника. Цель задана правилами прогрессии или калибровки, а не старым прогнозом." : "Приближённая оценка Эпли + RIR, EMA 0,2 по одному подходу на занятие. Не рекорд и не норматив. Прогноз не определяет восстановление; RIR и техника субъективны.";
+  if (supported && latestMeasured && reference && first.unroundedWeightKg != null && (first.weightKg < guard.weightKg || first.reps < guard.reps)) {
+    first.reason = `Опора: ${reference.weightKg} кг × ${reference.reps}, запас ${reference.rir}. Цель — запас ${range.targetRir}: ${first.weightKg} кг × ${first.reps}, с учётом шага ${range.weightStepKg} кг${current.length && fitted.fatigueBeta != null ? " и утомления" : ""}. Это подбор рабочей нагрузки, не потеря достигнутого результата; проверьте запас по подходу.`;
+    if (guard.action === "reduce") first.reason = `${guard.reason} ${first.reason}`;
+  }
+  const note = !supported ? "Формула не применяется к секундам, собственному весу, противовесу и категории «Другое». Здесь действуют обычные правила и калибровка." : reserveDriven ? "Свежий запас 4–5 используется как сигнал для следующей цели, не для вычисления точного 1ПМ. Более старый расчёт не отменяет эту обратную связь; шаг и диапазон ограничены, новую цель нужно проверить подходом." : status === "stale" ? "Нет качественного измерения за 28 дней. Нужна повторная оценка; старый расчёт не повышает нагрузку." : status === "insufficient" ? "Нет пригодного свежего измерения для рабочей цели: нужны 2–10 повторений, RIR 0–3 и сохранённая техника. Более сильный подход вне области формулы не ограничивается оценкой лёгкого подхода. Цель задана правилами прогрессии или калибровки, а не старым прогнозом." : "Эпли + RIR по сильнейшему качественному подходу последнего занятия или сегодня. Старое EMA 0,2 не ограничивает свежий результат; оно используется для проверки тренда. Не рекорд и не норматив. RIR, техника и утомление приблизительны; восстановление по ним не определяется.";
   return { next: { weightKg: first.weightKg, reps: first.reps, action: first.action, reason: first.reason },
     model: modelForecastSchema.parse({ version: "epley-rir-ema-v1", status,
       estimated1RMKg: supported ? strength ?? fitted.estimated1RMKg : null, sessions: fitted.sessions,
@@ -65,8 +75,8 @@ export function buildActivePrediction(state: OfflineState, workoutId: number, ex
   const compatible = state.sets.filter(row => row.exerciseId === exerciseId && sameLoadCategory(row, exercise) && (exercise.equipment !== "dumbbell" || (row.dumbbellCount ?? 1) === (exercise.dumbbellCount ?? 1)));
   const before = Math.min(now, Date.parse(workout.startedAt));
   const finished = new Map(state.workouts.filter(row => row.finishedAt && Date.parse(row.finishedAt) <= before).map(row => [row.id, row]));
-  const history = compatible.filter(row => finished.has(row.workoutId)).map(row => ({ ...row, workoutStartedAt: finished.get(row.workoutId)!.startedAt, workoutFinishedAt: finished.get(row.workoutId)!.finishedAt! })).sort((a, b) => a.workoutFinishedAt.localeCompare(b.workoutFinishedAt) || a.workoutId - b.workoutId || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
-  const current = compatible.filter(row => row.workoutId === workoutId).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+  const history = compatible.filter(row => finished.has(row.workoutId)).map(row => ({ ...row, workoutStartedAt: finished.get(row.workoutId)!.startedAt, workoutFinishedAt: finished.get(row.workoutId)!.finishedAt! })).sort((a, b) => Date.parse(a.workoutFinishedAt) - Date.parse(b.workoutFinishedAt) || a.workoutId - b.workoutId || Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id);
+  const current = compatible.filter(row => row.workoutId === workoutId).sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id);
   const last = current.at(-1) ?? history.at(-1);
   const baseline = workingBaseline(history, current, range.repsMin);
   const probe = assessedProbe(baseline, range.repsMin, range.targetRir, exercise.equipment === "bodyweight");

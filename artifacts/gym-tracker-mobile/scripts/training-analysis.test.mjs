@@ -44,8 +44,8 @@ test("review of an old workout cannot see future sessions, and compares the same
   assert.equal(analysis.totals.sets, 6);
   assert.deepEqual(analysis.exercises[0].comparison, { workoutId: old.id, weightKg: 40, previousReps: 8, currentReps: 10, comparableEffort: true });
   assert.equal(analysis.exercises[0].next.weightKg, 40);
-  assert.equal(analysis.exercises[0].next.reps, 8);
-  assert.ok(Math.abs(analysis.exercises[0].model.estimated1RMKg - (0.8 * (40 * (1 + 10 / 30)) + 0.2 * (40 * (1 + 12 / 30)))) < 1e-8);
+  assert.equal(analysis.exercises[0].next.reps, 10, "fresh measured repetitions must not be reduced by the earlier EMA");
+  assert.ok(Math.abs(analysis.exercises[0].model.estimated1RMKg - 40 * (1 + 12 / 30)) < 1e-8);
   value.sets.find(row => row.workoutId === old.id).rir = null;
   value.sets.filter(row => row.workoutId === old.id).forEach(row => row.rir = null);
   assert.equal(buildTrainingAnalysis(value, focus.id).exercises[0].comparison.comparableEffort, false);

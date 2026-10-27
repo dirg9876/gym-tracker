@@ -100,7 +100,7 @@ export function returnAfterBreak(row: { weightKg: number; reps: number }, step: 
 }
 
 export function nextWorkingLoad(sets: RecordedSet[], goal: Goal, now = Date.now()) {
-  const eligible = sets.filter(set => set.exerciseId === goal.exerciseId && set.durationSeconds == null).sort((a, b) => (a.workoutFinishedAt ?? a.createdAt).localeCompare(b.workoutFinishedAt ?? b.createdAt) || a.createdAt.localeCompare(b.createdAt));
+  const eligible = sets.filter(set => set.exerciseId === goal.exerciseId && set.durationSeconds == null).sort((a, b) => Date.parse(a.workoutFinishedAt ?? a.createdAt) - Date.parse(b.workoutFinishedAt ?? b.createdAt) || Date.parse(a.createdAt) - Date.parse(b.createdAt));
   const latest = eligible.at(-1);
   if (!latest) return { weightKg: null, increase: false, reason: "Нет записанных рабочих подходов" };
   const session = eligible.filter(set => set.workoutId === latest.workoutId);
@@ -113,7 +113,8 @@ export function nextWorkingLoad(sets: RecordedSet[], goal: Goal, now = Date.now(
   const date = (set: RecordedSet) => Date.parse(set.workoutFinishedAt ?? set.createdAt);
   const recent = now >= date(latest) && now - date(latest) <= 28 * 86400000;
   const confirmedTwice = previous.length > 0 && date(latest) - date(previous.at(-1)!) <= 28 * 86400000 && success(session) && success(previous);
-  const fastTrack = success(session) && session.every(set => set.rir! >= Math.max(4, (goal.targetRir ?? 2) + 2))
+  const easyWorkingSession = session.length >= goal.sets && session.every(set => set.weightKg === baseline.weightKg && set.reps >= goal.repsMin && set.reps <= goal.repsMax && set.technique === "good" && set.rir != null && set.rir >= Math.max(5, (goal.targetRir ?? 2) + 3));
+  const fastTrack = easyWorkingSession || success(session) && session.every(set => set.rir! >= Math.max(4, (goal.targetRir ?? 2) + 2))
     && previous.every(set => set.technique === "good" && set.rir != null && set.rir >= (goal.targetRir ?? 2));
   const increment = progressionIncrement(baseline.weightKg, step, confirmedTwice && clearlyEasy, goal.equipment);
   const increase = goal.equipment !== "bodyweight" && latest.workoutId != null && recent && (confirmedTwice || fastTrack) && increment != null;
@@ -122,6 +123,7 @@ export function nextWorkingLoad(sets: RecordedSet[], goal: Goal, now = Date.now(
   if (increase) {
     const confirmation = confirmedTwice
       ? `Верх диапазона (${goal.repsMax}) повторён во всех ${session.length} подходах двух тренировок с запасом и техникой.`
+      : easyWorkingSession ? `Все ${session.length} подхода в рабочем диапазоне выполнены с запасом не меньше ${Math.max(5, (goal.targetRir ?? 2) + 3)} и сохранённой техникой: можно проверить один шаг, не ожидая верха диапазона.`
       : `Во всех ${session.length} подходах выполнено по ${goal.repsMax} повт. с запасом не меньше ${Math.max(4, (goal.targetRir ?? 2) + 2)} и сохранённой техникой: можно проверить один шаг уже на следующем занятии.`;
     reason = `${confirmation} Прибавка ${increment} кг${confirmedTwice && clearlyEasy && increment! > step ? " (два шага при большом запасе, не более 10%)" : ""}; вернитесь к ${goal.repsMin} повт.`;
   } else if (session.some(set => set.technique === "breakdown")) reason = "Без повышения. При нарушении техники уменьшите нагрузку или смените вариант упражнения";

@@ -14,10 +14,14 @@ export function ExerciseOutlook({ outlook, compact = false, showChart = true }: 
   const muted = { color: colors.mutedForeground, fontSize: 12, lineHeight: 19 };
   const { timed, assisted, calibration } = outlook;
   const bodyweight = outlook.exercise.equipment === "bodyweight";
+  const previous = outlook.lastPerformance;
+  const explainedReduction = !timed && !assisted && previous != null && outlook.initialWeightKg != null && outlook.initialWeightKg < previous.weightKg;
   const value = (set: Outlook["sessions"][number]["targets"][number]) => timed ? set.durationSeconds ?? 0 : bodyweight ? set.reps : set.weightKg;
   return <View style={{ gap: 12 }}>
     <Text style={text}>{outlook.scheduleSource}</Text>
     <Text style={muted}>{timed ? "Удержание в секундах" : `${outlook.repsMin}–${outlook.repsMax} повт. · целевой запас ${outlook.targetRir}`}{outlook.exercise.equipment === "dumbbell" ? " · вес одной гантели" : assisted ? " · противовес" : bodyweight ? " · вес указан дополнительный" : ""}</Text>
+    {previous ? <Text style={text}>Последний результат · {formatShortDate(previous.date)}: {timed ? previous.durationSeconds == null ? "время не записано" : `${previous.durationSeconds} с` : `${assisted ? "противовес " : bodyweight ? "+" : ""}${formatKg(previous.weightKg)} × ${previous.reps}${previous.rir == null ? " · запас не указан" : ` · запас ${previous.rir}`}`}</Text> : null}
+    {explainedReduction ? <Text style={muted}>{outlook.reason}</Text> : null}
     {!timed && !assisted && !calibration ? <Text style={{ ...muted, color: colors.accent }}>Целевой сценарий роста: все подходы с запасом {outlook.scenarioRir}+ и хорошей техникой. При меньшем запасе цель пересчитывается по фактическому подходу.</Text> : null}
     {calibration ? <Text style={{ ...muted, color: colors.amber }}>Нужен подборочный подход. Остальные подходы и дальнейшая прибавка определятся после оценки запаса и техники.</Text> : null}
     {outlook.changeKg != null && outlook.changeKg !== 0 ? <Text style={{ ...text, color: outlook.changeKg > 0 ? colors.success : colors.mutedForeground }}>Возможное изменение веса в сценарии: {outlook.changeKg > 0 ? "+" : ""}{formatKg(outlook.changeKg)}</Text> : null}
@@ -43,6 +47,6 @@ export function ExerciseOutlook({ outlook, compact = false, showChart = true }: 
     </View>)}
     {compact && outlook.sessions.length ? <Pressable accessibilityRole="button" accessibilityLabel="Подходы следующих занятий" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Text style={{ ...muted, color: colors.accent, flex: 1 }}>{expanded ? "Свернуть подходы" : "По подходам"}</Text><Feather name={expanded ? "chevron-up" : "chevron-down"} size={18} color={colors.accent} /></Pressable> : null}
     {compact ? <Pressable accessibilityRole="button" accessibilityLabel="Расчёт и условия прогноза" accessibilityState={{ expanded: explanation }} onPress={() => setExplanation(value => !value)} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="info" size={17} color={colors.accent} /><Text style={{ ...muted, flex: 1, color: colors.accent }}>Расчёт и условия</Text><Feather name={explanation ? "chevron-up" : "chevron-down"} size={18} color={colors.accent} /></Pressable> : null}
-    {!compact || explanation ? <><Text style={muted}>{outlook.reason}</Text><Text style={muted}>{outlook.assumptions}</Text></> : null}
+    {!compact || explanation ? <>{!explainedReduction ? <Text style={muted}>{outlook.reason}</Text> : null}<Text style={muted}>{outlook.assumptions}</Text></> : null}
   </View>;
 }

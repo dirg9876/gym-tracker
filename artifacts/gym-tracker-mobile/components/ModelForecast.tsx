@@ -16,7 +16,7 @@ export function ModelForecast({ model, perDumbbell = false }: { model: Forecast;
       <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>Оценочный 1ПМ: {formatNumber(model.estimated1RMKg!)} кг{perDumbbell ? " на гантель" : ""}{model.source === "today" ? " · по подходу сегодня" : ` · занятий: ${model.sessions}`}</Text>
       {model.unroundedWeightKg != null ? <Text style={muted}>Расчётный вес при RIR {model.targetRir}: {formatNumber(model.unroundedWeightKg)} кг до округления и ограничений прогрессии.</Text> : null}
       {model.predictedReps != null ? <Text style={muted}>Математическая оценка, не цель подхода: около {formatNumber(model.predictedReps)} повт. с RIR {model.targetRir}. Назначение ограничено диапазоном упражнения.</Text> : null}
-      <Text style={muted}>{model.validationSamples ? `Проверка на последующих занятиях: ${model.validationSamples} · средняя ошибка ${formatNumber(model.repErrorMAE!)} повт. при записанном RIR.` : "Ещё нет последующих занятий для проверки ошибки прогноза."}</Text>
+      <Text style={muted}>{model.validationSamples ? `Проверка EMA-тренда на последующих занятиях: ${model.validationSamples} · средняя ошибка ${formatNumber(model.repErrorMAE!)} повт. при записанном RIR, не точность назначений.` : "Ещё нет последующих занятий для проверки ошибки тренда."}</Text>
       <Text style={muted}>{model.fatigueBeta == null ? "Коэффициент утомления ещё не определён." : `Поправка на подход: ${formatNumber(model.fatigueBeta)} повт. · сопоставлений: ${model.fatigueSamples}`}</Text>
     </> : null}
     <Text style={muted}>{model.note}</Text>

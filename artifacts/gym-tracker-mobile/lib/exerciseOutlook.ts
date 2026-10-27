@@ -1,4 +1,4 @@
-import { defaultCoachProfile, goalPrescription, personalCoachProfile } from "@workspace/ai-coach";
+import { defaultCoachProfile, goalPrescription, personalCoachProfile, strongestMeasurement } from "@workspace/ai-coach";
 import type { OfflineState } from "./offlineApi";
 import { buildAdaptiveSplit, planningGroup, type SplitDay } from "./adaptiveWorkout";
 import { monthProgress } from "./coachMonth";
@@ -8,7 +8,7 @@ import { isTimedExercise, minimumWeight, sameLoadCategory } from "./workoutMeasu
 import { localDateKey } from "./trainingInsights";
 import type { SetTarget } from "./workoutTemplates";
 import { bodyWeightForecast } from "./bodyWeight";
-import { nextWorkingLoad, progressionIncrement, reserveRepGain, returnAfterBreak } from "./trainingCoach";
+import { nextWorkingLoad, progressionIncrement, reserveRepGain, returnAfterBreak, workingBaseline } from "./trainingCoach";
 
 const daysBetween = (a: string, b: string) => (Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000;
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 12);
@@ -52,8 +52,12 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
   const { profile, doneIds, byWorkout, monthly, remaining, spacing, firstDate, definitions, timeline } = planning;
   const policy = goalPrescription(profile.goal, exercise), timed = isTimedExercise(exercise.name), assisted = isAssisted(exercise);
   const history = state.sets.filter(row => doneIds.has(row.workoutId) && row.exerciseId === exerciseId && sameLoadCategory(row, exercise) && (exercise.equipment !== "dumbbell" || (row.dumbbellCount ?? 1) === (exercise.dumbbellCount ?? 1)))
-    .sort((a, b) => byWorkout.get(a.workoutId)!.finishedAt!.localeCompare(byWorkout.get(b.workoutId)!.finishedAt!) || a.workoutId - b.workoutId || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+    .sort((a, b) => Date.parse(byWorkout.get(a.workoutId)!.finishedAt!) - Date.parse(byWorkout.get(b.workoutId)!.finishedAt!) || a.workoutId - b.workoutId || Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id);
   const last = history.at(-1);
+  const latest = history.filter(row => row.workoutId === last?.workoutId);
+  const reference = !timed && !assisted ? strongestMeasurement(latest) ?? workingBaseline(history, [], policy.repsMin) : last;
+  const lastPerformance = reference ? { date: byWorkout.get(reference.workoutId)!.startedAt, weightKg: reference.weightKg, reps: reference.reps,
+    durationSeconds: reference.durationSeconds ?? null, rir: reference.rir ?? null, technique: reference.technique ?? null } : null;
   const phase = phaseFor(planningGroup(exercise));
   const phaseDefinition = definitions.find(row => row.exerciseId === exerciseId);
   let scheduleSource = monthly ? "Месячный план" : phaseDefinition ? "Текущий состав сплита" : "Условное повторение упражнения";
@@ -115,7 +119,7 @@ export function buildExerciseOutlook(state: OfflineState, exerciseId: number, no
       reps: policy.repsMax, sets: count, confirmations: 1, targetRir: scenarioRir }
     : null;
   return { exercise: { id: exercise.id, name: exercise.name, muscleGroup: exercise.muscleGroup, equipment: exercise.equipment, isMain: exercise.isMain, isCustom: exercise.isCustom },
-    repsMin: policy.repsMin, repsMax: policy.repsMax, targetRir: policy.targetRir, scenarioRir, weightStepKg: stepKg, timed, assisted, calibration, scheduleSource, sessions, progression,
+    repsMin: policy.repsMin, repsMax: policy.repsMax, targetRir: policy.targetRir, scenarioRir, weightStepKg: stepKg, timed, assisted, calibration, scheduleSource, sessions, progression, lastPerformance,
     initialWeightKg, changeKg: !calibration && !timed && !assisted && initialWeightKg != null && lastWeightKg != null ? Math.round((lastWeightKg - initialWeightKg) * 100) / 100 : null,
     reason: timed && !last ? "Время пока не проверено по вашим подходам; начальный ориентир требует посильной проверки без боли." : assisted ? "Противовес подбирается вручную. Уменьшение противовеса повышает, а не снижает нагрузку." : prediction.next.reason,
     assumptions: `Даты предполагаемые: ${monthly ? "месячный план" : "настройки"}, ${monthly ? Math.round(7 / spacing) : profile.daysPerWeek} занятий в неделю; дни недели не закреплены. ${timed || assisted || calibration ? "Нагрузку сначала проверяют фактическими подходами." : `Будущие точки — целевой сценарий при выполнении всех подходов с запасом не меньше ${scenarioRir} и хорошей техникой, не обещание роста силы.`} Меньший запас, пропуск или новая запись меняют следующие цели. Условные результаты не добавляются в историю и не обучают оценку силы.`,

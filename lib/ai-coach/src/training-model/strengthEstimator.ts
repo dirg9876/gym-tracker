@@ -14,9 +14,17 @@ export function epleyWithRir(weightKg: number, reps: number, rir: number): numbe
 export function qualityEstimate(row: Pick<StrengthObservation, "weightKg" | "reps" | "rir" | "technique" | "durationSeconds">): number | null {
   return row.durationSeconds == null && row.technique === "good" && row.rir != null ? epleyWithRir(row.weightKg, row.reps, row.rir) : null;
 }
+export function strongestMeasurement<T extends Parameters<typeof qualityEstimate>[0]>(rows: T[]): T | undefined {
+  let best: T | undefined, estimate = -Infinity;
+  for (const row of rows) {
+    const value = qualityEstimate(row);
+    if (value != null && value > estimate + 1e-8) { best = row; estimate = value; }
+  }
+  return best;
+}
 const median = (values: number[]) => { const sorted = values.slice().sort((a, b) => a - b); const i = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[i] : (sorted[i - 1] + sorted[i]) / 2; };
 
-// One observation per session keeps later fatigued sets out of the long-term EMA.
+// One best valid observation per session avoids both ramp-up bias and back-off fatigue.
 export function estimateStrength(rows: StrengthObservation[], now: number) {
   const sessions = new Map<number, StrengthObservation[]>();
   for (const row of rows) {
@@ -24,12 +32,12 @@ export function estimateStrength(rows: StrengthObservation[], now: number) {
     if (!Number.isFinite(finished) || !Number.isFinite(started) || started > finished || finished > now || now - finished > 90 * day) continue;
     const batch = sessions.get(row.workoutId) ?? []; batch.push(row); sessions.set(row.workoutId, batch);
   }
-  const ordered = [...sessions.values()].map(batch => batch.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt))).sort((a, b) => a[0].workoutFinishedAt.localeCompare(b[0].workoutFinishedAt) || a[0].workoutId - b[0].workoutId);
+  const ordered = [...sessions.values()].map(batch => batch.slice().sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))).sort((a, b) => Date.parse(a[0].workoutFinishedAt) - Date.parse(b[0].workoutFinishedAt) || a[0].workoutId - b[0].workoutId);
   let strength: number | null = null, lastFinished: number | null = null, used = 0;
   const errors: number[] = [], slopes: number[] = [];
   let fatigueSessions = 0;
   for (const batch of ordered) {
-    const firstIndex = batch.findIndex(row => qualityEstimate(row) != null);
+    const firstIndex = batch.indexOf(strongestMeasurement(batch)!);
     if (firstIndex < 0) continue;
     const first = batch[firstIndex], finished = Date.parse(first.workoutFinishedAt);
     if (lastFinished != null && finished - lastFinished > 28 * day) { strength = null; used = 0; slopes.length = 0; fatigueSessions = 0; }

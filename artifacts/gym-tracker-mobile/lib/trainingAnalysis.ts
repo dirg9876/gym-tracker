@@ -44,7 +44,7 @@ export function buildTrainingAnalysis(state: OfflineState, workoutId?: number, n
     const key = `${exercise.id}/${equipment}/${isAssisted(set) ? "assisted" : "weight"}/${equipment === "dumbbell" ? set.dumbbellCount ?? 1 : 1}`;
     rows.push({ ...set, equipment, name: exercise.name, group: exercise.muscleGroup, date: workout.startedAt, workoutFinishedAt: workout.finishedAt!, key });
   }
-  rows.sort((a, b) => a.date.localeCompare(b.date) || a.workoutId - b.workoutId || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+  rows.sort((a, b) => Date.parse(a.date) - Date.parse(b.date) || a.workoutId - b.workoutId || Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id);
   const period = rows.filter(row => Date.parse(row.date) >= start);
   const focusRows = focus ? rows.filter(row => row.workoutId === focus.id) : null;
   const groups = new Map<string, Row[]>();
